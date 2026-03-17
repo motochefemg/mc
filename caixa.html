@@ -879,83 +879,80 @@ async function prepararMovComComprovante(m) {
 }
 
 function saveData(){
-  // Salva local imediatamente
+  if(!currentLoja) return;
+  // Salva LOCAL imediatamente — duas chaves para garantir
   const key = 'caixa_'+currentLoja+'_'+hoje();
-  const estado = {movimentacoes, caixaAberto, caixaAbertoEm, trocoInicialVal};
-  localStorage.setItem(key, JSON.stringify(estado));
-  // Salva também sessão atual (sem data) para restaurar ao reabrir
-  localStorage.setItem('caixa_sessao_'+currentLoja, JSON.stringify(estado));
-  // Sync Sheets em background — envia TODAS as movimentações do dia
-  const payload = {
-    loja: currentLoja,
-    data: hoje(),
-    movimentacoes: movimentacoes,
+  const estado = {
+    movimentacoes,
     caixaAberto,
     caixaAbertoEm,
-    trocoInicial: trocoInicialVal
+    trocoInicialVal,
+    savedAt: new Date().toISOString()
   };
-  // Comprime comprovantes e envia pro Sheets
+  try {
+    localStorage.setItem(key, JSON.stringify(estado));
+    localStorage.setItem('caixa_sessao_'+currentLoja, JSON.stringify(estado));
+  } catch(e) { console.warn('localStorage cheio:', e); }
+
+  // Sync Sheets em background
   Promise.all(movimentacoes.map(m => prepararMovComComprovante(m)))
     .then(movsComprimidas => {
-      const payloadCompleto = {
-        ...payload,
-        movimentacoes: movsComprimidas
+      const payload = {
+        loja: currentLoja,
+        data: hoje(),
+        movimentacoes: movsComprimidas,
+        caixaAberto,
+        caixaAbertoEm,
+        trocoInicial: trocoInicialVal
       };
-      return fetch(APPS_SCRIPT_URL+'?action=caixa_save_all&data='+encodeURIComponent(JSON.stringify(payloadCompleto)));
+      return fetch(APPS_SCRIPT_URL+'?action=caixa_save_all&data='+encodeURIComponent(JSON.stringify(payload)));
     })
     .then(r => r.json())
     .then(j => { if(!j.success) console.warn('caixa_save_all falhou:', j); })
-    .catch(err => console.warn('Erro ao salvar no Sheets:', err));
+    .catch(err => console.warn('Sheets offline, dados salvos localmente:', err));
 }
 
 async function loadData(){
+  if(!currentLoja) return;
   const key = 'caixa_'+currentLoja+'_'+hoje();
-  // Tenta carregar do Sheets primeiro
+
+  // 1. Tenta Sheets primeiro
   try {
     const r = await fetch(`${APPS_SCRIPT_URL}?action=caixa_get&loja=${encodeURIComponent(currentLoja)}&data=${hoje()}`,
-      {signal: AbortSignal.timeout(8000)});
+      {signal: AbortSignal.timeout(6000)});
     const json = await r.json();
-    if(json.success){
-      if(json.movimentacoes?.length > 0){
-        // Novo formato — array completo
-        movimentacoes = json.movimentacoes.map(m=>({
-          ...m, valor: parseFloat(m.valor)||0,
-          formasPgto: typeof m.formasPgto==='string' ? JSON.parse(m.formasPgto||'null') : m.formasPgto,
-          comprovante: m.comprovante && typeof m.comprovante==='string' ? JSON.parse(m.comprovante) : m.comprovante
-        }));
-        caixaAberto = json.caixaAberto === true || json.caixaAberto === 'true';
-        caixaAbertoEm = json.caixaAbertoEm||null;
-        trocoInicialVal = parseFloat(json.trocoInicial)||0;
-      } else if(json.data?.length > 0){
-        // Formato antigo — compatibilidade
-        movimentacoes = json.data.map(m=>({
-          ...m, valor: parseFloat(m.valor)||0,
-          formasPgto: typeof m.formasPgto==='string' ? JSON.parse(m.formasPgto||'null') : m.formasPgto
-        }));
-        const ultima = json.data[json.data.length-1];
-        if(ultima.caixaAberto !== undefined) caixaAberto = ultima.caixaAberto === 'true' || ultima.caixaAberto === true;
-        if(ultima.caixaAbertoEm) caixaAbertoEm = ultima.caixaAbertoEm;
-        if(ultima.trocoInicial) trocoInicialVal = parseFloat(ultima.trocoInicial)||0;
-      }
-      localStorage.setItem(key, JSON.stringify({movimentacoes, caixaAberto, caixaAbertoEm, trocoInicialVal}));
+    if(json.success && json.movimentacoes?.length > 0){
+      movimentacoes = json.movimentacoes.map(m=>({
+        ...m,
+        valor: parseFloat(m.valor)||0,
+        formasPgto: typeof m.formasPgto==='string' ? JSON.parse(m.formasPgto||'null') : m.formasPgto,
+        comprovante: m.comprovante && typeof m.comprovante==='string' ? JSON.parse(m.comprovante) : m.comprovante
+      }));
+      caixaAberto = json.caixaAberto === true || json.caixaAberto === 'true';
+      caixaAbertoEm = json.caixaAbertoEm||null;
+      trocoInicialVal = parseFloat(json.trocoInicial)||0;
+      // Atualiza localStorage com dados do Sheets
+      try { localStorage.setItem(key, JSON.stringify({movimentacoes, caixaAberto, caixaAbertoEm, trocoInicialVal})); } catch(e){}
       return;
     }
-  } catch(e) { console.warn('Sheets indisponível:', e); }
-  // Fallback — tenta localStorage do dia, depois sessão salva
-  const raw = localStorage.getItem(key) || localStorage.getItem('caixa_sessao_'+currentLoja);
-  if(raw){
-    try {
+  } catch(e) { console.warn('Sheets indisponível, usando localStorage'); }
+
+  // 2. Fallback — localStorage do dia
+  try {
+    const raw = localStorage.getItem(key) || localStorage.getItem('caixa_sessao_'+currentLoja);
+    if(raw){
       const d = JSON.parse(raw);
-      movimentacoes = (d.movimentacoes||[]).filter(m => m.data === hoje());
+      // NÃO filtra por data — aceita tudo que foi salvo
+      movimentacoes = (d.movimentacoes||[]);
       caixaAberto = d.caixaAberto||false;
       caixaAbertoEm = d.caixaAbertoEm||null;
       trocoInicialVal = d.trocoInicialVal||0;
-    } catch(e) {
-      movimentacoes=[]; caixaAberto=false; caixaAbertoEm=null; trocoInicialVal=0;
+      return;
     }
-  } else {
-    movimentacoes=[]; caixaAberto=false; caixaAbertoEm=null; trocoInicialVal=0;
-  }
+  } catch(e) { console.warn('Erro ao ler localStorage:', e); }
+
+  // 3. Sem dados
+  movimentacoes=[]; caixaAberto=false; caixaAbertoEm=null; trocoInicialVal=0;
 }
 function getMovHoje(){
   const d = hoje();
