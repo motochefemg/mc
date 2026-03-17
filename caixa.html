@@ -915,6 +915,8 @@ function saveData(){
 async function loadData(){
   if(!currentLoja) return;
   const key = 'caixa_'+currentLoja+'_'+hoje();
+  const statusEl = document.getElementById('syncStatus');
+  if(statusEl) statusEl.textContent = '⟳ Carregando...';
 
   // 1. Tenta Sheets primeiro
   try {
@@ -1949,6 +1951,21 @@ window.addEventListener('load', () => {
     const sw = `const C='mc-v2';self.addEventListener('install',e=>{self.skipWaiting();});self.addEventListener('fetch',e=>{e.respondWith(fetch(e.request).catch(()=>caches.match(e.request)));});`;
     navigator.serviceWorker.register(URL.createObjectURL(new Blob([sw],{type:'text/javascript'}))).catch(()=>{});
   }
+  // Auto-login — restaura sessão salva
+  try {
+    const s = JSON.parse(localStorage.getItem('mc_cx_session') || 'null');
+    if(s && s.u && s.p && (Date.now() - s.ts) < 7*24*60*60*1000) {
+      const sel = document.getElementById('selLoja');
+      const inp = document.getElementById('inputSenha');
+      const chk = document.getElementById('lembrar');
+      if(sel && inp) {
+        sel.value = s.u;
+        inp.value = s.p;
+        if(chk) chk.checked = true;
+        doLogin();
+      }
+    }
+  } catch(e) {}
 });
 
 
