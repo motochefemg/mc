@@ -376,6 +376,7 @@ tr:hover td{background:var(--bg2);}
     <button class="tbtn" onclick="logout()">Sair</button>
   </div>
 
+  <div id="syncStatus" style="text-align:center;font-size:11px;color:#888;padding:3px 0;background:#f9f9f9;border-bottom:1px solid #eee;min-height:18px"></div>
   <div class="tabs">
     <button class="tab active" onclick="goTab('caixa',this)">📊 Caixa do Dia</button>
     <button class="tab" onclick="goTab('frente',this)">🛒 Frente de Caixa</button>
@@ -383,6 +384,7 @@ tr:hover td{background:var(--bg2);}
     <button class="tab" onclick="goTab('extrato',this)">📋 Extrato</button>
     <button class="tab" id="tabBird" style="display:none" onclick="goTab('bird',this)">🌐 Bird's Eye</button>
   </div>
+  <div id="syncStatus" style="text-align:center;font-size:11px;color:var(--text3);padding:2px 8px;background:var(--card2)"></div>
 
   <!-- ══ TAB: CAIXA DO DIA ══ -->
   <div class="view active" id="view-caixa">
@@ -546,6 +548,11 @@ tr:hover td{background:var(--bg2);}
     </div>
   </div>
 
+  <!-- ══ TAB: BIRD'S EYE ══ -->
+  <div class="view" id="view-bird">
+    <div id="viewBird"><div style="text-align:center;padding:40px;color:var(--text3)">Carregando...</div></div>
+  </div>
+
   <!-- ══ TAB: EXTRATO ══ -->
   <div class="view" id="view-extrato">
     <div class="pgrid">
@@ -673,7 +680,9 @@ let tipoPedidoAtivo = 'motos';
 let pedidoSelecionado = null;
 let pedidoAtual = null;
 let pgtoSelecionado = null;
-let movimentacoes = []; // [{id,tipo,desc,valor,pgto,hora,data,vendedor,numPedido,parcelas,obs}]
+let movimentacoes = [];
+let formasPgto = [];
+let anexosEntrada = [];
 let caixaAberto = false;
 let caixaAbertoEm = null;
 let trocoInicialVal = 0;
@@ -1752,6 +1761,59 @@ function limparComprovante(tipo) {
 
 
 // ══════════════════════════════════════════════
+// EMISSÃO NF — modal confirmação
+// ══════════════════════════════════════════════
+function perguntarEmitirNF(mov) {
+  reciboMovAtual = mov;
+  const desc = mov.desc || '—';
+  const el = document.getElementById('nfPedidoDesc');
+  if(el) el.textContent = desc;
+  const statusEl = document.getElementById('nfEmissaoStatus');
+  if(statusEl) statusEl.textContent = '';
+  const btnNF = document.getElementById('btnConfirmarNF');
+  if(btnNF){ btnNF.disabled=false; btnNF.textContent='📄 Emitir NF'; }
+  document.getElementById('modalEmitirNF').style.display='flex';
+}
+
+async function emitirNFModal() {
+  if(!reciboMovAtual) return;
+  const pedidoId = reciboMovAtual.raw?.id || reciboMovAtual.rawId || null;
+  const statusEl = document.getElementById('nfEmissaoStatus');
+  const btn = document.getElementById('btnConfirmarNF');
+  if(!pedidoId){
+    if(statusEl) statusEl.innerHTML='<span style="color:var(--red)">ID do pedido não encontrado.</span>';
+    return;
+  }
+  btn.disabled=true; btn.textContent='⏳ Emitindo...';
+  if(statusEl){ statusEl.style.color='var(--text3)'; statusEl.textContent='Aguarde...'; }
+  try {
+    const r = await fetch(`${APPS_SCRIPT_URL}?action=emitirnf&pedidoId=${pedidoId}`, {signal: AbortSignal.timeout(30000)});
+    const json = await r.json();
+    if(json.success){
+      btn.textContent='✓ NF Emitida'; btn.style.background='var(--green)';
+      if(statusEl){ statusEl.style.color='var(--green)'; statusEl.textContent='✓ NF emitida!'+(json.nfNumero?' NF Nº '+json.nfNumero:''); }
+      showToast('📄 NF '+(json.nfNumero||'')+' emitida!');
+      setTimeout(()=>{ document.getElementById('modalEmitirNF').style.display='none'; abrirRecibo(reciboMovAtual); }, 1500);
+    } else {
+      btn.disabled=false; btn.textContent='📄 Emitir NF';
+      if(statusEl){ statusEl.style.color='var(--red)'; statusEl.textContent='✗ '+(json.error||'Erro ao emitir'); }
+    }
+  } catch(e){
+    btn.disabled=false; btn.textContent='📄 Emitir NF';
+    if(statusEl){ statusEl.style.color='var(--red)'; statusEl.textContent='✗ '+e.message; }
+  }
+}
+
+function excluirMov(id){
+  if(!confirm('Excluir este lançamento?')) return;
+  movimentacoes = movimentacoes.filter(m=>m.id!==id);
+  saveData();
+  renderExtrato();
+  renderCaixa();
+  showToast('Lançamento excluído');
+}
+
+// ══════════════════════════════════════════════
 // EMISSÃO DE NF
 // ══════════════════════════════════════════════
 async function emitirNFCaixa() {
@@ -1934,27 +1996,6 @@ function verComprovante(mov) {
   }
 }
 </script>
-
-<!-- MODAL EMITIR NF -->
-<div class="mov" id="modalEmitirNF" style="display:none">
-  <div class="mbox" style="max-width:420px">
-    <div class="mh">
-      <div class="mt">Emitir Nota Fiscal?</div>
-      <button class="mc" onclick="document.getElementById('modalEmitirNF').style.display='none';abrirRecibo(reciboMovAtual)">×</button>
-    </div>
-    <div class="mb" style="text-align:center;padding:30px">
-      <div style="font-size:40px;margin-bottom:16px">📄</div>
-      <div style="font-size:15px;font-weight:700;margin-bottom:8px" id="nfPedidoDesc">—</div>
-      <div style="font-size:13px;color:var(--text3);margin-bottom:24px">Pagamento registrado com sucesso!<br>Deseja emitir a Nota Fiscal agora?</div>
-      <div id="nfEmissaoStatus" style="margin-bottom:16px;font-size:13px;min-height:20px"></div>
-      <div style="display:flex;gap:10px;justify-content:center">
-        <button class="btn btn-s btn-lg" onclick="document.getElementById('modalEmitirNF').style.display='none';abrirRecibo(reciboMovAtual)">Agora não</button>
-        <button class="btn btn-p btn-lg" id="btnConfirmarNF" onclick="emitirNFModal()">📄 Emitir NF</button>
-      </div>
-    </div>
-  </div>
-</div>
-
 
 <script>
 // PWA Manifest + Service Worker
