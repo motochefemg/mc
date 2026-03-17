@@ -894,7 +894,7 @@ function saveData(){
     localStorage.setItem('caixa_sessao_'+currentLoja, JSON.stringify(estado));
   } catch(e) { console.warn('localStorage cheio:', e); }
 
-  // Sync Sheets em background
+  // Sync Sheets em background via POST (evita limite de URL)
   Promise.all(movimentacoes.map(m => prepararMovComComprovante(m)))
     .then(movsComprimidas => {
       const payload = {
@@ -905,11 +905,36 @@ function saveData(){
         caixaAbertoEm,
         trocoInicial: trocoInicialVal
       };
-      return fetch(APPS_SCRIPT_URL+'?action=caixa_save_all&data='+encodeURIComponent(JSON.stringify(payload)));
+      const body = JSON.stringify(payload);
+      // Tenta POST primeiro, fallback para GET sem comprovantes
+      return fetch(APPS_SCRIPT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({ action: 'caixa_save_all', data: body })
+      }).catch(() => {
+        // Fallback GET sem comprovantes se POST falhar
+        const payloadLeve = {
+          ...payload,
+          movimentacoes: payload.movimentacoes.map(m => ({...m, comprovante: null}))
+        };
+        return fetch(APPS_SCRIPT_URL+'?action=caixa_save_all&data='+encodeURIComponent(JSON.stringify(payloadLeve)));
+      });
     })
     .then(r => r.json())
-    .then(j => { if(!j.success) console.warn('caixa_save_all falhou:', j); })
-    .catch(err => console.warn('Sheets offline, dados salvos localmente:', err));
+    .then(j => {
+      const el = document.getElementById('syncStatus');
+      if(j.success) {
+        if(el) el.textContent = '✓ Salvo na nuvem · '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+      } else {
+        console.warn('caixa_save_all falhou:', j);
+        if(el) el.textContent = '⚠ Salvo local (erro nuvem)';
+      }
+    })
+    .catch(err => {
+      console.warn('Sheets offline:', err);
+      const el = document.getElementById('syncStatus');
+      if(el) el.textContent = '⚠ Salvo local (offline)';
+    });
 }
 
 async function loadData(){
