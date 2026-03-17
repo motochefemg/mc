@@ -905,11 +905,14 @@ function saveData(){
   };
 
   const script = document.createElement('script');
-  script.onerror = () => {
+  script.onerror = (err) => {
     delete window[cbName];
     const s = document.getElementById('syncStatus');
-    if(s) s.textContent = '⚠ Offline';
+    if(s) s.textContent = '⚠ Erro script';
+    console.error('JSONP script.onerror:', err);
   };
+  console.log('JSONP URL length:', urlJsonp.length);
+  console.log('JSONP callback:', cbName);
   script.src = urlJsonp;
   document.head.appendChild(script);
   setTimeout(() => { 
