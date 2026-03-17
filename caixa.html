@@ -517,7 +517,7 @@ tr:hover td{background:var(--bg2);}
           <div class="fg">
             <label class="fl">Forma de pagamento</label>
             <select class="fsel" id="sPagamento">
-              <option value="">Selecione...</option>
+              <option value="">Selecione... (opcional)</option>
               <option>PIX</option>
               <option>Dinheiro</option>
               <option>Cartão de Débito</option>
@@ -1449,6 +1449,7 @@ function fecharModal(){
 function confirmarVenda(){
   const pgtosFilled = formasPgto.filter(f=>f&&f.tipo);
   if(pgtosFilled.length===0){ mostrarErroModal('Adicione ao menos uma forma de pagamento!'); return; }
+  console.log('DEBUG confirmarVenda - anexosEntrada:', anexosEntrada.length, JSON.stringify(anexosEntrada.map(a=>a.nome)));
   if(anexosEntrada.length===0){ mostrarErroModal('Anexe ao menos um comprovante de pagamento!'); return; }
   const p = pedidoAtual;
   if(!p){ mostrarErroModal('Nenhum pedido selecionado!'); return; }
@@ -1521,7 +1522,7 @@ function registrarSaida(){
   const pgto = document.getElementById('sPagamento').value;
   const obs = document.getElementById('sObs').value;
   const msg = document.getElementById('saidaMsg');
-  if(!cat||!desc||!valor||!pgto){ msg.innerHTML='<span style="color:var(--red)">Preencha todos os campos obrigatórios.</span>'; return; }
+  if(!cat||!desc||!valor){ msg.innerHTML='<span style="color:var(--red)">Preencha categoria, descrição e valor.</span>'; return; }
   if(!comprovantes.saida){ msg.innerHTML='<span style="color:var(--red)">Anexe o comprovante ou nota da despesa.</span>'; return; }
   movimentacoes.push({
     id:Date.now(), tipo:'saida', categoria:cat,
@@ -1624,6 +1625,7 @@ function onAnexos(input, tipo) {
       const obj = { nome: file.name, base64: e.target.result, tipo: file.type };
       if(tipo==='entrada') anexosEntrada.push(obj);
       else comprovantes.saida = obj;
+      console.log('DEBUG onAnexos carregou:', file.name, '| anexosEntrada agora tem:', anexosEntrada.length);
 
       // Renderiza thumbnail
       const addBtn = container.querySelector('.anexo-add');
@@ -1678,26 +1680,37 @@ const comprovantes = { entrada: null, saida: null };
 function onComprovante(input, tipo) {
   const file = input.files[0];
   if (!file) return;
-  const area   = document.getElementById('comp' + (tipo==='entrada'?'Entrada':'Saida') + 'Area');
-  const prev   = document.getElementById('comp' + (tipo==='entrada'?'Entrada':'Saida') + 'Preview');
-  const nome   = document.getElementById('comp' + (tipo==='entrada'?'Entrada':'Saida') + 'Nome');
+  const area = document.getElementById('comp' + (tipo==='entrada'?'Entrada':'Saida') + 'Area');
+  const prev = document.getElementById('comp' + (tipo==='entrada'?'Entrada':'Saida') + 'Preview');
+  const nome = document.getElementById('comp' + (tipo==='entrada'?'Entrada':'Saida') + 'Nome');
+
+  // Mostra loading enquanto carrega
   area.classList.add('has-file');
-  nome.textContent = '✓ ' + file.name;
+  nome.textContent = '⟳ Carregando ' + file.name + '...';
   nome.style.display = 'block';
-  if (file.type.startsWith('image/')) {
-    const reader = new FileReader();
-    reader.onload = e => {
+  // Limpa comprovante enquanto carrega
+  comprovantes[tipo] = null;
+
+  const reader = new FileReader();
+  reader.onload = e => {
+    // Salva comprovante SOMENTE após carregamento completo
+    comprovantes[tipo] = { base64: e.target.result, nome: file.name, tipo: file.type };
+    nome.textContent = '✓ ' + file.name;
+    if (file.type.startsWith('image/')) {
       prev.src = e.target.result;
       prev.style.display = 'block';
-      comprovantes[tipo] = { base64: e.target.result, nome: file.name, tipo: file.type };
-    };
-    reader.readAsDataURL(file);
-  } else {
-    prev.style.display = 'none';
-    const reader = new FileReader();
-    reader.onload = e => { comprovantes[tipo] = { base64: e.target.result, nome: file.name, tipo: file.type }; };
-    reader.readAsDataURL(file);
-  }
+    } else {
+      prev.style.display = 'none';
+    }
+    console.log('Comprovante carregado:', tipo, file.name);
+  };
+  reader.onerror = () => {
+    comprovantes[tipo] = null;
+    nome.textContent = '✗ Erro ao carregar. Tente novamente.';
+    area.classList.remove('has-file');
+  };
+  reader.readAsDataURL(file);
+  input.value = '';
 }
 
 function limparComprovante(tipo) {
