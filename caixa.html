@@ -1648,25 +1648,6 @@ function imprimirRecibo() {
       .recibo-rodape{text-align:center;font-size:10px;color:#aaa;margin-top:16px;letter-spacing:1px}
     </style>
   </head><body>${el.outerHTML}<script>window.onload=()=>{window.print();window.close();}<\/script>
-<script>
-// Auto-login — roda após página carregar completamente
-window.addEventListener('load', function() {
-  try {
-    var s = JSON.parse(localStorage.getItem('mc_cx_session') || 'null');
-    if(s && s.u && s.p && (Date.now() - s.ts) < 7*24*60*60*1000) {
-      var sel = document.getElementById('selLoja');
-      var inp = document.getElementById('inputSenha');
-      var chk = document.getElementById('lembrar');
-      if(sel && inp) {
-        sel.value = s.u;
-        inp.value = s.p;
-        if(chk) chk.checked = true;
-        doLogin();
-      }
-    }
-  } catch(e) { console.warn('Auto-login erro:', e); }
-});
-</script>
 
 </body></html>`);
   w.document.close();
