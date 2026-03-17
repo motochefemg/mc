@@ -713,53 +713,50 @@ async function renderBird() {
   el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text2)">⟳ Carregando todas as lojas...</div>';
 
   const data = hoje();
-  const lojas = TODAS_LOJAS;
-  const dadosLojas = {};
-
-  // Busca dados de todas as lojas em paralelo
-  await Promise.all(lojas.map(async loja => {
-    try {
-      const r = await fetch(`${APPS_SCRIPT_URL}?action=caixa_get&loja=${encodeURIComponent(loja)}&data=${data}`, {signal: AbortSignal.timeout(8000)});
-      const json = await r.json();
-      const movs = (json.movimentacoes || json.data || []).map(m => ({
-        ...m,
-        valor: parseFloat(m.valor)||0,
-        formasPgto: typeof m.formasPgto==='string' ? JSON.parse(m.formasPgto||'null') : m.formasPgto
-      }));
-      dadosLojas[loja] = {
-        movs,
-        caixaAberto: json.caixaAberto === true || json.caixaAberto === 'true',
-        trocoInicial: parseFloat(json.trocoInicial)||0
-      };
-    } catch(e) {
-      // Fallback localStorage
-      const key = 'caixa_'+loja+'_'+data;
-      try {
-        const local = JSON.parse(localStorage.getItem(key)||'{}');
-        dadosLojas[loja] = { movs: local.movimentacoes||[], caixaAberto: local.caixaAberto||false, trocoInicial: local.trocoInicialVal||0 };
-      } catch(e2) {
-        dadosLojas[loja] = { movs: [], caixaAberto: false, trocoInicial: 0 };
-      }
-    }
-  }));
-
-  // Também busca despesas dos gestores
   const gestores = [
     { key: '__cesar__', nome: 'César Rodrigues' },
     { key: '__luiz__', nome: 'Luiz Paulo Arouca' },
     { key: '__matheus__', nome: 'Matheus' },
     { key: '__joao__', nome: 'João Brito' },
   ];
-  await Promise.all(gestores.map(async g => {
+  const dadosLojas = {};
+
+  // Inicializa todos com vazio para renderizar logo
+  TODAS_LOJAS.forEach(l => dadosLojas[l] = { movs:[], caixaAberto:false, trocoInicial:0 });
+  gestores.forEach(g => dadosLojas[g.key] = { movs:[], nome:g.nome, isGestor:true });
+
+  // Função de fetch com timeout curto
+  const fetchLoja = async (lojaKey) => {
     try {
-      const r = await fetch(`${APPS_SCRIPT_URL}?action=caixa_get&loja=${encodeURIComponent(g.key)}&data=${data}`, {signal: AbortSignal.timeout(8000)});
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), 5000);
+      const r = await fetch(`${APPS_SCRIPT_URL}?action=caixa_get&loja=${encodeURIComponent(lojaKey)}&data=${data}`, {signal: ctrl.signal});
+      clearTimeout(timer);
       const json = await r.json();
-      const movs = (json.movimentacoes || json.data || []).map(m => ({...m, valor: parseFloat(m.valor)||0}));
-      dadosLojas[g.key] = { movs, nome: g.nome, isGestor: true };
+      const movs = (json.movimentacoes || json.data || []).map(m => ({
+        ...m, valor: parseFloat(m.valor)||0,
+        formasPgto: typeof m.formasPgto==='string' ? JSON.parse(m.formasPgto||'null') : m.formasPgto
+      }));
+      return { movs, caixaAberto: json.caixaAberto===true||json.caixaAberto==='true', trocoInicial: parseFloat(json.trocoInicial)||0 };
     } catch(e) {
-      dadosLojas[g.key] = { movs: [], nome: g.nome, isGestor: true };
+      return { movs:[], caixaAberto:false, trocoInicial:0 };
     }
-  }));
+  };
+
+  // Busca todas em paralelo com Promise.allSettled (não trava se uma falhar)
+  const todasChaves = [...TODAS_LOJAS, ...gestores.map(g=>g.key)];
+  const resultados = await Promise.allSettled(todasChaves.map(k => fetchLoja(k)));
+  
+  todasChaves.forEach((k, i) => {
+    if(resultados[i].status === 'fulfilled') {
+      const r = resultados[i].value;
+      if(gestores.find(g=>g.key===k)) {
+        dadosLojas[k] = { ...r, nome: gestores.find(g=>g.key===k).nome, isGestor:true };
+      } else {
+        dadosLojas[k] = r;
+      }
+    }
+  });
 
   // Calcular totais consolidados
   let totalEntradas = 0, totalSaidas = 0, totalMotos = 0;
