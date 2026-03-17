@@ -870,59 +870,45 @@ function saveData(){
     localStorage.setItem('caixa_sessao_'+currentLoja, JSON.stringify(estadoLocal));
   } catch(e) {}
 
-  // Sync Sheets via JSONP (sem CORS, sem limite de tamanho problemático)
+  // Sync Sheets via fetch GET — payload ultra-compacto por linha
   const statusEl = document.getElementById('syncStatus');
   if(statusEl) statusEl.textContent = '⟳ Sincronizando...';
 
-  // Monta payload com movimentações (sem base64 de imagem para caber na URL)
-  // Comprovantes ficam salvos no Sheets como referência (nome do arquivo)
-  const movsParaSheets = movimentacoes.map(m => ({
-    id: m.id, tipo: m.tipo, categoria: m.categoria||'',
-    desc: (m.desc||'').slice(0,100), valor: m.valor||0,
-    pgto: (m.pgto||'').slice(0,50), vendedor: (m.vendedor||'').slice(0,50),
-    cliente: (m.cliente||'').slice(0,50), numPedido: m.numPedido||'',
-    hora: m.hora||'', data: m.data||hoje(), obs: (m.obs||'').slice(0,200),
-    temComprovante: !!(m.comprovante || (m.anexos && m.anexos.length > 0))
+  // Salva cada movimentação individualmente para evitar URL longa
+  const salvarUm = (m) => {
+    const p = {
+      loja: currentLoja, data: hoje(),
+      caixaAberto, caixaAbertoEm, trocoInicial: trocoInicialVal,
+      mov: {
+        id: m.id, tipo: m.tipo||'', categoria: m.categoria||'',
+        desc: (m.desc||'').slice(0,80), valor: m.valor||0,
+        pgto: (m.pgto||'').slice(0,40), vendedor: (m.vendedor||'').slice(0,40),
+        cliente: (m.cliente||'').slice(0,40), numPedido: m.numPedido||'',
+        hora: m.hora||'', data: m.data||hoje(), obs: (m.obs||'').slice(0,100)
+      }
+    };
+    const url = APPS_SCRIPT_URL + '?action=caixa_save_mov&data=' + encodeURIComponent(JSON.stringify(p));
+    return fetch(url).then(r => r.json()).catch(() => null);
+  };
+
+  // Primeiro limpa o dia, depois salva cada mov
+  const urlLimpa = APPS_SCRIPT_URL + '?action=caixa_save_all&data=' + encodeURIComponent(JSON.stringify({
+    loja: currentLoja, data: hoje(),
+    movimentacoes: [],
+    caixaAberto, caixaAbertoEm, trocoInicial: trocoInicialVal
   }));
 
-  const cbName = 'cb_' + Date.now();
-  const payload = {
-    loja: currentLoja, data: hoje(),
-    movimentacoes: movsParaSheets,
-    caixaAberto, caixaAbertoEm, trocoInicial: trocoInicialVal
-  };
-  const urlJsonp = APPS_SCRIPT_URL + '?action=caixa_save_all&callback=' + cbName + '&data=' + encodeURIComponent(JSON.stringify(payload));
-
-  window[cbName] = (j) => {
-    delete window[cbName];
-    const s = document.getElementById('syncStatus');
-    if(j && j.success) {
-      if(s) s.textContent = '✓ Salvo na nuvem · ' + new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
-    } else {
-      if(s) s.textContent = '⚠ Erro ao salvar';
-      console.warn('save falhou:', j);
-    }
-  };
-
-  const script = document.createElement('script');
-  script.onerror = (err) => {
-    delete window[cbName];
-    const s = document.getElementById('syncStatus');
-    if(s) s.textContent = '⚠ Erro script';
-    console.error('JSONP script.onerror:', err);
-  };
-  console.log('JSONP URL length:', urlJsonp.length);
-  console.log('JSONP callback:', cbName);
-  script.src = urlJsonp;
-  document.head.appendChild(script);
-  setTimeout(() => { 
-    if(window[cbName]) {
-      delete window[cbName];
-      const s = document.getElementById('syncStatus');
-      if(s) s.textContent = '⚠ Timeout';
-    }
-    if(script.parentNode) script.parentNode.removeChild(script);
-  }, 10000);
+  fetch(urlLimpa)
+    .then(r => r.json())
+    .then(() => Promise.all(movimentacoes.map(m => salvarUm(m))))
+    .then(() => {
+      if(statusEl) statusEl.textContent = '✓ Salvo na nuvem · ' + new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+      console.log('Sync OK:', movimentacoes.length, 'movs');
+    })
+    .catch(err => {
+      if(statusEl) statusEl.textContent = '⚠ Erro sync';
+      console.warn('Sync erro:', err);
+    });
 }
 
 async function loadData(){
