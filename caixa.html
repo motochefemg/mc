@@ -904,7 +904,8 @@ async function prepararMovComComprovante(m) {
 }
 
 function saveData(){
-  if(!currentLoja) return;
+  console.log('saveData chamado | loja:', currentLoja, '| movs:', movimentacoes.length);
+  if(!currentLoja) { console.warn('saveData: currentLoja é null!'); return; }
   // Salva LOCAL imediatamente — duas chaves para garantir
   const key = 'caixa_'+currentLoja+'_'+hoje();
   const estado = {
@@ -1013,8 +1014,9 @@ function doLogin(){
   const cfg = LOJAS_CONFIG[loja];
   if(!cfg){ err.textContent='Não configurado.'; return; }
   if(senha !== cfg.senha){ err.textContent='Senha incorreta.'; return; }
-  currentLoja = cfg.gestor ? loja : loja; // gestores têm loja própria para despesas
+  currentLoja = loja;
   currentUser = cfg.adm;
+  console.log('doLogin: currentLoja =', currentLoja);
   isGestor = cfg.gestor === true;
   err.textContent='';
   document.getElementById('loginScreen').style.display='none';
@@ -1154,6 +1156,7 @@ function renderCaixa(){
 }
 
 function abrirCaixa(){
+  console.log('abrirCaixa chamado | loja:', currentLoja);
   const troco = parseFloat(document.getElementById('trocoInicial').value)||0;
   trocoInicialVal = troco;
   caixaAberto = true;
