@@ -915,65 +915,50 @@ function saveData(){
     trocoInicialVal,
     savedAt: new Date().toISOString()
   };
+  // Salva localStorage SEM base64 (só referência)
+  const estadoLocal = {
+    ...estado,
+    movimentacoes: estado.movimentacoes.map(m => ({
+      ...m,
+      comprovante: m.comprovante ? { nome: m.comprovante.nome } : null,
+      anexos: (m.anexos||[]).map(a => ({ nome: a.nome }))
+    }))
+  };
   try {
-    localStorage.setItem(key, JSON.stringify(estado));
-    localStorage.setItem('caixa_sessao_'+currentLoja, JSON.stringify(estado));
-  } catch(e) { console.warn('localStorage cheio:', e); }
+    localStorage.setItem(key, JSON.stringify(estadoLocal));
+    localStorage.setItem('caixa_sessao_'+currentLoja, JSON.stringify(estadoLocal));
+  } catch(e) { console.warn('localStorage erro:', e); }
 
-  // Sync Sheets — payload mínimo, uma requisição por movimentação se necessário
-  const movsMinimas = movimentacoes.map(m => ({
-    id: m.id,
-    tipo: m.tipo,
-    categoria: m.categoria||'',
-    desc: (m.desc||'').slice(0,80),
-    valor: m.valor||0,
-    pgto: (m.pgto||'').slice(0,40),
-    vendedor: (m.vendedor||'').slice(0,40),
-    cliente: (m.cliente||'').slice(0,40),
-    numPedido: m.numPedido||'',
-    hora: m.hora||'',
-    data: m.data||hoje(),
-    obs: (m.obs||'').slice(0,100)
-  }));
-  const payloadSheets = {
+  // Sync Sheets via POST — sem limite de tamanho, comprovantes incluídos
+  const payloadCompleto = {
+    action: 'caixa_save_all',
     loja: currentLoja,
     data: hoje(),
-    movimentacoes: movsMinimas,
+    movimentacoes: movimentacoes,
     caixaAberto,
     caixaAbertoEm,
     trocoInicial: trocoInicialVal
   };
-  const jsonStr = JSON.stringify(payloadSheets);
-  const url = APPS_SCRIPT_URL+'?action=caixa_save_all&data='+encodeURIComponent(jsonStr);
-  console.log('saveData URL length:', url.length, '| movs:', movsMinimas.length);
-  
-  // Se URL muito longa, divide em chunks de 10 movimentações
-  const salvarChunk = (chunk, isLast) => {
-    const p = {...payloadSheets, movimentacoes: chunk, _append: !isLast};
-    return fetch(APPS_SCRIPT_URL+'?action=caixa_save_all&data='+encodeURIComponent(JSON.stringify(p)))
-      .then(r => r.json());
-  };
-  
-  const chunks = [];
-  for(let i=0; i<movsMinimas.length; i+=10) chunks.push(movsMinimas.slice(i,i+10));
-  if(chunks.length===0) chunks.push([]);
-  
-  // Envia chunks sequencialmente
-  chunks.reduce((p, chunk, i) => 
-    p.then(() => salvarChunk(chunk, i===chunks.length-1)), Promise.resolve())
+
+  const statusEl = document.getElementById('syncStatus');
+
+  fetch(APPS_SCRIPT_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify(payloadCompleto)
+  })
+  .then(r => r.json())
   .then(j => {
-    const el = document.getElementById('syncStatus');
-    if(j && j.success) {
-      if(el) el.textContent = '✓ Salvo na nuvem · '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+    if(j.success) {
+      if(statusEl) statusEl.textContent = '✓ Salvo na nuvem · '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
     } else {
-      if(el) el.textContent = '⚠ Erro ao salvar na nuvem';
       console.warn('save falhou:', j);
+      if(statusEl) statusEl.textContent = '⚠ Erro: '+j.error;
     }
   })
   .catch(err => {
-    const el = document.getElementById('syncStatus');
-    if(el) el.textContent = '⚠ Salvo local (offline)';
-    console.warn('Sheets offline:', err);
+    console.warn('POST falhou:', err);
+    if(statusEl) statusEl.textContent = '⚠ Offline — salvo local';
   });
 }
 
