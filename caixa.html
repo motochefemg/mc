@@ -805,7 +805,7 @@ function logout(){
 // INIT
 // ══════════════════════════════════════════════
 function initApp(){
-  const lojaKey = isGestor ? '__gestor__' : currentLoja;
+  const lojaKey = currentLoja; // para gestores, currentLoja já é '__cesar__' etc
   const cfg = LOJAS_CONFIG[lojaKey];
   document.getElementById('topLoja').textContent = isGestor ? '👔 '+currentUser : currentLoja;
   document.getElementById('topAvatar').textContent = cfg.sigla;
