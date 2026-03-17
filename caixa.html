@@ -888,18 +888,20 @@ function saveData(){
       }
     };
     const url = APPS_SCRIPT_URL + '?action=caixa_save_mov&data=' + encodeURIComponent(JSON.stringify(p));
-    return fetch(url).then(r => r.json()).catch(() => null);
+    return fetch(url, {mode:'no-cors'}).catch(() => null);
   };
 
-  // Primeiro limpa o dia, depois salva cada mov
+  // Usa no-cors para evitar bloqueio CORS — dados chegam no servidor mesmo sem ler resposta
+  const salvarNoCors = (url) => fetch(url, {mode:'no-cors'}).catch(()=>null);
+
+  // Limpa o dia primeiro, depois salva cada mov
   const urlLimpa = APPS_SCRIPT_URL + '?action=caixa_save_all&data=' + encodeURIComponent(JSON.stringify({
     loja: currentLoja, data: hoje(),
     movimentacoes: [],
     caixaAberto, caixaAbertoEm, trocoInicial: trocoInicialVal
   }));
 
-  fetch(urlLimpa)
-    .then(r => r.json())
+  salvarNoCors(urlLimpa)
     .then(() => Promise.all(movimentacoes.map(m => salvarUm(m))))
     .then(() => {
       if(statusEl) statusEl.textContent = '✓ Salvo na nuvem · ' + new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
