@@ -608,7 +608,7 @@ tr:hover td{background:var(--bg2);}
     </div>
     <div class="mf">
       <button class="btn btn-s" onclick="fecharModal()">Cancelar</button>
-      <button class="btn btn-g btn-lg" onclick="confirmarVenda()">✓ CONFIRMAR VENDA</button>
+      <button class="btn btn-g btn-lg" id="btnConfirmarVenda" onclick="confirmarVenda()">✓ CONFIRMAR VENDA</button>
     </div>
   </div>
 </div>
@@ -881,7 +881,10 @@ async function prepararMovComComprovante(m) {
 function saveData(){
   // Salva local imediatamente
   const key = 'caixa_'+currentLoja+'_'+hoje();
-  localStorage.setItem(key, JSON.stringify({movimentacoes, caixaAberto, caixaAbertoEm, trocoInicialVal}));
+  const estado = {movimentacoes, caixaAberto, caixaAbertoEm, trocoInicialVal};
+  localStorage.setItem(key, JSON.stringify(estado));
+  // Salva também sessão atual (sem data) para restaurar ao reabrir
+  localStorage.setItem('caixa_sessao_'+currentLoja, JSON.stringify(estado));
   // Sync Sheets em background — envia TODAS as movimentações do dia
   const payload = {
     loja: currentLoja,
@@ -938,14 +941,18 @@ async function loadData(){
       return;
     }
   } catch(e) { console.warn('Sheets indisponível:', e); }
-  // Fallback localStorage
-  const raw = localStorage.getItem(key);
+  // Fallback — tenta localStorage do dia, depois sessão salva
+  const raw = localStorage.getItem(key) || localStorage.getItem('caixa_sessao_'+currentLoja);
   if(raw){
-    const d = JSON.parse(raw);
-    movimentacoes = d.movimentacoes||[];
-    caixaAberto = d.caixaAberto||false;
-    caixaAbertoEm = d.caixaAbertoEm||null;
-    trocoInicialVal = d.trocoInicialVal||0;
+    try {
+      const d = JSON.parse(raw);
+      movimentacoes = (d.movimentacoes||[]).filter(m => m.data === hoje());
+      caixaAberto = d.caixaAberto||false;
+      caixaAbertoEm = d.caixaAbertoEm||null;
+      trocoInicialVal = d.trocoInicialVal||0;
+    } catch(e) {
+      movimentacoes=[]; caixaAberto=false; caixaAbertoEm=null; trocoInicialVal=0;
+    }
   } else {
     movimentacoes=[]; caixaAberto=false; caixaAbertoEm=null; trocoInicialVal=0;
   }
@@ -1605,29 +1612,56 @@ function showToast(msg){
 function onAnexos(input, tipo) {
   const files = Array.from(input.files);
   if(!files.length) return;
-  const lista = tipo==='entrada' ? anexosEntrada : (comprovantes.saida ? [comprovantes.saida] : []);
-  const container = document.getElementById('anexos'+tipo.charAt(0).toUpperCase()+tipo.slice(1));
+  const containerId = 'anexos'+tipo.charAt(0).toUpperCase()+tipo.slice(1);
+
   files.forEach(file => {
     const reader = new FileReader();
     reader.onload = e => {
+      // Busca container DENTRO do onload (pode ter sido recriado pelo modal)
+      const container = document.getElementById(containerId);
+      if(!container) return;
+
       const obj = { nome: file.name, base64: e.target.result, tipo: file.type };
       if(tipo==='entrada') anexosEntrada.push(obj);
       else comprovantes.saida = obj;
+
       // Renderiza thumbnail
       const addBtn = container.querySelector('.anexo-add');
       const item = document.createElement('div');
       item.className = 'anexo-item';
       const idx = tipo==='entrada' ? anexosEntrada.length-1 : 0;
       if(file.type.startsWith('image/')){
-        item.innerHTML=`<img src="${e.target.result}"><button class="anexo-remove" onclick="removerAnexo('${tipo}',${idx},this.parentElement)">✕</button>`;
+        item.innerHTML=`<img src="${e.target.result}" style="max-width:60px;max-height:60px;border-radius:4px"><button class="anexo-remove" onclick="removerAnexo('${tipo}',${idx},this.parentElement)">✕</button>`;
       } else {
-        item.innerHTML=`<div class="anexo-pdf">📄</div><button class="anexo-remove" onclick="removerAnexo('${tipo}',${idx},this.parentElement)">✕</button>`;
+        item.innerHTML=`<div class="anexo-pdf">📄<div style="font-size:9px;margin-top:4px;word-break:break-all">${file.name.slice(0,12)}</div></div><button class="anexo-remove" onclick="removerAnexo('${tipo}',${idx},this.parentElement)">✕</button>`;
       }
-      container.insertBefore(item, addBtn);
+      if(addBtn) container.insertBefore(item, addBtn);
+      else container.appendChild(item);
+
+      // Feedback visual no botão
+      atualizarBtnConfirmar();
+    };
+    reader.onerror = () => {
+      mostrarErroModal('Erro ao carregar o arquivo. Tente novamente.');
     };
     reader.readAsDataURL(file);
   });
   input.value='';
+}
+
+function atualizarBtnConfirmar() {
+  const btn = document.getElementById('btnConfirmarVenda');
+  if(!btn) return;
+  const temComprovante = anexosEntrada.length > 0;
+  const temPgto = formasPgto.filter(f=>f&&f.tipo).length > 0;
+  if(temComprovante && temPgto) {
+    btn.disabled = false;
+    btn.style.opacity = '1';
+    btn.textContent = '✓ CONFIRMAR VENDA';
+  } else {
+    btn.disabled = false; // não bloqueia mas avisa
+    btn.style.opacity = temComprovante ? '1' : '0.6';
+  }
 }
 
 function removerAnexo(tipo, idx, el) {
