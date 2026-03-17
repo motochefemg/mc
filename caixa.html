@@ -559,7 +559,18 @@ tr:hover td{background:var(--bg2);}
       <div class="panel full">
         <div class="ph">
           <div class="pt">Extrato do Caixa</div>
-          <div style="display:flex;gap:8px;align-items:center">
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <select class="fsel" id="filtroLojaExt" style="width:200px;padding:6px 10px;font-size:12px;display:none" onchange="renderExtrato()">
+              <option value="MOTOCHEFE Varginha">MC Varginha</option>
+              <option value="MOTOCHEFE Poços de Caldas">MC Poços de Caldas</option>
+              <option value="MOTOCHEFE Itajubá">MC Itajubá</option>
+              <option value="ECOMOV LAV">EC Lavras</option>
+              <option value="ECOMOV Pouso Alegre">EC Pouso Alegre</option>
+              <option value="__cesar__">👔 César</option>
+              <option value="__luiz__">👔 Luiz Paulo</option>
+              <option value="__matheus__">👔 Matheus</option>
+              <option value="__joao__">👔 João Brito</option>
+            </select>
             <input type="date" class="fc" id="filtroDataExt" style="width:150px;padding:6px 10px;font-size:12px" onchange="renderExtrato()">
             <button class="btn btn-sm btn-s" onclick="exportarExtrato()" style="padding:6px 10px">📥 Excel</button>
             <select class="fsel" id="filtroTipoExt" style="width:130px;padding:6px 10px;font-size:12px" onchange="renderExtrato()">
@@ -870,47 +881,40 @@ function saveData(){
     localStorage.setItem('caixa_sessao_'+currentLoja, JSON.stringify(estadoLocal));
   } catch(e) {}
 
-  // Sync Sheets via fetch GET — payload ultra-compacto por linha
+  // Sync via Image ping — bypass CORS completamente
   const statusEl = document.getElementById('syncStatus');
   if(statusEl) statusEl.textContent = '⟳ Sincronizando...';
 
-  // Salva cada movimentação individualmente para evitar URL longa
-  const salvarUm = (m) => {
-    const p = {
-      loja: currentLoja, data: hoje(),
-      caixaAberto, caixaAbertoEm, trocoInicial: trocoInicialVal,
-      mov: {
-        id: m.id, tipo: m.tipo||'', categoria: m.categoria||'',
-        desc: (m.desc||'').slice(0,80), valor: m.valor||0,
-        pgto: (m.pgto||'').slice(0,40), vendedor: (m.vendedor||'').slice(0,40),
-        cliente: (m.cliente||'').slice(0,40), numPedido: m.numPedido||'',
-        hora: m.hora||'', data: m.data||hoje(), obs: (m.obs||'').slice(0,100)
-      }
-    };
-    const url = APPS_SCRIPT_URL + '?action=caixa_save_mov&data=' + encodeURIComponent(JSON.stringify(p));
-    return fetch(url, {mode:'no-cors'}).catch(() => null);
-  };
+  const pingUrl = (url) => new Promise(resolve => {
+    const img = new Image();
+    img.onload = img.onerror = () => resolve();
+    img.src = url;
+    setTimeout(resolve, 5000);
+  });
 
-  // Usa no-cors para evitar bloqueio CORS — dados chegam no servidor mesmo sem ler resposta
-  const salvarNoCors = (url) => fetch(url, {mode:'no-cors'}).catch(()=>null);
-
-  // Limpa o dia primeiro, depois salva cada mov
-  const urlLimpa = APPS_SCRIPT_URL + '?action=caixa_save_all&data=' + encodeURIComponent(JSON.stringify({
-    loja: currentLoja, data: hoje(),
-    movimentacoes: [],
-    caixaAberto, caixaAbertoEm, trocoInicial: trocoInicialVal
+  const movsCompactas = movimentacoes.map(m => ({
+    id: m.id, tipo: m.tipo||'', cat: (m.categoria||'').slice(0,30),
+    desc: (m.desc||'').slice(0,60), val: m.valor||0,
+    pgto: (m.pgto||'').slice(0,30), vend: (m.vendedor||'').slice(0,30),
+    cli: (m.cliente||'').slice(0,30), num: m.numPedido||'',
+    hora: m.hora||'', data: m.data||hoje()
   }));
 
-  salvarNoCors(urlLimpa)
-    .then(() => Promise.all(movimentacoes.map(m => salvarUm(m))))
-    .then(() => {
-      if(statusEl) statusEl.textContent = '✓ Salvo na nuvem · ' + new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
-      console.log('Sync OK:', movimentacoes.length, 'movs');
-    })
-    .catch(err => {
-      if(statusEl) statusEl.textContent = '⚠ Erro sync';
-      console.warn('Sync erro:', err);
-    });
+  const payload = {
+    loja: currentLoja, data: hoje(),
+    movs: movsCompactas,
+    ab: caixaAberto ? 1 : 0,
+    aem: caixaAbertoEm||'',
+    troco: trocoInicialVal
+  };
+
+  const url = APPS_SCRIPT_URL + '?action=caixa_ping&data=' + encodeURIComponent(JSON.stringify(payload));
+  console.log('Ping URL length:', url.length);
+
+  pingUrl(url).then(() => {
+    if(statusEl) statusEl.textContent = '✓ Salvo na nuvem · ' + new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+    console.log('Ping enviado');
+  });
 }
 
 async function loadData(){
@@ -1023,6 +1027,14 @@ function initApp(){
   setInterval(()=>{ document.getElementById('topDate').textContent = fmtData(new Date())+' · '+fmtHora(new Date()); }, 30000);
   // Data extrato padrão = hoje
   document.getElementById('filtroDataExt').value = hoje();
+  // Gestor vê select de loja no extrato
+  if(isGestor) {
+    const sel = document.getElementById('filtroLojaExt');
+    if(sel) {
+      sel.style.display = 'block';
+      sel.value = currentLoja; // começa na loja do gestor
+    }
+  }
   loadData().then(() => {
     renderCaixa();
     carregarPedidos();
@@ -1553,12 +1565,36 @@ function registrarSaida(){
 // ══════════════════════════════════════════════
 // EXTRATO
 // ══════════════════════════════════════════════
-function renderExtrato(){
+async function renderExtrato(){
   const filtData = document.getElementById('filtroDataExt').value||hoje();
   const filtTipo = document.getElementById('filtroTipoExt').value;
+  const filtLojaEl = document.getElementById('filtroLojaExt');
+  const el = document.getElementById('listaExtrato');
+
+  // Gestor busca do Sheets pela loja selecionada
+  if(isGestor && filtLojaEl && filtLojaEl.style.display !== 'none') {
+    const lojaFiltro = filtLojaEl.value;
+    el.innerHTML = '<div class="loading"><span class="spin"></span>Buscando...</div>';
+    try {
+      const r = await fetch(`${APPS_SCRIPT_URL}?action=caixa_get&loja=${encodeURIComponent(lojaFiltro)}&data=${filtData}`, {signal: AbortSignal.timeout(8000)});
+      const json = await r.json();
+      let movs = (json.movimentacoes||[]).map(m=>({...m, valor: parseFloat(m.valor)||0})).filter(m=>m.tipo!=='sistema');
+      if(filtTipo) movs = movs.filter(m=>m.tipo===filtTipo);
+      movs = [...movs].reverse();
+      renderExtratoHTML(movs, filtData, filtTipo, lojaFiltro);
+    } catch(e) {
+      el.innerHTML = `<div class="empty"><div class="empty-icon">⚠</div>Erro: ${e.message}</div>`;
+    }
+    return;
+  }
+
   let movs = movimentacoes.filter(m=>m.data===filtData&&m.tipo!=='sistema');
   if(filtTipo) movs = movs.filter(m=>m.tipo===filtTipo);
   movs = [...movs].reverse();
+  renderExtratoHTML(movs, filtData, filtTipo, currentLoja);
+}
+
+function renderExtratoHTML(movs, filtData, filtTipo, loja){
   const totEnt = movs.filter(m=>m.tipo==='entrada').reduce((s,m)=>s+m.valor,0);
   const totSai = movs.filter(m=>m.tipo==='saida').reduce((s,m)=>s+m.valor,0);
   const el = document.getElementById('listaExtrato');
