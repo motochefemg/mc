@@ -693,6 +693,41 @@ function fmtData(d){
   return String(dt.getDate()).padStart(2,'0')+'/'+String(dt.getMonth()+1).padStart(2,'0')+'/'+dt.getFullYear();
 }
 function hoje(){ return new Date().toISOString().slice(0,10); }
+
+// Comprime imagem para ~100KB antes de salvar
+async function comprimirImagem(base64, maxKB=100) {
+  return new Promise(resolve => {
+    if(!base64 || !base64.startsWith('data:image')) { resolve(base64); return; }
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      let w = img.width, h = img.height;
+      const maxDim = 1200;
+      if(w > maxDim || h > maxDim) {
+        if(w > h) { h = Math.round(h * maxDim/w); w = maxDim; }
+        else { w = Math.round(w * maxDim/h); h = maxDim; }
+      }
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      let quality = 0.8;
+      let result = canvas.toDataURL('image/jpeg', quality);
+      while(result.length > maxKB*1024*1.37 && quality > 0.2) {
+        quality -= 0.1;
+        result = canvas.toDataURL('image/jpeg', quality);
+      }
+      resolve(result);
+    };
+    img.src = base64;
+  });
+}
+
+// Prepara movimentação com comprovante comprimido para salvar no Sheets
+async function prepararMovComComprovante(m) {
+  if(!m.comprovante?.base64) return {...m, comprovante: null};
+  const base64Comp = await comprimirImagem(m.comprovante.base64);
+  return {...m, comprovante: {...m.comprovante, base64: base64Comp}};
+}
+
 function saveData(){
   // Salva local imediatamente
   const key = 'caixa_'+currentLoja+'_'+hoje();
@@ -706,15 +741,18 @@ function saveData(){
     caixaAbertoEm,
     trocoInicial: trocoInicialVal
   };
-  fetch(APPS_SCRIPT_URL+'?action=caixa_save_all&data='+encodeURIComponent(JSON.stringify(payload)))
-    .catch(()=>{
-      // Fallback: envia só a última se salvar tudo falhar
-      if(movimentacoes.length > 0){
-        const ultima = movimentacoes[movimentacoes.length-1];
-        const p2 = {...ultima, loja: currentLoja, trocoInicial: trocoInicialVal, caixaAberto, caixaAbertoEm};
-        fetch(APPS_SCRIPT_URL+'?action=caixa_save&data='+encodeURIComponent(JSON.stringify(p2))).catch(()=>{});
-      }
-    });
+  // Comprime comprovantes e envia pro Sheets
+  Promise.all(movimentacoes.map(m => prepararMovComComprovante(m)))
+    .then(movsComprimidas => {
+      const payloadCompleto = {
+        ...payload,
+        movimentacoes: movsComprimidas
+      };
+      return fetch(APPS_SCRIPT_URL+'?action=caixa_save_all&data='+encodeURIComponent(JSON.stringify(payloadCompleto)));
+    })
+    .then(r => r.json())
+    .then(j => { if(!j.success) console.warn('caixa_save_all falhou:', j); })
+    .catch(err => console.warn('Erro ao salvar no Sheets:', err));
 }
 
 async function loadData(){
@@ -729,7 +767,8 @@ async function loadData(){
         // Novo formato — array completo
         movimentacoes = json.movimentacoes.map(m=>({
           ...m, valor: parseFloat(m.valor)||0,
-          formasPgto: typeof m.formasPgto==='string' ? JSON.parse(m.formasPgto||'null') : m.formasPgto
+          formasPgto: typeof m.formasPgto==='string' ? JSON.parse(m.formasPgto||'null') : m.formasPgto,
+          comprovante: m.comprovante && typeof m.comprovante==='string' ? JSON.parse(m.comprovante) : m.comprovante
         }));
         caixaAberto = json.caixaAberto === true || json.caixaAberto === 'true';
         caixaAbertoEm = json.caixaAbertoEm||null;
