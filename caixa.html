@@ -744,20 +744,31 @@ async function renderBird() {
     }
   };
 
-  // Busca todas em paralelo com Promise.allSettled (não trava se uma falhar)
+  // Renderiza imediatamente com dados vazios
+  renderBirdHTML(dadosLojas, lojas, gestores);
+
+  // Busca todas em paralelo e atualiza ao chegar
   const todasChaves = [...TODAS_LOJAS, ...gestores.map(g=>g.key)];
-  const resultados = await Promise.allSettled(todasChaves.map(k => fetchLoja(k)));
-  
-  todasChaves.forEach((k, i) => {
-    if(resultados[i].status === 'fulfilled') {
-      const r = resultados[i].value;
+  let atualizadas = 0;
+  todasChaves.forEach(k => {
+    fetchLoja(k).then(r => {
       if(gestores.find(g=>g.key===k)) {
         dadosLojas[k] = { ...r, nome: gestores.find(g=>g.key===k).nome, isGestor:true };
       } else {
         dadosLojas[k] = r;
       }
-    }
+      atualizadas++;
+      // Re-renderiza a cada loja que chega
+      renderBirdHTML(dadosLojas, lojas, gestores);
+    });
   });
+
+  // (renderização agora é feita por renderBirdHTML chamada acima)
+}
+
+function renderBirdHTML(dadosLojas, lojas, gestores) {
+  const el = document.getElementById('viewBird');
+  if(!el) return;
 
   // Calcular totais consolidados
   let totalEntradas = 0, totalSaidas = 0, totalMotos = 0;
