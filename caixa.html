@@ -376,7 +376,7 @@ tr:hover td{background:var(--bg2);}
     <button class="tbtn" onclick="logout()">Sair</button>
   </div>
 
-  <div id="syncStatus" style="text-align:center;font-size:11px;color:#888;padding:3px 0;background:#f9f9f9;border-bottom:1px solid #eee;min-height:18px"></div>
+
   <div class="tabs">
     <button class="tab active" onclick="goTab('caixa',this)">📊 Caixa do Dia</button>
     <button class="tab" onclick="goTab('frente',this)">🛒 Frente de Caixa</button>
@@ -933,6 +933,7 @@ function saveData(){
     trocoInicial: trocoInicialVal
   };
   const url = APPS_SCRIPT_URL+'?action=caixa_save_all&data='+encodeURIComponent(JSON.stringify(payloadSheets));
+  console.log('saveData URL length:', url.length, '| movs:', payloadSheets.movimentacoes.length);
   fetch(url)
     .then(r => r.json())
     .then(j => {
