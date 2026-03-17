@@ -697,13 +697,24 @@ function saveData(){
   // Salva local imediatamente
   const key = 'caixa_'+currentLoja+'_'+hoje();
   localStorage.setItem(key, JSON.stringify({movimentacoes, caixaAberto, caixaAbertoEm, trocoInicialVal}));
-  // Sync Sheets em background — envia última movimentação
-  if(movimentacoes.length > 0){
-    const ultima = movimentacoes[movimentacoes.length-1];
-    const payload = {...ultima, loja: currentLoja, trocoInicial: trocoInicialVal, caixaAberto, caixaAbertoEm};
-    fetch(APPS_SCRIPT_URL+'?action=caixa_save&data='+encodeURIComponent(JSON.stringify(payload)))
-      .catch(()=>{});
-  }
+  // Sync Sheets em background — envia TODAS as movimentações do dia
+  const payload = {
+    loja: currentLoja,
+    data: hoje(),
+    movimentacoes: movimentacoes,
+    caixaAberto,
+    caixaAbertoEm,
+    trocoInicial: trocoInicialVal
+  };
+  fetch(APPS_SCRIPT_URL+'?action=caixa_save_all&data='+encodeURIComponent(JSON.stringify(payload)))
+    .catch(()=>{
+      // Fallback: envia só a última se salvar tudo falhar
+      if(movimentacoes.length > 0){
+        const ultima = movimentacoes[movimentacoes.length-1];
+        const p2 = {...ultima, loja: currentLoja, trocoInicial: trocoInicialVal, caixaAberto, caixaAbertoEm};
+        fetch(APPS_SCRIPT_URL+'?action=caixa_save&data='+encodeURIComponent(JSON.stringify(p2))).catch(()=>{});
+      }
+    });
 }
 
 async function loadData(){
@@ -713,22 +724,31 @@ async function loadData(){
     const r = await fetch(`${APPS_SCRIPT_URL}?action=caixa_get&loja=${encodeURIComponent(currentLoja)}&data=${hoje()}`,
       {signal: AbortSignal.timeout(8000)});
     const json = await r.json();
-    if(json.success && json.data?.length > 0){
-      movimentacoes = json.data.map(m=>({
-        ...m,
-        valor: parseFloat(m.valor)||0,
-        formasPgto: typeof m.formasPgto==='string' ? JSON.parse(m.formasPgto||'null') : m.formasPgto
-      }));
-      // Pega estado do caixa da última movimentação
-      const ultima = json.data[json.data.length-1];
-      if(ultima.caixaAberto !== undefined) caixaAberto = ultima.caixaAberto === 'true' || ultima.caixaAberto === true;
-      if(ultima.caixaAbertoEm) caixaAbertoEm = ultima.caixaAbertoEm;
-      if(ultima.trocoInicial) trocoInicialVal = parseFloat(ultima.trocoInicial)||0;
-      // Atualiza local também
+    if(json.success){
+      if(json.movimentacoes?.length > 0){
+        // Novo formato — array completo
+        movimentacoes = json.movimentacoes.map(m=>({
+          ...m, valor: parseFloat(m.valor)||0,
+          formasPgto: typeof m.formasPgto==='string' ? JSON.parse(m.formasPgto||'null') : m.formasPgto
+        }));
+        caixaAberto = json.caixaAberto === true || json.caixaAberto === 'true';
+        caixaAbertoEm = json.caixaAbertoEm||null;
+        trocoInicialVal = parseFloat(json.trocoInicial)||0;
+      } else if(json.data?.length > 0){
+        // Formato antigo — compatibilidade
+        movimentacoes = json.data.map(m=>({
+          ...m, valor: parseFloat(m.valor)||0,
+          formasPgto: typeof m.formasPgto==='string' ? JSON.parse(m.formasPgto||'null') : m.formasPgto
+        }));
+        const ultima = json.data[json.data.length-1];
+        if(ultima.caixaAberto !== undefined) caixaAberto = ultima.caixaAberto === 'true' || ultima.caixaAberto === true;
+        if(ultima.caixaAbertoEm) caixaAbertoEm = ultima.caixaAbertoEm;
+        if(ultima.trocoInicial) trocoInicialVal = parseFloat(ultima.trocoInicial)||0;
+      }
       localStorage.setItem(key, JSON.stringify({movimentacoes, caixaAberto, caixaAbertoEm, trocoInicialVal}));
       return;
     }
-  } catch(e) {}
+  } catch(e) { console.warn('Sheets indisponível:', e); }
   // Fallback localStorage
   const raw = localStorage.getItem(key);
   if(raw){

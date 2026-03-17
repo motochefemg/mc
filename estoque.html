@@ -979,30 +979,71 @@ const DADOS_INICIAIS = [{"id":1,"chassi":"LA250860V1000W9245","modelo":"MC20 MIN
 
 
 async function load() {
-  // Dados iniciais sempre como base
-  motos = typeof DADOS_INICIAIS!=='undefined' ? DADOS_INICIAIS.map(m=>({...m,historico:m.historico||[]})) : [];
+  showSyncStatus('⟳ Carregando do servidor...', false);
   try {
-    const local = JSON.parse(localStorage.getItem('mc_estoque_motos')||'[]');
-    if(local.length > motos.length) motos = local;
-    else if(local.length > 0){
-      const mapaLocal = {};
-      local.forEach(m=>mapaLocal[m.id]=m);
-      motos = motos.map(m=>mapaLocal[m.id]||m);
+    // Busca dados do Google Sheets via Apps Script
+    const [r1,r2,r3,r4] = await Promise.all([
+      fetch(`${AS}?action=estoque_get&tabela=ESTOQUE`).then(r=>r.json()).catch(()=>({data:[]})),
+      fetch(`${AS}?action=estoque_get&tabela=DEMANDAS`).then(r=>r.json()).catch(()=>({data:[]})),
+      fetch(`${AS}?action=estoque_get&tabela=GARANTIAS`).then(r=>r.json()).catch(()=>({data:[]})),
+      fetch(`${AS}?action=estoque_get&tabela=PECAS`).then(r=>r.json()).catch(()=>({data:[]})),
+    ]);
+
+    // Motos — usa Sheets se tiver dados, senão dados iniciais
+    const sheetsMotos = (r1.data||[]).map(m=>({...m, historico: typeof m.historico==='string' ? JSON.parse(m.historico||'[]') : (m.historico||[])}));
+    if(sheetsMotos.length > 0){
+      motos = sheetsMotos;
+      localStorage.setItem('mc_estoque_motos', JSON.stringify(motos));
+    } else {
+      // Primeira vez: carrega dados iniciais e sobe pro Sheets
+      motos = typeof DADOS_INICIAIS!=='undefined' ? DADOS_INICIAIS.map(m=>({...m,historico:m.historico||[]})) : [];
+      try { const loc=JSON.parse(localStorage.getItem('mc_estoque_motos')||'[]'); if(loc.length>motos.length) motos=loc; } catch(e){}
+      // Sobe dados iniciais pro Sheets em background
+      subirDadosIniciais();
     }
-  } catch(ex){}
-  demandas = typeof DEMANDAS_INICIAIS!=='undefined' ? DEMANDAS_INICIAIS.map(d=>({...d})) : [];
-  try { const dL=JSON.parse(localStorage.getItem('mc_estoque_demandas')||'[]'); if(dL.length>demandas.length) demandas=dL; } catch(ex){}
-  garantias = typeof GARANTIAS_INICIAIS!=='undefined' ? GARANTIAS_INICIAIS.map(g=>({...g})) : [];
-  try { const gL=JSON.parse(localStorage.getItem('mc_estoque_garantias')||'[]'); if(gL.length>garantias.length) garantias=gL; } catch(ex){}
-  pecas = typeof PECAS_INICIAIS!=='undefined' ? PECAS_INICIAIS.map(p=>({...p})) : [];
-  showSyncStatus('✓ '+motos.length+' motos · '+demandas.length+' demandas · '+garantias.length+' garantias · '+pecas.length+' peças', true);
+
+    demandas = (r2.data||[]);
+    if(demandas.length===0){
+      demandas = typeof DEMANDAS_INICIAIS!=='undefined' ? DEMANDAS_INICIAIS.map(d=>({...d})) : [];
+    }
+
+    garantias = (r3.data||[]);
+    if(garantias.length===0){
+      garantias = typeof GARANTIAS_INICIAIS!=='undefined' ? GARANTIAS_INICIAIS.map(g=>({...g})) : [];
+    }
+
+    pecas = (r4.data||[]);
+    if(pecas.length===0){
+      pecas = typeof PECAS_INICIAIS!=='undefined' ? PECAS_INICIAIS.map(p=>({...p})) : [];
+    }
+
+    showSyncStatus('✓ '+motos.length+' motos · '+demandas.length+' demandas · '+garantias.length+' garantias · '+pecas.length+' peças', true);
+  } catch(e) {
+    // Fallback localStorage
+    console.warn('Sheets indisponível, usando localStorage:', e);
+    motos = typeof DADOS_INICIAIS!=='undefined' ? DADOS_INICIAIS.map(m=>({...m,historico:m.historico||[]})) : [];
+    try { const loc=JSON.parse(localStorage.getItem('mc_estoque_motos')||'[]'); if(loc.length>motos.length) motos=loc; } catch(ex){}
+    demandas = typeof DEMANDAS_INICIAIS!=='undefined' ? DEMANDAS_INICIAIS.map(d=>({...d})) : [];
+    garantias = typeof GARANTIAS_INICIAIS!=='undefined' ? GARANTIAS_INICIAIS.map(g=>({...g})) : [];
+    pecas = typeof PECAS_INICIAIS!=='undefined' ? PECAS_INICIAIS.map(p=>({...p})) : [];
+    showSyncStatus('⚠ Offline — dados locais', false);
+  }
+}
+
+async function subirDadosIniciais(){
+  // Sobe as 196 motos iniciais pro Sheets (só roda uma vez)
+  try {
+    for(const m of motos){
+      await fetch(`${AS}?action=estoque_save&tabela=ESTOQUE&data=${encodeURIComponent(JSON.stringify({...m, historico: JSON.stringify(m.historico||[])}))}`);
+    }
+    console.log('Dados iniciais subidos pro Sheets!');
+  } catch(e){ console.warn('Erro ao subir dados iniciais:', e); }
 }
 
 async function saveItem(tabela, item) {
   // Salva local imediatamente
-  localStorage.setItem('mc_estoque_'+tabela.toLowerCase(), JSON.stringify(
-    tabela==='ESTOQUE'?motos:tabela==='DEMANDAS'?demandas:garantias
-  ));
+  const dados = tabela==='ESTOQUE'?motos:tabela==='DEMANDAS'?demandas:tabela==='GARANTIAS'?garantias:tabela==='PECAS'?pecas:[];
+  localStorage.setItem('mc_estoque_'+tabela.toLowerCase(), JSON.stringify(dados));
   // Envia ao Sheets em background
   try {
     await fetch(`${AS}?action=estoque_save&tabela=${tabela}&data=${encodeURIComponent(JSON.stringify(item))}`);
