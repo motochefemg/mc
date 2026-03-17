@@ -829,26 +829,42 @@ async function renderBird() {
 
   html += '</div>';
 
-  // Despesas dos gestores
-  const despesasGestores = gestores.filter(g => dadosLojas[g.key]?.movs?.length > 0);
-  if(despesasGestores.length > 0) {
-    html += `<div style="font-size:14px;letter-spacing:2px;color:var(--text2);margin:16px 0 8px">DESPESAS GESTORES</div>`;
-    html += '<div class="bird-grid">';
-    despesasGestores.forEach(g => {
-      const { movs, nome } = dadosLojas[g.key];
-      const total = movs.reduce((s,m)=>s+m.valor,0);
-      html += `<div class="bird-loja">
-        <div class="bird-loja-header"><div class="bird-loja-nome">${nome}</div><div style="font-size:11px;color:var(--text3)">${movs.length} lançamentos</div></div>
-        <div class="bird-loja-body">
-          <div class="bird-kpi"><div class="bird-kpi-l">Total despesas</div><div class="bird-kpi-v" style="color:var(--red)">${fmtCurrency(total)}</div></div>
-          <div class="bird-movs" style="margin-top:8px">
-            ${movs.slice(-3).reverse().map(m=>`<div class="bird-mov"><div class="bird-mov-icon out">↓</div><div style="flex:1">${m.desc||'—'}</div><div style="font-weight:700;color:var(--red)">${fmtCurrency(m.valor)}</div></div>`).join('')}
-          </div>
+  // Gestores — sempre mostra todos
+  html += `<div style="font-size:14px;letter-spacing:2px;color:var(--text2);margin:16px 0 8px">LANÇAMENTOS DOS GESTORES</div>`;
+  html += '<div class="bird-grid">';
+  gestores.forEach(g => {
+    const { movs, nome } = dadosLojas[g.key] || { movs: [], nome: g.nome };
+    const totalEnt = movs.filter(m=>m.tipo==='entrada').reduce((s,m)=>s+m.valor,0);
+    const totalSai = movs.filter(m=>m.tipo==='saida').reduce((s,m)=>s+m.valor,0);
+    const total = movs.reduce((s,m)=>s+m.valor,0);
+    html += `<div class="bird-loja">
+      <div class="bird-loja-header">
+        <div class="bird-loja-nome">${nome}</div>
+        <div style="font-size:11px;color:var(--text3)">${movs.length} lançamento${movs.length!==1?'s':''}</div>
+      </div>
+      <div class="bird-loja-body">
+        <div class="bird-kpis">
+          <div class="bird-kpi"><div class="bird-kpi-l">Entradas</div><div class="bird-kpi-v" style="color:var(--green)">${fmtCurrency(totalEnt)}</div></div>
+          <div class="bird-kpi"><div class="bird-kpi-l">Saídas</div><div class="bird-kpi-v" style="color:var(--red)">${fmtCurrency(totalSai)}</div></div>
         </div>
-      </div>`;
-    });
-    html += '</div>';
-  }
+        <div class="bird-movs" style="margin-top:8px">
+          ${movs.length===0
+            ? '<div style="color:var(--text3);font-size:12px;text-align:center;padding:8px">Sem lançamentos hoje</div>'
+            : movs.slice(-5).reverse().map(m=>`
+              <div class="bird-mov">
+                <div class="bird-mov-icon ${m.tipo==='entrada'?'in':'out'}">${m.tipo==='entrada'?'↑':'↓'}</div>
+                <div style="flex:1;min-width:0">
+                  <div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${m.desc||m.categoria||'—'}</div>
+                  <div style="font-size:10px;color:var(--text3)">${m.hora||''}</div>
+                </div>
+                <div style="font-weight:700;color:${m.tipo==='entrada'?'var(--green)':'var(--red)'};white-space:nowrap">${fmtCurrency(m.valor)}</div>
+              </div>`).join('')
+          }
+        </div>
+      </div>
+    </div>`;
+  });
+  html += '</div>';
 
   el.innerHTML = html;
 }
@@ -903,32 +919,21 @@ function saveData(){
     localStorage.setItem('caixa_sessao_'+currentLoja, JSON.stringify(estado));
   } catch(e) { console.warn('localStorage cheio:', e); }
 
-  // Sync Sheets em background via POST (evita limite de URL)
-  Promise.all(movimentacoes.map(m => prepararMovComComprovante(m)))
-    .then(movsComprimidas => {
-      const payload = {
-        loja: currentLoja,
-        data: hoje(),
-        movimentacoes: movsComprimidas,
-        caixaAberto,
-        caixaAbertoEm,
-        trocoInicial: trocoInicialVal
-      };
-      const body = JSON.stringify(payload);
-      // Tenta POST primeiro, fallback para GET sem comprovantes
-      return fetch(APPS_SCRIPT_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain' },
-        body: JSON.stringify({ action: 'caixa_save_all', data: body })
-      }).catch(() => {
-        // Fallback GET sem comprovantes se POST falhar
-        const payloadLeve = {
-          ...payload,
-          movimentacoes: payload.movimentacoes.map(m => ({...m, comprovante: null}))
-        };
-        return fetch(APPS_SCRIPT_URL+'?action=caixa_save_all&data='+encodeURIComponent(JSON.stringify(payloadLeve)));
-      });
-    })
+  // Sync Sheets — GET sem comprovantes (comprovante fica só no local)
+  const payloadSheets = {
+    loja: currentLoja,
+    data: hoje(),
+    movimentacoes: movimentacoes.map(m => ({
+      ...m,
+      comprovante: m.comprovante ? { nome: m.comprovante.nome, temComprovante: true } : null,
+      anexos: m.anexos ? m.anexos.map(a => ({ nome: a.nome, temComprovante: true })) : []
+    })),
+    caixaAberto,
+    caixaAbertoEm,
+    trocoInicial: trocoInicialVal
+  };
+  const url = APPS_SCRIPT_URL+'?action=caixa_save_all&data='+encodeURIComponent(JSON.stringify(payloadSheets));
+  fetch(url)
     .then(r => r.json())
     .then(j => {
       const el = document.getElementById('syncStatus');
@@ -936,11 +941,10 @@ function saveData(){
         if(el) el.textContent = '✓ Salvo na nuvem · '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
       } else {
         console.warn('caixa_save_all falhou:', j);
-        if(el) el.textContent = '⚠ Salvo local (erro nuvem)';
+        if(el) el.textContent = '⚠ Salvo local (nuvem com erro)';
       }
     })
     .catch(err => {
-      console.warn('Sheets offline:', err);
       const el = document.getElementById('syncStatus');
       if(el) el.textContent = '⚠ Salvo local (offline)';
     });
