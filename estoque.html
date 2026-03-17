@@ -1135,14 +1135,14 @@ function doLogin(){
   document.getElementById('loginScreen').style.display='none';
   document.getElementById('app').style.display='block';
   document.getElementById('topUser').textContent = NOMES[u];
-  load();
-    // Salvar sessão
+  // Salvar sessão
   if(document.getElementById('lembrar')?.checked){
     localStorage.setItem('mc_est_session', JSON.stringify({u: document.getElementById('selUser').value, p: document.getElementById('loginSenha').value, ts: Date.now()}));
   } else {
     localStorage.removeItem('mc_est_session');
   }
-  renderAll();
+  // Aguarda carregar antes de renderizar
+  load().then(() => renderAll());
 }
 function logout(){
   currentUser=null; isGestor=false;
