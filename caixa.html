@@ -1012,28 +1012,23 @@ function initApp(){
   document.getElementById('topAvatar').textContent = cfg.sigla;
   // Bird's Eye tab — só gestor
   document.getElementById('tabBird').style.display = isGestor ? 'block' : 'none';
+  document.getElementById('topDate').textContent = fmtData(new Date())+' · '+fmtHora(new Date());
+  setInterval(()=>{ document.getElementById('topDate').textContent = fmtData(new Date())+' · '+fmtHora(new Date()); }, 30000);
+  // Data extrato padrão = hoje
+  document.getElementById('filtroDataExt').value = hoje();
+
   if(isGestor){
-    // Gestor tem caixa próprio para despesas (usa loja = chave do gestor ex: __cesar__)
-    // E acessa bird's eye como visão principal
-    loadData().then(() => renderBird()); // carrega e depois renderiza bird's eye
+    // Mostra select de loja no extrato
+    const sel = document.getElementById('filtroLojaExt');
+    if(sel) { sel.style.display = 'block'; sel.value = currentLoja; }
+    // Vai para Bird's Eye
+    loadData().then(() => renderBird());
     document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
     document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
     document.getElementById('tabBird').classList.add('active');
     document.getElementById('view-bird').classList.add('active');
     renderBird();
     return;
-  }
-  document.getElementById('topDate').textContent = fmtData(new Date())+' · '+fmtHora(new Date());
-  setInterval(()=>{ document.getElementById('topDate').textContent = fmtData(new Date())+' · '+fmtHora(new Date()); }, 30000);
-  // Data extrato padrão = hoje
-  document.getElementById('filtroDataExt').value = hoje();
-  // Gestor vê select de loja no extrato
-  if(isGestor) {
-    const sel = document.getElementById('filtroLojaExt');
-    if(sel) {
-      sel.style.display = 'block';
-      sel.value = currentLoja; // começa na loja do gestor
-    }
   }
   loadData().then(() => {
     renderCaixa();
