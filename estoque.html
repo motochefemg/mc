@@ -1299,6 +1299,10 @@ function renderKPIs(){
   const total = filtradas.length;
   const el = document.getElementById('kpisEstoque');
   const fStatus = document.getElementById('fStatus');
+  // Pendências para gestor
+  const pendTransfer = motos.filter(m=>m.status==='PEND. TRANSFER' && (!fLoja||m.localizacao===fLoja)).length;
+  const pendReserva = motos.filter(m=>m.status==='PEND. RESERVA' && (!fLoja||m.localizacao===fLoja)).length;
+
   el.innerHTML = `
     <div class="kpi ${!fStatus?.value?'sel':''}" onclick="document.getElementById('fStatus').value='';renderEstoque();renderKPIs()">
       <div class="kl">Total${fLoja?' — '+fLoja:''}</div>
@@ -1310,7 +1314,19 @@ function renderKPIs(){
         <div class="kl">${cfg.label}</div>
         <div class="kv" style="color:${cfg.dot}">${counts[s]}</div>
         <div class="ks">unidades</div>
-      </div>`).join('')}`;
+      </div>`).join('')}
+    ${isAdmU() && (pendTransfer>0||pendReserva>0) ? `
+      ${pendTransfer>0?`<div class="kpi" style="border:2px solid #f59e0b;cursor:pointer" onclick="document.getElementById('fStatus').value='PEND. TRANSFER';renderEstoque();renderKPIs()">
+        <div class="kl" style="color:#b45309">🔄 Pend. Transfer</div>
+        <div class="kv" style="color:#b45309">${pendTransfer}</div>
+        <div class="ks" style="color:#b45309">aguardando gestor</div>
+      </div>`:''}
+      ${pendReserva>0?`<div class="kpi" style="border:2px solid #f59e0b;cursor:pointer" onclick="document.getElementById('fStatus').value='PEND. RESERVA';renderEstoque();renderKPIs()">
+        <div class="kl" style="color:#b45309">⏳ Pend. Reserva</div>
+        <div class="kv" style="color:#b45309">${pendReserva}</div>
+        <div class="ks" style="color:#b45309">aguardando ADM</div>
+      </div>`:''}
+    ` : ''}`;
 }
 
 function renderModelos(){
@@ -1496,8 +1512,8 @@ function processarTextoPDF(texto, nomeArquivo){
 
   const motosEncontradas = [];
   const vistos = new Set();
-  const cores = 'BRANCO|PRETO|AZUL|VERMELHO|VERDE|PRATA|CINZA|FANTASIA|CARBONO|UK|VINHO|LARANJA|AMARELO|ROXO|ROSA';
-  const modelos = 'JETMAX|JET MAX|JET|X12-10|X12|X15|X11 MINI|X11 PRO|X11|MIA TRI|MIA|BIG TRI|BIG|DOT|SOMA|ROMA|FANTOM|GRID|GIGA|SOFIA|SPACE|SHARK|BOB|POP|P10|P8|RET|SOL|MC20 MINI|MC20|SUPER JOY|JOY BASIC|JOY TRICICLO|CHOOPER|RETRO|DUDU|FERINHA|TRI 1000|PIX|BAW|ECO II|DRIFT CAR|VT B-2|PATINETE';
+  const cores = 'BRANCO|PRETO|AZUL|VERMELHO|VERDE|PRATA|CINZA|BEGE|FANTASIA|CARBONO|UK|VINHO|LARANJA|AMARELO|ROXO|ROSA';
+  const modelos = 'JETMAX|JET MAX|JET|X12-10|X12|X15|X11 MINI|X11 PRO|X11|MIA TRI|MIATRI|MIA|BIG TRI|BIG|DOT|SOMA|ROMA|FANTOM|GRID|GIGA|SOFIA|SPACE|SHARK|BOB|POP|P10|P8|RET|SOL|MC20 MINI|MC20|SUPER JOY|JOY BASIC|JOY TRICICLO|CHOOPER|RETRO|DUDU|FERINHA|TRI 1000|PIX|BAW|ECO II|DRIFT CAR|VT B-2|PATINETE';
 
   // Processa linha por linha
   const linhas = texto.split('\n');
@@ -1540,8 +1556,8 @@ function processarTextoBruto(texto, nomeArq){
   const emissao = texto.match(/(\d{4}-\d{2}-\d{2})/)?.[1] || '';
   const motosEncontradas = [];
   const vistas = new Set();
-  const cores = 'BRANCO|PRETO|AZUL|VERMELHO|VERDE|PRATA|CINZA|FANTASIA|CARBONO|UK|VINHO|LARANJA|AMARELO|ROXO|ROSA';
-  const modelos = 'JETMAX|JET MAX|JET|X12-10|X12|X15|X11 MINI|X11 PRO|X11|MIA TRI|MIA|BIG TRI|BIG|DOT|SOMA|ROMA|FANTOM|GRID|GIGA|SOFIA|SPACE|SHARK|BOB|POP|P10|P8|RET|SOL|MC20 MINI|MC20|SUPER JOY|JOY BASIC|JOY TRICICLO|CHOOPER|RETRO|DUDU|FERINHA|TRI 1000|PIX|BAW|ECO II|DRIFT CAR|VT B-2|PATINETE';
+  const cores = 'BRANCO|PRETO|AZUL|VERMELHO|VERDE|PRATA|CINZA|BEGE|FANTASIA|CARBONO|UK|VINHO|LARANJA|AMARELO|ROXO|ROSA';
+  const modelos = 'JETMAX|JET MAX|JET|X12-10|X12|X15|X11 MINI|X11 PRO|X11|MIA TRI|MIATRI|MIA|BIG TRI|BIG|DOT|SOMA|ROMA|FANTOM|GRID|GIGA|SOFIA|SPACE|SHARK|BOB|POP|P10|P8|RET|SOL|MC20 MINI|MC20|SUPER JOY|JOY BASIC|JOY TRICICLO|CHOOPER|RETRO|DUDU|FERINHA|TRI 1000|PIX|BAW|ECO II|DRIFT CAR|VT B-2|PATINETE';
   const linhas = texto.split(/[;\n]/);
   linhas.forEach(linha => {
     const l = linha.trim().replace(/\s+/g,' ');
@@ -1574,8 +1590,8 @@ function processarXML(xml){
 
   const motosEncontradas = [];
   const vistas = new Set();
-  const cores = 'BRANCO|PRETO|AZUL|VERMELHO|VERDE|PRATA|CINZA|FANTASIA|CARBONO|UK|VINHO|LARANJA|AMARELO|ROXO|ROSA';
-  const modelos = 'JETMAX|JET MAX|JET|X12-10|X12|X15|X11 MINI|X11 PRO|X11|MIA TRI|MIA|BIG TRI|BIG|DOT|SOMA|ROMA|FANTOM|GRID|GIGA|SOFIA|SPACE|SHARK|BOB|POP|P10|P8|RET|SOL|MC20 MINI|MC20|SUPER JOY|JOY BASIC|JOY TRICICLO|CHOOPER|RETRO|DUDU|FERINHA|TRI 1000|PIX|BAW|ECO II|DRIFT CAR|VT B-2|PATINETE';
+  const cores = 'BRANCO|PRETO|AZUL|VERMELHO|VERDE|PRATA|CINZA|BEGE|FANTASIA|CARBONO|UK|VINHO|LARANJA|AMARELO|ROXO|ROSA';
+  const modelos = 'JETMAX|JET MAX|JET|X12-10|X12|X15|X11 MINI|X11 PRO|X11|MIA TRI|MIATRI|MIA|BIG TRI|BIG|DOT|SOMA|ROMA|FANTOM|GRID|GIGA|SOFIA|SPACE|SHARK|BOB|POP|P10|P8|RET|SOL|MC20 MINI|MC20|SUPER JOY|JOY BASIC|JOY TRICICLO|CHOOPER|RETRO|DUDU|FERINHA|TRI 1000|PIX|BAW|ECO II|DRIFT CAR|VT B-2|PATINETE';
 
   // Método 1: tag <veicProd>
   doc.querySelectorAll('veicProd').forEach(v => {
@@ -1674,17 +1690,24 @@ function confirmarEntradaNF(){
   const emissao = document.getElementById('nfResumo').dataset.emissao||hoje();
 
   selecionadas.forEach(m=>{
-    const chassi = m.chassi1 || m.chassi2;
-    // Evita duplicata por chassi
-    if(motos.find(x=>x.chassi===chassi)){ return; }
+    const chassi = (m.chassi1 || m.chassi2 || '').toUpperCase();
+    const existente = motos.find(x=>x.chassi===chassi);
+    if(existente) {
+      // Chassi já existe — só atualiza nfEntrada e dataEntrada
+      existente.nfEntrada = numNF;
+      existente.dataEntrada = emissao||hoje();
+      addHistorico(existente, 'ENTRADA', `NF ${numNF} confirmada — ${m.modelo} ${m.cor} — ${loc}`);
+      saveItem('ESTOQUE', existente);
+      return;
+    }
     const nova = {
-      id: nextId(motos)+Math.random(),
+      id: nextId(motos),
       chassi, modelo: m.modelo, cor: m.cor,
       status: 'CAIXA', localizacao: loc,
       nfEntrada: numNF, dataEntrada: emissao||hoje(),
       historico: [{
         data: new Date().toISOString(),
-        usuario: NOMES[currentUser],
+        usuario: NOMES[currentUser]||currentUser,
         acao: 'ENTRADA',
         detalhes: `Entrada via NF ${numNF} — ${m.modelo} ${m.cor} — ${loc}`
       }]
@@ -1693,7 +1716,12 @@ function confirmarEntradaNF(){
   });
 
   save(); fecharModal('modalNF'); renderAll();
-  selecionadas.forEach((m,i)=>{ const nova=motos[motos.length-selecionadas.length+i]; if(nova) saveItem('ESTOQUE',nova); });
+  // Salvar cada moto adicionada/atualizada no Sheets
+  selecionadas.forEach(m => {
+    const chassi = (m.chassi1 || m.chassi2 || '').toUpperCase();
+    const motoSalva = motos.find(x => x.chassi === chassi);
+    if(motoSalva) saveItem('ESTOQUE', motoSalva);
+  });
   showToast('✓ '+selecionadas.length+' moto(s) adicionada(s) ao estoque!');
 }
 
@@ -1833,8 +1861,9 @@ function confirmarStatus(){
     if(vendRes) m.vendedor = vendRes;
     if(destRes) m.destino = destRes;
     m.dataStatus = dataRes;
-    m.comprovantePedido = reservaComprovante;
-    addHistorico(m, 'RESERVADA', `Pedido #${numPedido} · Cliente: ${cliente||'—'} · Vendedor: ${vendRes||'—'} · Dest: ${destRes} · Data: ${fmtData(dataRes)} · Comp: ${reservaComprovante.nome}${obs?' · '+obs:''}`);
+    if(reservaComprovante) m.comprovantePedido = reservaComprovante;
+    const compNome = reservaComprovante ? reservaComprovante.nome : (m.comprovantePedido?.nome || 'sem comprovante');
+    addHistorico(m, 'RESERVADA', `Pedido #${numPedido} · Cliente: ${cliente||'—'} · Vendedor: ${vendRes||'—'} · Dest: ${destRes} · Data: ${fmtData(dataRes)} · Comp: ${compNome}${obs?' · '+obs:''}`);
 
   } else if(novo==='VENDIDA'){
     const vendedor = document.getElementById('vendedorVenda').value;
@@ -2076,14 +2105,14 @@ function salvarCampoInline(campo, m){
 
   } else if(campo === 'localizacao'){
     if(!valor) return;
-    const ant = m.localizacao;
+    const ant = m.destino || m.localizacao;
     if(isGestorU()){
-      m.localizacao = valor;
-      m.dataLocalizacao = dt;
+      // Gestor aprova direto: muda destino (localização física permanece no galpão)
       m.destino = valor;
-      addHistorico(m, 'TRANSFERÊNCIA', `${ant} → ${valor} · ${fmtData(dt)} · Aprovado por ${NOMES[currentUser]}`);
+      m.dataStatus = dt;
+      addHistorico(m, 'TRANSFERÊNCIA', `Destino: ${ant} → ${valor} · ${fmtData(dt)} · Aprovado por ${NOMES[currentUser]}`);
     } else {
-      // ADM solicita transferência — gestor aprova
+      // ADM/vendedor solicita transferência — gestor aprova
       m.status = 'PEND. TRANSFER';
       m.destinoTransferSolicitado = valor;
       m.dataStatus = dt;
