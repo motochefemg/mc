@@ -49,6 +49,7 @@ body{background:var(--bg);color:var(--text);font-family:'Barlow',sans-serif;min-
 .s-vendida  {background:rgba(22,163,74,.1);color:#15803d;border-color:rgba(22,163,74,.25);}
 .s-garantia {background:rgba(220,38,38,.1);color:#b91c1c;border-color:rgba(220,38,38,.25);}
 .s-transfer {background:rgba(107,114,128,.1);color:#374151;border-color:rgba(107,114,128,.25);}
+.s-entregue {background:rgba(8,145,178,.1);color:#0891b2;border-color:rgba(8,145,178,.25);}
 .s-pend     {background:rgba(245,158,11,.1);color:#b45309;border-color:rgba(245,158,11,.25);}
 
 /* LOGIN */
@@ -298,6 +299,8 @@ textarea.fc{resize:vertical;min-height:70px;}
     <button class="tab" onclick="goTab('garantias',this)">🔴 Garantias</button>
     <button class="tab" onclick="goTab('montagens',this)">🔧 Montagens</button>
     <button class="tab" onclick="goTab('pecas',this)">🔩 Peças</button>
+    <button class="tab" onclick="goTab('transferencias',this)">🚚 Transferências</button>
+    <button class="tab" onclick="goTab('logistica',this)">📦 Logística</button>
   </div>
 
   <!-- ══ ESTOQUE ══ -->
@@ -317,6 +320,7 @@ textarea.fc{resize:vertical;min-height:70px;}
           <option value="VENDIDA">✅ Vendida</option>
           <option value="GARANTIA">🔴 Garantia</option>
           <option value="TRANSFERÊNCIA">🚚 Transferência</option>
+          <option value="ENTREGUE">📦 Entregue</option>
         </select>
         <select class="f-sel" id="fLoja" onchange="renderEstoque();renderKPIs()">
           <option value="">Todas as lojas</option>
@@ -378,6 +382,49 @@ textarea.fc{resize:vertical;min-height:70px;}
       </div>
       <div id="listaDemandas"></div>
     </main>
+  </div>
+
+  <!-- ══ TRANSFERÊNCIAS ══ -->
+  <div id="view-transferencias" style="display:none">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px">
+      <h2 style="font-family:'Bebas Neue';font-size:22px;letter-spacing:1px">TRANSFERÊNCIAS</h2>
+      <div style="display:flex;gap:8px;align-items:center">
+        <select id="fTrfStatus" class="f-sel" onchange="renderTransferencias()">
+          <option value="">Todos</option>
+          <option value="PENDENTE">⏳ Pendentes</option>
+          <option value="APROVADA">✅ Aprovadas</option>
+          <option value="CONCLUÍDA">📦 Concluídas</option>
+        </select>
+        <select id="fTrfTipo" class="f-sel" onchange="renderTransferencias()">
+          <option value="">Todos os tipos</option>
+          <option value="RESERVA">🔒 Reservas</option>
+          <option value="TRANSFERÊNCIA">🚚 Transferências</option>
+        </select>
+      </div>
+    </div>
+    <div id="listaTrf"></div>
+  </div>
+
+  <!-- ══ LOGÍSTICA ══ -->
+  <div id="view-logistica" style="display:none">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px">
+      <h2 style="font-family:'Bebas Neue';font-size:22px;letter-spacing:1px">LOGÍSTICA DE ENTREGAS</h2>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <select id="fLogStatus" class="f-sel" onchange="renderLogistica()">
+          <option value="">Todos</option>
+          <option value="AGUARDANDO">⏳ Aguardando</option>
+          <option value="EM ROTA">🚛 Em Rota</option>
+          <option value="ENTREGUE">✅ Entregue</option>
+        </select>
+        <select id="fLogLoja" class="f-sel" onchange="renderLogistica()">
+          <option value="">Todas as lojas</option>
+          <option>GALPÃO</option><option>VARGINHA</option><option>POÇOS</option>
+          <option>LAVRAS</option><option>ITAJUBÁ</option><option>POUSO ALEGRE</option>
+        </select>
+        <span id="btnNovaEntregaWrap"></span>
+      </div>
+    </div>
+    <div id="listaLogistica"></div>
   </div>
 
   <!-- ══ GARANTIAS ══ -->
@@ -883,7 +930,55 @@ textarea.fc{resize:vertical;min-height:70px;}
 </div>
 
 <!-- MODAL: GARANTIA -->
-<div class="mov" id="modalGarantia" style="display:none">
+<!-- MODAL: ENTREGA LOGÍSTICA -->
+<div class="mov" id="modalEntrega" style="display:none">
+  <div class="mbox" style="max-width:520px">
+    <div class="mh"><div class="mt" id="entregaTitulo">Nova Entrega</div><button class="mc" onclick="fecharModal('modalEntrega')">×</button></div>
+    <div class="mb">
+      <div class="frow">
+        <div class="fg"><label class="fl">Chassi <span>*</span></label>
+          <input class="fc" id="eLogChassi" placeholder="Digite o chassi ou busque" oninput="buscarChassiLog(this.value)">
+          <div id="eLogChassiSug" style="display:none;background:var(--card);border:1px solid var(--border2);border-radius:8px;max-height:150px;overflow-y:auto;margin-top:4px"></div>
+        </div>
+        <div class="fg"><label class="fl">Modelo / Cor</label><input class="fc" id="eLogModelo" placeholder="Preenchido automaticamente" readonly></div>
+      </div>
+      <div class="frow">
+        <div class="fg"><label class="fl">NF de Saída</label><input class="fc" id="eLogNF" placeholder="Número da NF"></div>
+        <div class="fg"><label class="fl">Data de Saída <span>*</span></label><input type="date" class="fc" id="eLogDataSaida"></div>
+      </div>
+      <div class="frow">
+        <div class="fg"><label class="fl">Origem</label>
+          <select class="fsel" id="eLogOrigem">
+            <option>GALPÃO</option><option>VARGINHA</option><option>POÇOS</option>
+            <option>LAVRAS</option><option>ITAJUBÁ</option><option>POUSO ALEGRE</option>
+          </select>
+        </div>
+        <div class="fg"><label class="fl">Destino <span>*</span></label>
+          <input class="fc" id="eLogDestino" placeholder="Cidade/loja de entrega">
+        </div>
+      </div>
+      <div class="frow">
+        <div class="fg"><label class="fl">Frete</label>
+          <select class="fsel" id="eLogFreteTipo" onchange="toggleFreteValor()">
+            <option value="GRATIS">Grátis</option>
+            <option value="COBRADO">Cobrado (R$)</option>
+          </select>
+        </div>
+        <div class="fg" id="eLogFreteValorWrap" style="display:none">
+          <label class="fl">Valor do Frete (R$)</label>
+          <input type="number" class="fc" id="eLogFreteValor" placeholder="0,00">
+        </div>
+      </div>
+      <div class="fg"><label class="fl">Observação</label><textarea class="fc" id="eLogObs" rows="2" placeholder="Transportadora, contato, etc..."></textarea></div>
+    </div>
+    <div class="mf">
+      <button class="btn btn-s" onclick="fecharModal('modalEntrega')">Cancelar</button>
+      <button class="btn btn-g btn-lg" onclick="salvarEntrega()">✓ REGISTRAR ENTREGA</button>
+    </div>
+  </div>
+</div>
+
+<div class="mov" id="modalEntrega" style="display:none">
   <div class="mbox">
     <div class="mh"><div class="mt" id="garantiaTitulo">Registrar Garantia</div><button class="mc" onclick="fecharModal('modalGarantia')">×</button></div>
     <div class="mb">
@@ -977,6 +1072,7 @@ const STATUS_CFG = {
   'VENDIDA':        { label:'✅ Vendida',          cls:'s-vendida',   dot:'#16a34a' },
   'GARANTIA':       { label:'🔴 Garantia',        cls:'s-garantia',  dot:'#dc2626' },
   'TRANSFERÊNCIA':  { label:'🚚 Transfer.',       cls:'s-transfer',  dot:'#6b7280' },
+  'ENTREGUE':       { label:'📦 Entregue',        cls:'s-entregue',  dot:'#0891b2' },
   'PEND. TRANSFER': { label:'🔄 Pend. Transfer',  cls:'s-pend',      dot:'#f59e0b' },
 };
 
@@ -985,6 +1081,31 @@ const STATUS_CFG = {
 // ══════════════════════════════════════════════
 let currentUser = null;
 let isGestor = false;
+let entregas = []; // [{id,data,chassi,modelo,cor,nfSaida,dataSaida,origem,destino,freteTipo,freteValor,dataEntrega,status,criadoPor,obs}]
+
+function saveEntregas(){
+  localStorage.setItem('mc_estoque_entregas', JSON.stringify(entregas));
+}
+
+let transferencias = []; // [{id,data,tipo,motoId,chassi,modelo,cor,localizacao,destino,vendedor,cliente,numPedido,status,criadoPor,aprovadoPor,dataAprovacao,obs}]
+
+async function saveTransferencias(){
+  // Salva no Sheets (fonte de verdade)
+  try {
+    const payload = JSON.stringify(transferencias);
+    const url = AS + '?action=transferencias_save_all&data=' + encodeURIComponent(payload);
+    // Se payload pequeno usa Image Ping; senão usa fetch
+    if(url.length < 7500) {
+      const img = new Image(); img.src = url;
+    } else {
+      fetch(AS + '?action=transferencias_save_all', {
+        method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'},
+        body:'data='+encodeURIComponent(payload), mode:'no-cors'
+      }).catch(()=>{});
+    }
+  } catch(e){ console.error('saveTransferencias erro:',e); }
+}
+
 let motos = [];      // [{id,chassi,modelo,cor,status,localizacao,vendedor,nfEntrada,pVenda,dataEntrada,montador,dataMontagem,numPedidoReserva,dataReserva,clienteReserva,nfeSaida,destino,obs,historico:[]}]
 let demandas = [];   // [{id,modelo,cor,loja,numPedido,cliente,data,valorPago,recibo}]
 let garantias = [];  // [{id,data,modelo,chassi,descricao,loja,cliente,situacao,nfMC}]
@@ -1008,11 +1129,12 @@ async function load() {
   showSyncStatus('⟳ Carregando do servidor...', false);
   try {
     // Busca dados do Google Sheets via Apps Script
-    const [r1,r2,r3,r4] = await Promise.all([
+    const [r1,r2,r3,r4,r5] = await Promise.all([
       fetch(`${AS}?action=estoque_get&tabela=ESTOQUE`).then(r=>r.json()).catch(()=>({data:[]})),
       fetch(`${AS}?action=estoque_get&tabela=DEMANDAS`).then(r=>r.json()).catch(()=>({data:[]})),
       fetch(`${AS}?action=estoque_get&tabela=GARANTIAS`).then(r=>r.json()).catch(()=>({data:[]})),
       fetch(`${AS}?action=estoque_get&tabela=PECAS`).then(r=>r.json()).catch(()=>({data:[]})),
+      fetch(`${AS}?action=transferencias_get`).then(r=>r.json()).catch(()=>({data:[]})),
     ]);
 
     // Motos — usa Sheets se tiver dados, senão dados iniciais
@@ -1028,16 +1150,15 @@ async function load() {
       subirDadosIniciais();
     }
 
-    // Demandas: localStorage É a fonte de verdade (preserva exclusões feitas offline)
-    // Sheets é só backup — se localStorage tiver dados, usa localStorage
+    // Demandas: localStorage É a fonte de verdade
     try {
       const loc = JSON.parse(localStorage.getItem('mc_estoque_demandas')||'null');
-      if(loc !== null) {
-        demandas = loc; // localStorage sempre tem prioridade para demandas
-      } else {
-        demandas = (r2.data||[]); // primeira vez: usa Sheets
-      }
+      demandas = loc !== null ? loc : (r2.data||[]);
     } catch(e) { demandas = (r2.data||[]); }
+
+    // Transferências: localStorage é fonte de verdade
+    try { transferencias = JSON.parse(localStorage.getItem('mc_estoque_transferencias')||'[]'); } catch(e){ transferencias = (r5.data||[]); }
+    try { entregas = JSON.parse(localStorage.getItem('mc_estoque_entregas')||'[]'); } catch(e){ entregas=[]; }
 
     garantias = (r3.data||[]);
     if(garantias.length===0){
@@ -1049,7 +1170,7 @@ async function load() {
       pecas = typeof PECAS_INICIAIS!=='undefined' ? PECAS_INICIAIS.map(p=>({...p})) : [];
     }
 
-    showSyncStatus('✓ '+motos.length+' motos · '+demandas.length+' demandas · '+garantias.length+' garantias · '+pecas.length+' peças', true);
+    showSyncStatus('✓ '+motos.length+' motos · '+demandas.length+' demandas · '+garantias.length+' garantias · '+pecas.length+' peças · '+transferencias.length+' transf.', true);
   } catch(e) {
     // Fallback localStorage
     console.warn('Sheets indisponível, usando localStorage:', e);
@@ -1057,6 +1178,8 @@ async function load() {
     try { const loc=JSON.parse(localStorage.getItem('mc_estoque_motos')||'[]'); if(loc.length>motos.length) motos=loc; } catch(ex){}
     // Usa localStorage para demandas/garantias/peças (preserva exclusões)
     try { const loc=JSON.parse(localStorage.getItem('mc_estoque_demandas')||'[]'); demandas=loc; } catch(ex){ demandas=[];}
+    try { transferencias=JSON.parse(localStorage.getItem('mc_estoque_transferencias')||'[]'); } catch(ex){ transferencias=[];}
+    try { entregas=JSON.parse(localStorage.getItem('mc_estoque_entregas')||'[]'); } catch(ex){ entregas=[];}
     try { const loc=JSON.parse(localStorage.getItem('mc_estoque_garantias')||'[]'); garantias=loc.length>0?loc:(typeof GARANTIAS_INICIAIS!=='undefined'?GARANTIAS_INICIAIS.map(g=>({...g})):[]); } catch(ex){ garantias=typeof GARANTIAS_INICIAIS!=='undefined'?GARANTIAS_INICIAIS.map(g=>({...g})):[];}
     try { const loc=JSON.parse(localStorage.getItem('mc_estoque_pecas')||'[]'); pecas=loc.length>0?loc:(typeof PECAS_INICIAIS!=='undefined'?PECAS_INICIAIS.map(p=>({...p})):[]); } catch(ex){ pecas=typeof PECAS_INICIAIS!=='undefined'?PECAS_INICIAIS.map(p=>({...p})):[];}
     showSyncStatus('⚠ Offline — dados locais', false);
@@ -1216,6 +1339,8 @@ function goTab(id, el){
   if(id==='estoque') renderEstoque();
   if(id==='demandas') renderDemandas();
   if(id==='garantias') renderGarantias();
+  if(id==='transferencias') renderTransferencias();
+  if(id==='logistica') renderLogistica();
   if(id==='montagens') renderMontagens();
   if(id==='pecas') renderPecas();
 }
@@ -1276,13 +1401,38 @@ function sortEstoque(campo) {
 
 function aplicarOrdem(lista) {
   if(!sortField) return lista;
+  const CAMPOS_DATA = ['dataStatus','dataEntrada','dataVenda','dataMontagem','dataReserva'];
+  const CAMPOS_NUM  = ['pVenda'];
   return [...lista].sort((a, b) => {
-    let va = a[sortField] || '';
-    let vb = b[sortField] || '';
-    // Numérico para pVenda e NFs numéricas
-    if(sortField === 'pVenda') {
-      return (parseFloat(va)||0 - parseFloat(vb)||0) * sortDir;
+    let va = a[sortField] ?? '';
+    let vb = b[sortField] ?? '';
+
+    if(CAMPOS_NUM.includes(sortField)){
+      return ((parseFloat(va)||0) - (parseFloat(vb)||0)) * sortDir;
     }
+
+    if(CAMPOS_DATA.includes(sortField)){
+      // Normaliza: 'dd/mm/yyyy' → 'yyyy-mm-dd' para comparação correta
+      const norm = d => {
+        if(!d) return '';
+        if(/^\d{4}-/.test(d)) return d.substring(0,10); // já é ISO
+        const p = d.split('/');
+        if(p.length===3) return p[2]+'-'+p[1]+'-'+p[0]; // dd/mm/yyyy → yyyy-mm-dd
+        return d;
+      };
+      // Fallback: se dataStatus vazio, usa dataEntrada
+      const fallback = (m_orig, campo) => {
+        if(campo === 'dataStatus') return norm(String(m_orig?.dataEntrada||''));
+        return '';
+      };
+      const da = norm(String(va)) || fallback(a, sortField);
+      const db = norm(String(vb)) || fallback(b, sortField);
+      if(!da && !db) return 0;
+      if(!da) return 1 * sortDir;
+      if(!db) return -1 * sortDir;
+      return da < db ? -1 * sortDir : da > db ? 1 * sortDir : 0;
+    }
+
     return String(va).localeCompare(String(vb), 'pt-BR', {numeric:true}) * sortDir;
   });
 }
@@ -1403,7 +1553,7 @@ function renderEstoque(){
         ${fmtData(ultimaMovimentacao(m))}
       </td>
       <td onclick="event.stopPropagation()">
-        ${isAdmU()?`<button class="btn btn-sm btn-r" onclick="excluirMoto('${m.id}')" title="Excluir moto">🗑</button>`:''}
+        ${isGestorU()?`<button class="btn btn-sm btn-r" onclick="excluirMoto('${m.id}')" title="Excluir moto">🗑</button>`:''}
       </td>
     </tr>`).join('');
 }
@@ -1507,7 +1657,9 @@ function processarTextoPDF(texto, nomeArquivo){
   console.log('PDF texto extraído (500 chars):', texto.substring(0,500));
 
   // Extrai número NF e data
-  const numNF = texto.match(/N[ºo°]?\s*0*(\d{4,8})/i)?.[1] || '';
+  // Extrai NF: aceita formato "Nº 000.035.835" ou "Nº 35835"
+  const _rawNF = texto.match(/N[ºo°][\s]*([\d.]{5,15})/)?.[1]||'';
+  const numNF = _rawNF.replace(/\./g,'').replace(/^0+/,'') || '';
   const emissao = texto.match(/(\d{2}\/\d{2}\/\d{4})/)?.[1] || '';
 
   const motosEncontradas = [];
@@ -1552,7 +1704,8 @@ function processarTextoPDF(texto, nomeArquivo){
 
 
 function processarTextoBruto(texto, nomeArq){
-  const numNF = texto.match(/nNF[>\s]*(\d+)/)?.[1] || texto.match(/0*(\d{5,8})/)?.[1] || '';
+  const _rawBruto = texto.match(/nNF[>\s]*([\d.]+)/)?.[1] || texto.match(/N[ºo°][\s]*([\d.]{5,15})/)?.[1] || '';
+  const numNF = _rawBruto.replace(/\./g,'').replace(/^0+/,'') || '';
   const emissao = texto.match(/(\d{4}-\d{2}-\d{2})/)?.[1] || '';
   const motosEncontradas = [];
   const vistas = new Set();
@@ -1584,7 +1737,10 @@ function processarXML(xml){
   // Número NF e data
   let numNF = doc.querySelector('nNF')?.textContent || '';
   let dhEmi = doc.querySelector('dhEmi')?.textContent || '';
-  if(!numNF) { const m = xml.match(/<nNF>(\d+)<\/nNF>/); if(m) numNF = m[1]; }
+  if(!numNF) {
+    const m = xml.match(/<nNF>([\d.]+)<\/nNF>/);
+    if(m) numNF = m[1].replace(/\./g,'').replace(/^0+/,'');
+  }
   if(!dhEmi) { const m = xml.match(/<dhEmi>([^<]+)<\/dhEmi>/); if(m) dhEmi = m[1]; }
   const emissao = dhEmi ? dhEmi.substring(0,10) : '';
 
@@ -1646,6 +1802,11 @@ function processarXML(xml){
 
 
 function mostrarResultadoNF(numNF, emissao, valorTotal, motosEnc, nomeArq){
+  // Fallback: tenta extrair número do nome do arquivo (ex: "35835_-_CESAR_ECOMOV.pdf")
+  if(!numNF && nomeArq){
+    const mArq = nomeArq.match(/^(\d{4,8})/);
+    if(mArq) numNF = mArq[1].replace(/^0+/,'');
+  }
   nfMotosDetectadas = motosEnc;
   document.getElementById('nfStep1').style.display='none';
   document.getElementById('nfStep2').style.display='block';
@@ -1855,7 +2016,11 @@ function confirmarStatus(){
     const cliente = document.getElementById('clienteReserva').value.trim();
     const vendRes = document.getElementById('vendedorReserva').value;
     const destRes = document.getElementById('destinoReserva').value;
-    if(!numPedido){ showToast('Informe o número do pedido!','err'); return; }
+    if(!numPedido){
+      showToast('Informe o número do pedido de venda!','err');
+      document.getElementById('numPedidoReserva')?.focus();
+      return;
+    }
     // Comprovante obrigatório só se for nova reserva (não aprovação de pendência)
     const aprovando = m.status === 'PEND. RESERVA';
     if(!aprovando && !reservaComprovante){ showToast('Anexe o comprovante de pagamento!','err'); return; }
@@ -1868,6 +2033,25 @@ function confirmarStatus(){
     if(reservaComprovante) m.comprovantePedido = reservaComprovante;
     const compNome = reservaComprovante ? reservaComprovante.nome : (m.comprovantePedido?.nome || 'sem comprovante');
     addHistorico(m, 'RESERVADA', `Pedido #${numPedido} · Cliente: ${cliente||'—'} · Vendedor: ${vendRes||'—'} · Dest: ${destRes} · Data: ${fmtData(dataRes)} · Comp: ${compNome}${obs?' · '+obs:''}`);
+    // Cria registro de transferência para o gestor acompanhar logística
+    transferencias.push({
+      id: nextId(transferencias),
+      data: dataRes || hoje(),
+      tipo: 'RESERVA',
+      motoId: m.id,
+      chassi: m.chassi,
+      modelo: m.modelo,
+      cor: m.cor,
+      localizacao: m.localizacao,
+      destino: destRes,
+      vendedor: vendRes || m.vendedor || '',
+      cliente: cliente || '',
+      numPedido: numPedido,
+      status: 'PENDENTE',
+      criadoPor: NOMES[currentUser]||currentUser,
+      obs: obs
+    });
+    saveTransferencias();
 
   } else if(novo==='VENDIDA'){
     const vendedor = document.getElementById('vendedorVenda').value;
@@ -1892,6 +2076,20 @@ function confirmarStatus(){
     m.dataStatus = hoje();
     addHistorico(m,'TRANSFERÊNCIA',`${ant} → ${dest}${obs?' · '+obs:''}`);
 
+  } else if(novo==='ENTREGUE'){
+    const detEnt = obs||`Entregue — ${statusAnt} → ENTREGUE`;
+    m.dataStatus = hoje();
+    addHistorico(m, 'ENTREGUE', detEnt);
+    // Registra na logística automaticamente
+    entregas.push({
+      id: nextId(entregas), data: hoje(), status: 'AGUARDANDO',
+      chassi: m.chassi, modelo: m.modelo, cor: m.cor,
+      nfSaida: m.nfeSaida||'', dataSaida: hoje(),
+      origem: m.localizacao||'GALPÃO', destino: m.destino||'',
+      freteTipo:'GRATIS', freteValor:0,
+      criadoPor: NOMES[currentUser]||currentUser, obs: obs||''
+    });
+    saveEntregas();
   } else {
     m.dataStatus = hoje();
     const detGar = statusAnt==='GARANTIA' && novo==='MONTADA' 
@@ -2114,20 +2312,31 @@ function salvarCampoInline(campo, m){
 
   } else if(campo === 'localizacao'){
     if(!valor) return;
-    const ant = m.destino || m.localizacao;
+    const ant = m.localizacao;
+    if(ant === valor) return;
+    // Qualquer mudança de localização → pendência de transferência
+    m.destinoTransferSolicitado = valor;
+    m.dataStatus = dt;
     if(isGestorU()){
-      // Gestor aprova direto: muda destino (localização física permanece no galpão)
+      m.localizacao = valor;
       m.destino = valor;
-      m.dataStatus = dt;
-      addHistorico(m, 'TRANSFERÊNCIA', `Destino: ${ant} → ${valor} · ${fmtData(dt)} · Aprovado por ${NOMES[currentUser]}`);
+      addHistorico(m, 'TRANSFERÊNCIA', `Localização: ${ant} → ${valor} · ${fmtData(dt)} · Gestor: ${NOMES[currentUser]||currentUser}`);
     } else {
-      // ADM/vendedor solicita transferência — gestor aprova
       m.status = 'PEND. TRANSFER';
-      m.destinoTransferSolicitado = valor;
-      m.dataStatus = dt;
-      addHistorico(m, 'PEND. TRANSFER', `Transferência solicitada: ${ant} → ${valor} · aguardando gestor`);
-      showToast('Transferência solicitada! Aguardando aprovação do gestor.','warn');
+      addHistorico(m, 'PEND. TRANSFER', `Mudança de localização: ${ant} → ${valor} · aguardando gestor`);
     }
+    transferencias.push({
+      id: nextId(transferencias), data: dt||hoje(), tipo: 'TRANSFERÊNCIA',
+      motoId: m.id, chassi: m.chassi, modelo: m.modelo, cor: m.cor,
+      localizacao: ant, destino: valor, vendedor: m.vendedor||'',
+      cliente:'', numPedido:'',
+      status: isGestorU()?'APROVADA':'PENDENTE',
+      criadoPor: NOMES[currentUser]||currentUser,
+      aprovadoPor: isGestorU()?(NOMES[currentUser]||currentUser):'',
+      dataAprovacao: isGestorU()?dt:'', obs:''
+    });
+    saveTransferencias();
+    if(!isGestorU()) showToast('Transferência solicitada! Aguardando gestor.','warn');
 
   } else if(campo === 'destino'){
     if(!valor) return;
@@ -2136,13 +2345,35 @@ function salvarCampoInline(campo, m){
     // Toda mudança de destino vira PEND. TRANSFER para o gestor acompanhar
     m.destino = valor;
     if(isGestorU()){
-      // Gestor aprova direto
+      // Gestor aprova direto → atualiza registro de transferência
       addHistorico(m, 'TRANSFERÊNCIA', `Destino: ${ant} → ${valor} · Aprovado por ${NOMES[currentUser]||currentUser}`);
+      const trf = transferencias.find(t=>t.motoId==m.id && t.status==='PENDENTE');
+      if(trf){ trf.status='APROVADA'; trf.aprovadoPor=NOMES[currentUser]||currentUser; trf.dataAprovacao=hoje(); }
+      saveTransferencias();
     } else {
       m.status = 'PEND. TRANSFER';
       m.destinoTransferSolicitado = valor;
       addHistorico(m, 'PEND. TRANSFER', `Destino solicitado: ${ant} → ${valor} · aguardando gestor`);
-      showToast('Destino atualizado! Transferência aguardando aprovação do gestor.','warn');
+      // Cria registro na aba Transferências
+      transferencias.push({
+        id: nextId(transferencias),
+        data: hoje(),
+        tipo: 'TRANSFERÊNCIA',
+        motoId: m.id,
+        chassi: m.chassi,
+        modelo: m.modelo,
+        cor: m.cor,
+        localizacao: m.localizacao,
+        destino: valor,
+        vendedor: m.vendedor || '',
+        cliente: '',
+        numPedido: '',
+        status: 'PENDENTE',
+        criadoPor: NOMES[currentUser]||currentUser,
+        obs: ''
+      });
+      saveTransferencias();
+      showToast('Transferência solicitada! Aguardando aprovação do gestor.','warn');
     }
   } else if(campo === 'vendedor'){
     const ant = m.vendedor;
@@ -2270,6 +2501,7 @@ function renderMontagens(){
 
 
 function excluirMoto(id){
+  if(!isGestorU()){ showToast('Apenas gestores podem excluir motos!','err'); return; }
   if(!confirm('Excluir esta moto do estoque? Esta ação não pode ser desfeita.')) return;
   deleteItem('ESTOQUE', id);
   motos = motos.filter(m => m.id != id);
@@ -2765,6 +2997,256 @@ const GSTATUS_CFG = {
   'AGUARDANDO SEPARAÇÃO':  {bg:'rgba(107,114,128,.1)',color:'#374151'},
   'RESOLVIDO':             {bg:'rgba(22,163,74,.1)',color:'#15803d'},
 };
+
+function renderTransferencias(){
+  const fStatus = document.getElementById('fTrfStatus')?.value||'';
+  const fTipo   = document.getElementById('fTrfTipo')?.value||'';
+  const el = document.getElementById('listaTrf');
+  if(!el) return;
+
+  let lista = [...transferencias].sort((a,b)=>b.data.localeCompare(a.data));
+  if(fStatus) lista = lista.filter(t=>t.status===fStatus);
+  if(fTipo)   lista = lista.filter(t=>t.tipo===fTipo);
+
+  if(lista.length===0){
+    el.innerHTML='<div class="empty"><div class="empty-icon">🚚</div>Nenhuma transferência registrada</div>';
+    return;
+  }
+
+  el.innerHTML = lista.map(t=>{
+    const statusColor = t.status==='PENDENTE'?'#f59e0b':t.status==='APROVADA'?'#2563eb':'#16a34a';
+    const statusBg    = t.status==='PENDENTE'?'rgba(245,158,11,.1)':t.status==='APROVADA'?'rgba(37,99,235,.1)':'rgba(22,163,74,.1)';
+    const tipoIcon    = t.tipo==='RESERVA'?'🔒':'🚚';
+    return `<div class="tcard" style="margin-bottom:10px;padding:14px 16px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px">
+        <div style="display:flex;gap:12px;align-items:center">
+          <span style="font-size:20px">${tipoIcon}</span>
+          <div>
+            <div style="font-weight:700;font-size:14px">${t.modelo} ${t.cor} <span style="font-size:11px;color:var(--text3);font-weight:400">· ${t.chassi}</span></div>
+            <div style="font-size:12px;color:var(--text3);margin-top:2px">
+              📍 ${t.localizacao||'—'} → <b style="color:var(--text)">${t.destino||'—'}</b>
+              ${t.numPedido?` · 📋 Pedido #${t.numPedido}`:''}
+              ${t.cliente?` · 👤 ${t.cliente}`:''}
+              ${t.vendedor?` · 🧑 ${t.vendedor}`:''}
+            </div>
+            <div style="font-size:11px;color:var(--text3);margin-top:2px">
+              📅 ${fmtData(t.data)} · Solicitado por ${t.criadoPor||'—'}
+              ${t.aprovadoPor?` · ✅ Aprovado por ${t.aprovadoPor} em ${fmtData(t.dataAprovacao)}`:''}
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
+          <span style="background:${statusBg};color:${statusColor};border-radius:6px;padding:2px 10px;font-size:11px;font-weight:700">${t.status}</span>
+          <div style="display:flex;gap:6px">
+            ${t.status==='PENDENTE'&&isGestorU()?`<button class="btn btn-sm" style="font-size:11px;background:rgba(37,99,235,.1);color:var(--blue)" onclick="aprovarTransferencia(${t.id})">✓ Aprovar</button>`:''}
+            ${t.status==='APROVADA'&&isGestorU()?`<button class="btn btn-sm" style="font-size:11px;background:rgba(22,163,74,.1);color:var(--green)" onclick="concluirTransferencia(${t.id})">📦 Concluída</button>`:''}
+          </div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function aprovarTransferencia(id){
+  const t = transferencias.find(x=>x.id===id);
+  if(!t||!isGestorU()) return;
+  t.status = 'APROVADA';
+  t.aprovadoPor = NOMES[currentUser]||currentUser;
+  t.dataAprovacao = hoje();
+  // Atualiza moto
+  const m = motos.find(x=>x.id===t.motoId);
+  if(m){
+    m.status = t.tipo==='RESERVA' ? 'RESERVADA' : 'TRANSFERÊNCIA';
+    if(t.destino) m.destino = t.destino;
+    addHistorico(m, m.status, `Aprovado por ${t.aprovadoPor} · Destino: ${t.destino}`);
+    save(); saveItem('ESTOQUE', m);
+  }
+  saveTransferencias(); renderTransferencias();
+  showToast('✓ Transferência aprovada!');
+}
+
+function concluirTransferencia(id){
+  const t = transferencias.find(x=>x.id===id);
+  if(!t||!isGestorU()) return;
+  t.status = 'CONCLUÍDA';
+  t.dataConclusao = hoje();
+  // Se for transferência física, atualiza localização da moto
+  const m = motos.find(x=>x.id===t.motoId);
+  if(m && t.tipo==='TRANSFERÊNCIA'){
+    const ant = m.localizacao;
+    m.localizacao = t.destino;
+    m.destino = t.destino;
+    m.status = 'MONTADA';
+    addHistorico(m, 'TRANSFERÊNCIA', `Transferência concluída: ${ant} → ${t.destino} · ${NOMES[currentUser]||currentUser}`);
+    save(); saveItem('ESTOQUE', m);
+  }
+  saveTransferencias(); renderTransferencias();
+  showToast('✓ Transferência concluída!');
+}
+
+function renderLogistica(){
+  const fStatus = document.getElementById('fLogStatus')?.value||'';
+  const fLoja   = document.getElementById('fLogLoja')?.value||'';
+  const el = document.getElementById('listaLogistica');
+  if(!el) return;
+
+  // Botão nova entrega — só ADM/gestor
+  const wrap = document.getElementById('btnNovaEntregaWrap');
+  if(wrap) wrap.innerHTML = isAdmU() ? '<button class="btn btn-g" onclick="abrirNovaEntrega()">+ Nova Entrega</button>' : '';
+
+  let lista = [...entregas].sort((a,b)=>(b.dataSaida||b.data||'').localeCompare(a.dataSaida||a.data||''));
+  if(fStatus) lista = lista.filter(e=>e.status===fStatus);
+  if(fLoja)   lista = lista.filter(e=>e.origem===fLoja||e.destino===fLoja);
+
+  if(lista.length===0){
+    el.innerHTML='<div class="empty"><div class="empty-icon">📦</div>Nenhuma entrega registrada</div>';
+    return;
+  }
+
+  const statusColor = {AGUARDANDO:'#f59e0b','EM ROTA':'#2563eb',ENTREGUE:'#16a34a'};
+  const statusBg    = {AGUARDANDO:'rgba(245,158,11,.1)','EM ROTA':'rgba(37,99,235,.1)',ENTREGUE:'rgba(22,163,74,.1)'};
+
+  el.innerHTML = lista.map(e=>{
+    const sc = statusColor[e.status]||'var(--text3)';
+    const sb = statusBg[e.status]||'var(--bg3)';
+    const freteStr = e.freteTipo==='COBRADO' ? `R$ ${parseFloat(e.freteValor||0).toLocaleString('pt-BR',{minimumFractionDigits:2})}` : 'Grátis';
+    return `<div class="tcard" style="margin-bottom:10px;padding:14px 16px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px">
+        <div style="flex:1;min-width:200px">
+          <div style="font-weight:700;font-size:15px;margin-bottom:4px">${e.modelo||'—'} <span style="color:var(--text3);font-weight:400">${e.cor||''}</span></div>
+          <div style="font-family:monospace;font-size:11px;color:var(--accent);margin-bottom:6px">${e.chassi||'—'}</div>
+          <div style="display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--text3)">
+            ${e.nfSaida?`<span>📄 NF ${e.nfSaida}</span>`:''}
+            <span>📅 Saída: <b style="color:var(--text)">${e.dataSaida?fmtData(e.dataSaida):'—'}</b></span>
+            <span>📍 ${e.origem||'—'} → <b style="color:var(--text)">${e.destino||'—'}</b></span>
+            <span>🚚 ${freteStr}</span>
+            ${e.dataEntrega?`<span>✅ Entregue: <b style="color:var(--green)">${fmtData(e.dataEntrega)}</b></span>`:''}
+          </div>
+          ${e.obs?`<div style="font-size:11px;color:var(--text3);margin-top:6px;padding-top:6px;border-top:1px solid var(--border)">📝 ${e.obs}</div>`:''}
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px">
+          <span style="background:${sb};color:${sc};border-radius:6px;padding:3px 12px;font-size:11px;font-weight:700">${e.status}</span>
+          <div style="display:flex;gap:6px">
+            ${isAdmU()&&e.status==='AGUARDANDO'?`<button class="btn btn-sm" style="font-size:11px;background:rgba(37,99,235,.1);color:var(--blue)" onclick="emRotaEntrega(${e.id})">🚛 Em Rota</button>`:''}
+            ${isGestorU()&&e.status!=='ENTREGUE'?`<button class="btn btn-sm" style="font-size:11px;background:rgba(22,163,74,.1);color:var(--green)" onclick="concluirEntrega(${e.id})">✅ Entregue</button>`:''}
+            ${isAdmU()?`<button class="btn btn-sm btn-r" style="font-size:11px" onclick="editarEntrega(${e.id})">✏️</button>`:''}
+          </div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function abrirNovaEntrega(){
+  document.getElementById('entregaTitulo').textContent = 'Nova Entrega';
+  ['eLogChassi','eLogModelo','eLogNF','eLogObs'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+  document.getElementById('eLogDataSaida').value = hoje();
+  document.getElementById('eLogFreteTipo').value = 'GRATIS';
+  document.getElementById('eLogFreteValorWrap').style.display='none';
+  document.getElementById('eLogOrigem').value = 'GALPÃO';
+  document.getElementById('eLogDestino').value = '';
+  document.getElementById('eLogChassiSug').style.display='none';
+  document.getElementById('modalEntrega').dataset.editId = '';
+  document.getElementById('modalEntrega').style.display='flex';
+}
+
+function editarEntrega(id){
+  const e = entregas.find(x=>x.id===id);
+  if(!e||!isAdmU()) return;
+  document.getElementById('entregaTitulo').textContent = 'Editar Entrega';
+  document.getElementById('eLogChassi').value = e.chassi||'';
+  document.getElementById('eLogModelo').value = `${e.modelo||''} ${e.cor||''}`.trim();
+  document.getElementById('eLogNF').value = e.nfSaida||'';
+  document.getElementById('eLogDataSaida').value = e.dataSaida||hoje();
+  document.getElementById('eLogOrigem').value = e.origem||'GALPÃO';
+  document.getElementById('eLogDestino').value = e.destino||'';
+  document.getElementById('eLogFreteTipo').value = e.freteTipo||'GRATIS';
+  document.getElementById('eLogFreteValor').value = e.freteValor||'';
+  document.getElementById('eLogFreteValorWrap').style.display = e.freteTipo==='COBRADO'?'block':'none';
+  document.getElementById('eLogObs').value = e.obs||'';
+  document.getElementById('modalEntrega').dataset.editId = id;
+  document.getElementById('modalEntrega').style.display='flex';
+}
+
+function buscarChassiLog(q){
+  const sug = document.getElementById('eLogChassiSug');
+  if(!q || q.length < 3){ sug.style.display='none'; return; }
+  const resultados = motos.filter(m=>m.chassi.toUpperCase().includes(q.toUpperCase())||
+    m.modelo.toUpperCase().includes(q.toUpperCase())).slice(0,6);
+  if(resultados.length===0){ sug.style.display='none'; return; }
+  sug.style.display='block';
+  sug.innerHTML = resultados.map(m=>`
+    <div onclick="selecionarChassiLog('${m.chassi}','${m.modelo}','${m.cor}','${m.localizacao}','${m.nfeSaida||''}')"
+      style="padding:8px 12px;cursor:pointer;font-size:12px;border-bottom:1px solid var(--border)" 
+      onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background=''">
+      <b>${m.chassi}</b> · ${m.modelo} ${m.cor} · <span style="color:var(--text3)">${m.localizacao}</span>
+    </div>`).join('');
+}
+
+function selecionarChassiLog(chassi, modelo, cor, loc, nfSaida){
+  document.getElementById('eLogChassi').value = chassi;
+  document.getElementById('eLogModelo').value = `${modelo} ${cor}`;
+  document.getElementById('eLogOrigem').value = loc||'GALPÃO';
+  if(nfSaida) document.getElementById('eLogNF').value = nfSaida;
+  document.getElementById('eLogChassiSug').style.display='none';
+}
+
+function toggleFreteValor(){
+  const v = document.getElementById('eLogFreteTipo').value;
+  document.getElementById('eLogFreteValorWrap').style.display = v==='COBRADO'?'block':'none';
+}
+
+function salvarEntrega(){
+  const chassi = document.getElementById('eLogChassi').value.trim().toUpperCase();
+  const destino = document.getElementById('eLogDestino').value.trim();
+  const dataSaida = document.getElementById('eLogDataSaida').value;
+  if(!chassi){ showToast('Informe o chassi!','err'); document.getElementById('eLogChassi').focus(); return; }
+  if(!destino){ showToast('Informe o destino!','err'); document.getElementById('eLogDestino').focus(); return; }
+  const modeloCor = document.getElementById('eLogModelo').value.trim();
+  const partes = modeloCor.split(' ');
+  const moto = motos.find(m=>m.chassi===chassi);
+  const editId = document.getElementById('modalEntrega').dataset.editId;
+  const dados = {
+    chassi, modelo: moto?.modelo||partes.slice(0,-1).join(' ')||modeloCor,
+    cor: moto?.cor||partes[partes.length-1]||'',
+    nfSaida: document.getElementById('eLogNF').value.trim(),
+    dataSaida, origem: document.getElementById('eLogOrigem').value,
+    destino, freteTipo: document.getElementById('eLogFreteTipo').value,
+    freteValor: parseFloat(document.getElementById('eLogFreteValor').value)||0,
+    status: 'AGUARDANDO', criadoPor: NOMES[currentUser]||currentUser,
+    obs: document.getElementById('eLogObs').value.trim(),
+    data: hoje()
+  };
+  if(editId){
+    const e = entregas.find(x=>x.id==editId);
+    if(e){ Object.assign(e, dados); }
+  } else {
+    entregas.push({id:nextId(entregas), ...dados});
+    // Muda status da moto para ENTREGUE se encontrada
+    if(moto){ moto.status='ENTREGUE'; moto.dataStatus=dataSaida; addHistorico(moto,'ENTREGUE',`Saída p/ ${destino} · NF: ${dados.nfSaida}`); save(); saveItem('ESTOQUE',moto); }
+  }
+  saveEntregas(); fecharModal('modalEntrega'); renderLogistica();
+  showToast('✓ Entrega registrada!');
+}
+
+function emRotaEntrega(id){
+  const e = entregas.find(x=>x.id===id);
+  if(!e) return;
+  e.status = 'EM ROTA';
+  saveEntregas(); renderLogistica();
+  showToast('✓ Em rota!');
+}
+
+function concluirEntrega(id){
+  if(!isGestorU()){ showToast('Apenas gestores podem confirmar entrega!','err'); return; }
+  const e = entregas.find(x=>x.id===id);
+  if(!e) return;
+  e.status = 'ENTREGUE';
+  e.dataEntrega = hoje();
+  e.concluidoPor = NOMES[currentUser]||currentUser;
+  saveEntregas(); renderLogistica();
+  showToast('✓ Entrega concluída!');
+}
 
 function renderGarantias(){
   const busca = (document.getElementById('fBuscaGar')?.value||'').toLowerCase();
