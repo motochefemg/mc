@@ -885,7 +885,7 @@ textarea.fc{resize:vertical;min-height:70px;}
 <!-- MODAL: GARANTIA -->
 <div class="mov" id="modalGarantia" style="display:none">
   <div class="mbox">
-    <div class="mh"><div class="mt">Registrar Garantia</div><button class="mc" onclick="fecharModal('modalGarantia')">×</button></div>
+    <div class="mh"><div class="mt" id="garantiaTitulo">Registrar Garantia</div><button class="mc" onclick="fecharModal('modalGarantia')">×</button></div>
     <div class="mb">
       <div class="frow">
         <div class="fg"><label class="fl">Modelo <span>*</span></label><input class="fc" id="gModelo"></div>
@@ -915,6 +915,7 @@ textarea.fc{resize:vertical;min-height:70px;}
       </div>
     </div>
     <div class="mf">
+      <input type="hidden" id="gEditId" value="">
       <button class="btn btn-s" onclick="fecharModal('modalGarantia')">Cancelar</button>
       <button class="btn btn-g btn-lg" onclick="salvarGarantia()">✓ SALVAR</button>
     </div>
@@ -1027,16 +1028,16 @@ async function load() {
       subirDadosIniciais();
     }
 
-    demandas = (r2.data||[]);
-    // Para demandas: localStorage é a fonte de verdade (preserva exclusões)
-    // Só usa dados do Sheets se vier com dados; localStorage tem prioridade quando Sheets vazio
+    // Demandas: localStorage É a fonte de verdade (preserva exclusões feitas offline)
+    // Sheets é só backup — se localStorage tiver dados, usa localStorage
     try {
-      const loc = JSON.parse(localStorage.getItem('mc_estoque_demandas')||'[]');
-      if(demandas.length === 0 && loc.length >= 0) {
-        // Sheets vazio: usa localStorage (pode ser vazio mesmo — demandas foram excluídas)
-        demandas = loc;
+      const loc = JSON.parse(localStorage.getItem('mc_estoque_demandas')||'null');
+      if(loc !== null) {
+        demandas = loc; // localStorage sempre tem prioridade para demandas
+      } else {
+        demandas = (r2.data||[]); // primeira vez: usa Sheets
       }
-    } catch(e) {}
+    } catch(e) { demandas = (r2.data||[]); }
 
     garantias = (r3.data||[]);
     if(garantias.length===0){
@@ -2743,10 +2744,14 @@ function renderGarantias(){
       <td style="font-size:12px">${g.cliente||'—'}</td>
       <td><span class="gstatus" style="background:${sc.bg};color:${sc.color}">${g.situacao}</span></td>
       <td style="font-size:11px;color:var(--text3)">${g.idPedido||g.nfMC||'—'}</td>
-      <td>
-        <select class="f-sel" style="font-size:11px;padding:4px 6px" onchange="alterarSituacaoGarantia(${g.id},this.value)">
-          ${Object.keys(GSTATUS_CFG).map(s=>`<option ${s===g.situacao?'selected':''}>${s}</option>`).join('')}
-        </select>
+      <td style="white-space:nowrap">
+        ${isGestorU() ? `
+          <select class="f-sel" style="font-size:11px;padding:4px 6px;margin-right:4px" onchange="alterarSituacaoGarantia(${g.id},this.value)">
+            ${Object.keys(GSTATUS_CFG).map(s=>`<option ${s===g.situacao?'selected':''}>${s}</option>`).join('')}
+          </select>
+          <button class="btn btn-sm" style="font-size:11px;padding:3px 8px" onclick="editarGarantia(${g.id})">✏️</button>
+          <button class="btn btn-sm btn-r" style="font-size:11px;padding:3px 8px" onclick="excluirGarantia(${g.id})">🗑</button>
+        ` : `<span class="gstatus" style="background:${sc.bg};color:${sc.color};font-size:11px">${g.situacao}</span>`}
       </td>
     </tr>`;
   }).join('');
@@ -2754,26 +2759,62 @@ function renderGarantias(){
 
 function abrirNovaGarantia(){
   ['gModelo','gChassi','gDesc','gCliente','gNFMC'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('gEditId').value = '';
+  document.getElementById('garantiaTitulo').textContent = 'Registrar Garantia';
+  document.getElementById('gSituacao').value = 'EM AUDITORIA';
+  document.getElementById('gLoja').value = 'GALPÃO';
   document.getElementById('modalGarantia').style.display='flex';
+}
+
+function editarGarantia(id){
+  if(!isGestorU()){ showToast('Apenas gestores podem editar garantias!','err'); return; }
+  const g = garantias.find(x=>x.id===id);
+  if(!g) return;
+  document.getElementById('gEditId').value = id;
+  document.getElementById('garantiaTitulo').textContent = 'Editar Garantia';
+  document.getElementById('gModelo').value = g.modelo||'';
+  document.getElementById('gChassi').value = g.chassi||'';
+  document.getElementById('gDesc').value = g.descricao||'';
+  document.getElementById('gLoja').value = g.loja||'GALPÃO';
+  document.getElementById('gCliente').value = g.cliente||'';
+  document.getElementById('gSituacao').value = g.situacao||'EM AUDITORIA';
+  document.getElementById('gNFMC').value = g.idPedido||g.nfMC||'';
+  document.getElementById('modalGarantia').style.display='flex';
+}
+
+function excluirGarantia(id){
+  if(!isGestorU()){ showToast('Apenas gestores podem excluir garantias!','err'); return; }
+  if(!confirm('Excluir esta garantia?')) return;
+  deleteItem('GARANTIAS', id);
+  garantias = garantias.filter(g=>g.id!==id);
+  save(); renderGarantias();
+  showToast('✓ Garantia excluída!');
 }
 
 function salvarGarantia(){
   const modelo = document.getElementById('gModelo').value.trim();
   const desc   = document.getElementById('gDesc').value.trim();
   if(!modelo||!desc){ showToast('Informe modelo e descrição!','err'); return; }
-  garantias.push({
-    id:nextId(garantias), data:hoje(),
+  const editId = document.getElementById('gEditId').value;
+  const dados = {
     modelo, chassi:document.getElementById('gChassi').value.trim().toUpperCase(),
     descricao:desc, loja:document.getElementById('gLoja').value,
     cliente:document.getElementById('gCliente').value.trim(),
     situacao:document.getElementById('gSituacao').value,
     idPedido:document.getElementById('gNFMC').value.trim(),
     nfMC:document.getElementById('gNFMC').value.trim(),
-  });
-  const novaGar = garantias[garantias.length-1];
-  save(); fecharModal('modalGarantia'); renderGarantias();
-  saveItem('GARANTIAS', novaGar);
-  showToast('✓ Garantia registrada!');
+  };
+  if(editId) {
+    // Edição
+    const g = garantias.find(x=>x.id==editId);
+    if(g) { Object.assign(g, dados); save(); fecharModal('modalGarantia'); renderGarantias(); saveItem('GARANTIAS',g); showToast('✓ Garantia atualizada!'); }
+  } else {
+    // Nova
+    garantias.push({ id:nextId(garantias), data:hoje(), ...dados });
+    const novaGar = garantias[garantias.length-1];
+    save(); fecharModal('modalGarantia'); renderGarantias(); saveItem('GARANTIAS',novaGar);
+    showToast('✓ Garantia registrada!');
+  }
 }
 
 function alterarSituacaoGarantia(id, sit){
