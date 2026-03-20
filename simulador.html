@@ -407,20 +407,23 @@ const MESES = ['','Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho',
 
 // Senhas — não óbvias, mistura nome+ano+código
 const SENHAS = {
-  'Pablo Albinati':                  'PA@Moto26',
+  // ADMs — senha da loja no caixa
+  'Pablo Albinati':                  'VRG@2k26#pa',
+  'Tiago Souza Gomes':               'LAV@2k26#tz',
+  'Pedro Henrique de Carvalho Porto':'PSA@2k26#ph',
+  'Julia Sampaio':                   'POC@2k26#js',
+  // Vendedores — senha do simulador (inalteradas)
   'Karla Souza Chagas':              'KS#Chefe7',
   'Murilo Belo':                     'MB!Vrg2026',
   'Julia Nascimento':                'JN*Poc831',
   'Rayssa Dayane Muniz Martins':     'RM@Day526',
   'Fernando Lopes':                  'FL#Poc77x',
-  'Julia Sampaio':                   'JS!Sam26k',
   'Emanuel Paiva':                   'EP@Lav314',
-  'Tiago Souza Gomes':               'TG#Lav99z',
   'Kawan Manso':                     'KM!Pso26m',
   'Charles Carvalho':                'CC@Pso5k2',
-  'Pedro Henrique de Carvalho Porto':'PH#Pso826',
-  'Cesar Rodrigues':                 'CR@Mtz26x',
-  'Luiz Paulo Arouca':               'LP!Mtz77k',
+  // Gestores — senha do caixa
+  'Cesar Rodrigues':                 'CR$Mg26!gest',
+  'Luiz Paulo Arouca':               'LP$Mg26!gest',
   '__gestor__':                      'Gest0r@MC26',
 };
 
@@ -434,13 +437,15 @@ const LOJA_VENDEDOR = {
 };
 
 const TABELA = [
-  {v:112000,p:0,a:0},{v:122000,p:50,a:50},{v:132000,p:60,a:110},{v:142000,p:70,a:180},
-  {v:152000,p:80,a:260},{v:162000,p:800,a:1060},{v:172000,p:100,a:1160},{v:182000,p:120,a:1280},
-  {v:192000,p:140,a:1420},{v:202000,p:160,a:1580},{v:212000,p:180,a:1760},{v:222000,p:900,a:2660},
-  {v:232000,p:280,a:2940},{v:242000,p:300,a:3240},{v:252000,p:1000,a:4240},{v:262000,p:400,a:4640},
-  {v:272000,p:450,a:5090},{v:282000,p:500,a:5590},{v:292000,p:600,a:6190},{v:302000,p:1200,a:7390},
-  {v:312000,p:700,a:8090},{v:322000,p:800,a:8890},{v:332000,p:900,a:9790},{v:342000,p:1000,a:10790},
-  {v:352000,p:2000,a:12790},
+  {v:112000,p:0,   a:0},    {v:122000,p:50,  a:50},   {v:132000,p:60,  a:110},
+  {v:142000,p:70,  a:180},  {v:152000,p:80,  a:260},  {v:162000,p:800, a:1060},
+  {v:172000,p:100, a:1160}, {v:182000,p:120, a:1280}, {v:192000,p:140, a:1420},
+  {v:202000,p:160, a:1580}, {v:212000,p:180, a:1760}, {v:222000,p:900, a:2660},
+  {v:232000,p:200, a:2860}, {v:242000,p:210, a:3070}, {v:252000,p:220, a:3290},
+  {v:262000,p:1000,a:4290}, {v:272000,p:240, a:4530}, {v:282000,p:250, a:4780},
+  {v:292000,p:260, a:5040}, {v:302000,p:1200,a:6240}, {v:312000,p:280, a:6520},
+  {v:322000,p:290, a:6810}, {v:332000,p:300, a:7110}, {v:342000,p:310, a:7420},
+  {v:352000,p:1500,a:8920},
 ];
 
 let currentUser = null;
