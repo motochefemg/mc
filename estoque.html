@@ -1693,23 +1693,27 @@ function confirmarEntradaNF(){
     const chassi = (m.chassi1 || m.chassi2 || '').toUpperCase();
     const existente = motos.find(x=>x.chassi===chassi);
     if(existente) {
-      // Chassi já existe — só atualiza nfEntrada e dataEntrada
+      // Chassi já existe — atualiza nfEntrada, dataEntrada e motor
       existente.nfEntrada = numNF;
       existente.dataEntrada = emissao||hoje();
-      addHistorico(existente, 'ENTRADA', `NF ${numNF} confirmada — ${m.modelo} ${m.cor} — ${loc}`);
+      if(m.chassi2 && !existente.motor) existente.motor = m.chassi2;
+      const motorInfo2 = m.chassi2 ? ` · Motor: ${m.chassi2}` : '';
+      addHistorico(existente, 'ENTRADA', `NF ${numNF} confirmada — ${m.modelo} ${m.cor} — ${loc}${motorInfo2}`);
       saveItem('ESTOQUE', existente);
       return;
     }
+    const motorInfo = m.chassi2 ? ` · Motor: ${m.chassi2}` : '';
     const nova = {
       id: nextId(motos),
       chassi, modelo: m.modelo, cor: m.cor,
+      motor: m.chassi2 || '',
       status: 'CAIXA', localizacao: loc,
       nfEntrada: numNF, dataEntrada: emissao||hoje(),
       historico: [{
         data: new Date().toISOString(),
         usuario: NOMES[currentUser]||currentUser,
         acao: 'ENTRADA',
-        detalhes: `Entrada via NF ${numNF} — ${m.modelo} ${m.cor} — ${loc}`
+        detalhes: `Entrada via NF ${numNF} — ${m.modelo} ${m.cor} — ${loc}${motorInfo}`
       }]
     };
     motos.push(nova);
@@ -1925,6 +1929,7 @@ function abrirHistorico(id){
   const cores = {ENTRADA:'#2563eb',MONTADA:'#7c3aed',RESERVADA:'#ea580c',VENDIDA:'#16a34a',GARANTIA:'#dc2626',TRANSFERÊNCIA:'#6b7280'};
   document.getElementById('histConteudo').innerHTML = `
     <div style="background:var(--bg3);border-radius:8px;padding:12px;margin-bottom:16px;display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px">
+      ${m.motor?`<div><span style="color:var(--text3)">Motor:</span> <b style="font-family:monospace;font-size:11px">${m.motor}</b></div>`:''}
       ${m.montador?`<div><span style="color:var(--text3)">Montador:</span> <b>${m.montador}</b></div>`:''}
       ${m.dataMontagem?`<div><span style="color:var(--text3)">Montado em:</span> <b>${fmtData(m.dataMontagem)}</b></div>`:''}
       ${m.numPedidoReserva?`<div><span style="color:var(--text3)">Pedido:</span> <b>#${m.numPedidoReserva}</b></div>`:''}
@@ -2025,9 +2030,13 @@ function editarCampo(event, campo, motoId){
   const mm = document.getElementById('miniModal');
   mm.style.display = 'block';
   const rect = event.target.getBoundingClientRect();
-  let top = rect.bottom + window.scrollY + 4;
-  let left = rect.left + window.scrollX;
+  // position:fixed usa viewport, sem scrollY/scrollX
+  let top = rect.bottom + 4;
+  let left = rect.left;
+  if(top + 220 > window.innerHeight) top = rect.top - 220; // abre acima se perto do rodapé
   if(left + 320 > window.innerWidth) left = window.innerWidth - 330;
+  if(top < 60) top = 60;
+  if(left < 8) left = 8;
   mm.style.top = top+'px';
   mm.style.left = left+'px';
 
@@ -2121,9 +2130,20 @@ function salvarCampoInline(campo, m){
     }
 
   } else if(campo === 'destino'){
-    const ant = m.destino;
+    if(!valor) return;
+    const ant = m.destino || m.localizacao;
+    if(valor === ant) return; // sem mudança
+    // Toda mudança de destino vira PEND. TRANSFER para o gestor acompanhar
     m.destino = valor;
-    addHistorico(m, 'DESTINO', `${ant||'—'} → ${valor||'—'}`);
+    if(isGestorU()){
+      // Gestor aprova direto
+      addHistorico(m, 'TRANSFERÊNCIA', `Destino: ${ant} → ${valor} · Aprovado por ${NOMES[currentUser]||currentUser}`);
+    } else {
+      m.status = 'PEND. TRANSFER';
+      m.destinoTransferSolicitado = valor;
+      addHistorico(m, 'PEND. TRANSFER', `Destino solicitado: ${ant} → ${valor} · aguardando gestor`);
+      showToast('Destino atualizado! Transferência aguardando aprovação do gestor.','warn');
+    }
   } else if(campo === 'vendedor'){
     const ant = m.vendedor;
     m.vendedor = valor;
