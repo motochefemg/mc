@@ -345,19 +345,19 @@ textarea.fc{resize:vertical;min-height:70px;}
         <div class="twrap">
           <table>
             <thead>
-              <tr>
-                <th>STATUS</th>
-                <th>CHASSI</th>
-                <th>MODELO</th>
-                <th>COR</th>
-                <th>LOCALIZAÇÃO ✏️</th>
-                <th>DESTINO ✏️</th>
-                <th>VENDEDOR ✏️</th>
-                <th>PEDIDO ✏️</th>
-                <th>NF ENTRADA</th>
-                <th>NF SAÍDA ✏️</th>
-                <th>P. VENDA</th>
-                <th>ÚLT. MOVIMENTAÇÃO</th>
+              <tr id="theadEstoque">
+                <th onclick="sortEstoque('status')" style="cursor:pointer;user-select:none">STATUS <span id="sort-status"></span></th>
+                <th onclick="sortEstoque('chassi')" style="cursor:pointer;user-select:none">CHASSI <span id="sort-chassi"></span></th>
+                <th onclick="sortEstoque('modelo')" style="cursor:pointer;user-select:none">MODELO <span id="sort-modelo"></span></th>
+                <th onclick="sortEstoque('cor')" style="cursor:pointer;user-select:none">COR <span id="sort-cor"></span></th>
+                <th onclick="sortEstoque('localizacao')" style="cursor:pointer;user-select:none">LOCALIZAÇÃO ✏️ <span id="sort-localizacao"></span></th>
+                <th onclick="sortEstoque('destino')" style="cursor:pointer;user-select:none">DESTINO ✏️ <span id="sort-destino"></span></th>
+                <th onclick="sortEstoque('vendedor')" style="cursor:pointer;user-select:none">VENDEDOR ✏️ <span id="sort-vendedor"></span></th>
+                <th onclick="sortEstoque('numPedidoReserva')" style="cursor:pointer;user-select:none">PEDIDO ✏️ <span id="sort-numPedidoReserva"></span></th>
+                <th onclick="sortEstoque('nfEntrada')" style="cursor:pointer;user-select:none">NF ENTRADA <span id="sort-nfEntrada"></span></th>
+                <th onclick="sortEstoque('nfeSaida')" style="cursor:pointer;user-select:none">NF SAÍDA ✏️ <span id="sort-nfeSaida"></span></th>
+                <th onclick="sortEstoque('pVenda')" style="cursor:pointer;user-select:none">P. VENDA <span id="sort-pVenda"></span></th>
+                <th onclick="sortEstoque('dataStatus')" style="cursor:pointer;user-select:none">ÚLT. MOVIMENTAÇÃO <span id="sort-dataStatus"></span></th>
                 <th></th>
               </tr>
             </thead>
@@ -1028,9 +1028,15 @@ async function load() {
     }
 
     demandas = (r2.data||[]);
-    if(demandas.length===0){
-      demandas = typeof DEMANDAS_INICIAIS!=='undefined' ? DEMANDAS_INICIAIS.map(d=>({...d})) : [];
-    }
+    // Para demandas: localStorage é a fonte de verdade (preserva exclusões)
+    // Só usa dados do Sheets se vier com dados; localStorage tem prioridade quando Sheets vazio
+    try {
+      const loc = JSON.parse(localStorage.getItem('mc_estoque_demandas')||'[]');
+      if(demandas.length === 0 && loc.length >= 0) {
+        // Sheets vazio: usa localStorage (pode ser vazio mesmo — demandas foram excluídas)
+        demandas = loc;
+      }
+    } catch(e) {}
 
     garantias = (r3.data||[]);
     if(garantias.length===0){
@@ -1048,9 +1054,10 @@ async function load() {
     console.warn('Sheets indisponível, usando localStorage:', e);
     motos = typeof DADOS_INICIAIS!=='undefined' ? DADOS_INICIAIS.map(m=>({...m,historico:m.historico||[]})) : [];
     try { const loc=JSON.parse(localStorage.getItem('mc_estoque_motos')||'[]'); if(loc.length>motos.length) motos=loc; } catch(ex){}
-    demandas = typeof DEMANDAS_INICIAIS!=='undefined' ? DEMANDAS_INICIAIS.map(d=>({...d})) : [];
-    garantias = typeof GARANTIAS_INICIAIS!=='undefined' ? GARANTIAS_INICIAIS.map(g=>({...g})) : [];
-    pecas = typeof PECAS_INICIAIS!=='undefined' ? PECAS_INICIAIS.map(p=>({...p})) : [];
+    // Usa localStorage para demandas/garantias/peças (preserva exclusões)
+    try { const loc=JSON.parse(localStorage.getItem('mc_estoque_demandas')||'[]'); demandas=loc; } catch(ex){ demandas=[];}
+    try { const loc=JSON.parse(localStorage.getItem('mc_estoque_garantias')||'[]'); garantias=loc.length>0?loc:(typeof GARANTIAS_INICIAIS!=='undefined'?GARANTIAS_INICIAIS.map(g=>({...g})):[]); } catch(ex){ garantias=typeof GARANTIAS_INICIAIS!=='undefined'?GARANTIAS_INICIAIS.map(g=>({...g})):[];}
+    try { const loc=JSON.parse(localStorage.getItem('mc_estoque_pecas')||'[]'); pecas=loc.length>0?loc:(typeof PECAS_INICIAIS!=='undefined'?PECAS_INICIAIS.map(p=>({...p})):[]); } catch(ex){ pecas=typeof PECAS_INICIAIS!=='undefined'?PECAS_INICIAIS.map(p=>({...p})):[];}
     showSyncStatus('⚠ Offline — dados locais', false);
   }
 }
@@ -1243,6 +1250,42 @@ function toggleVendidas(){
 // ══════════════════════════════════════════════
 // KPIs
 // ══════════════════════════════════════════════
+// ══════════════════════════════════════════════
+// ORDENAÇÃO DA TABELA
+// ══════════════════════════════════════════════
+let sortField = '';
+let sortDir = 1; // 1 = asc, -1 = desc
+
+function sortEstoque(campo) {
+  if(sortField === campo) {
+    sortDir *= -1;
+  } else {
+    sortField = campo;
+    sortDir = 1;
+  }
+  // Atualiza ícones
+  document.querySelectorAll('[id^="sort-"]').forEach(el => el.textContent = '');
+  const el = document.getElementById('sort-' + campo);
+  if(el) el.textContent = sortDir === 1 ? ' ↑' : ' ↓';
+  renderEstoque();
+}
+
+function aplicarOrdem(lista) {
+  if(!sortField) return lista;
+  return [...lista].sort((a, b) => {
+    let va = a[sortField] || '';
+    let vb = b[sortField] || '';
+    // Numérico para pVenda e NFs numéricas
+    if(sortField === 'pVenda') {
+      return (parseFloat(va)||0 - parseFloat(vb)||0) * sortDir;
+    }
+    return String(va).localeCompare(String(vb), 'pt-BR', {numeric:true}) * sortDir;
+  });
+}
+
+// ══════════════════════════════════════════════
+// ORDENAÇÃO DA TABELA
+// ══════════════════════════════════════════════
 function renderKPIs(){
   const fLoja = document.getElementById('fLoja')?.value||'';
   const filtradas = fLoja ? motos.filter(m=>m.localizacao===fLoja) : motos;
@@ -1282,10 +1325,13 @@ function renderEstoque(){
   const fStatus = document.getElementById('fStatus')?.value||'';
   const fLoja = document.getElementById('fLoja')?.value||'';
   const fModelo = document.getElementById('fModelo')?.value||'';
+  // Oculta VENDIDAS por padrão — só mostra quando selecionado explicitamente
+  const mostrarVendidas = fStatus === 'VENDIDA';
 
   let lista = motos.filter(m=>{
     if(mostraDisp && m.status!=='CAIXA' && m.status!=='MONTADA') return false;
     if(!mostraDisp && fStatus && m.status!==fStatus) return false;
+    if(!mostraDisp && !fStatus && m.status==='VENDIDA') return false; // vendidas ocultas por padrão
     if(fLoja && m.localizacao!==fLoja) return false;
     if(fModelo && m.modelo!==fModelo) return false;
     if(busca){
@@ -1295,13 +1341,14 @@ function renderEstoque(){
     return true;
   });
 
+  const listaFinal = aplicarOrdem(lista);
   const tbody = document.getElementById('tbodyEstoque');
-  if(lista.length===0){
+  if(listaFinal.length===0){
     tbody.innerHTML=`<tr><td colspan="10"><div class="empty"><div class="empty-icon">🏍</div>Nenhuma moto encontrada</div></td></tr>`;
     return;
   }
 
-  tbody.innerHTML = lista.map(m=>`
+  tbody.innerHTML = listaFinal.map(m=>`
     <tr>
       <td onclick="event.stopPropagation();editarCampoStatus('${m.id}')" title="${isVendedor()?'Solicitar reserva':'Clique para alterar status'}" style="cursor:pointer">
         ${statusBadge(m.status)}
@@ -1437,80 +1484,74 @@ async function extrairTextoPDFjs(arrayBuffer){
 }
 
 function processarTextoPDF(texto, nomeArquivo){
-  // Debug — mostra trecho do texto extraído no console
-  console.log('Texto PDF extraído (primeiros 2000 chars):', texto.substring(0,2000));
+  console.log('PDF texto extraído (500 chars):', texto.substring(0,500));
 
-  const numNF = texto.match(/N[ºo°°]?\s*0*(\d{5,8})/i)?.[1] || texto.match(/Nº\s*(\d+)/)?.[1] || '';
+  // Extrai número NF e data
+  const numNF = texto.match(/N[ºo°]?\s*0*(\d{4,8})/i)?.[1] || '';
   const emissao = texto.match(/(\d{2}\/\d{2}\/\d{4})/)?.[1] || '';
 
   const motosEncontradas = [];
-  const cores = 'BRANCO|PRETO|AZUL|VERMELHO|VERDE|PRATA|CINZA|FANTASIA|CARBONO|UK|VINHO[\w\/]*|LARANJA|AMARELO|ROXO|ROSA';
-  const modelos = 'JET|X12-10|X12|MIA TRI|MIA|BIG TRI|BIG|JETMAX|DOT|SOMA|ROMA|FANTOM|P10|X11|MC20';
+  const vistos = new Set();
+  const cores = 'BRANCO|PRETO|AZUL|VERMELHO|VERDE|PRATA|CINZA|FANTASIA|CARBONO|UK|VINHO|LARANJA|AMARELO|ROXO|ROSA';
+  const modelos = 'JETMAX|JET MAX|JET|X12-10|X12|X15|X11 MINI|X11 PRO|X11|MIA TRI|MIA|BIG TRI|BIG|DOT|SOMA|ROMA|FANTOM|GRID|GIGA|SOFIA|SPACE|SHARK|BOB|POP|P10|P8|RET|SOL|MC20 MINI|MC20|SUPER JOY|JOY BASIC|JOY TRICICLO|CHOOPER|RETRO|DUDU|FERINHA|TRI 1000|PIX|BAW|ECO II|DRIFT CAR|VT B-2|PATINETE';
 
-  // Processa linha por linha — padrão da NF Laiouns:
-  // "JET LA25860V1000W1413 QS60V30H25111000335 BRANCO"
-  // "X12-10 HL5TCAH3XS9W66969 10ZW6073316YA25176969 PRETO"
+  // Processa linha por linha
   const linhas = texto.split('\n');
   linhas.forEach(linha => {
-    const l = linha.trim();
-    // Padrão: MODELO CHASSI1 CHASSI2 COR
-    const m1 = l.match(new RegExp(`^(${modelos})\s+([A-Z0-9]{10,22})\s+([A-Z0-9]{10,26})\s+(${cores})`, 'i'));
-    if(m1){
-      motosEncontradas.push({
-        modelo: m1[1].trim().toUpperCase(),
-        chassi1: m1[2].trim(),
-        chassi2: m1[3].trim(),
-        cor: m1[4].trim().toUpperCase(),
-        selecionada: true
-      });
+    const l = linha.trim().replace(/\s+/g,' ');
+    if(!l) return;
+    // Padrão principal: MODELO CHASSI1 CHASSI2 COR (chassi2 pode ter letras minúsculas)
+    const m1 = l.match(new RegExp(`^(${modelos})\\s+([A-Za-z0-9]{8,22})\\s+([A-Za-z0-9]{8,26})\\s+(${cores})`, 'i'));
+    if(m1 && !vistos.has(m1[2].toUpperCase())){
+      vistos.add(m1[2].toUpperCase());
+      motosEncontradas.push({ modelo:m1[1].trim().toUpperCase(), chassi1:m1[2].trim().toUpperCase(), chassi2:m1[3].trim().toUpperCase(), cor:m1[4].trim().toUpperCase(), selecionada:true });
       return;
     }
-    // Padrão: MODELO CHASSI COR (sem segundo chassi)
-    const m2 = l.match(new RegExp(`^(${modelos})\s+([A-Z0-9]{10,22})\s+(${cores})`, 'i'));
-    if(m2){
-      motosEncontradas.push({
-        modelo: m2[1].trim().toUpperCase(),
-        chassi1: m2[2].trim(),
-        chassi2: '',
-        cor: m2[3].trim().toUpperCase(),
-        selecionada: true
-      });
+    // Padrão sem chassi2: MODELO CHASSI COR
+    const m2 = l.match(new RegExp(`^(${modelos})\\s+([A-Za-z0-9]{8,22})\\s+(${cores})`, 'i'));
+    if(m2 && !vistos.has(m2[2].toUpperCase())){
+      vistos.add(m2[2].toUpperCase());
+      motosEncontradas.push({ modelo:m2[1].trim().toUpperCase(), chassi1:m2[2].trim().toUpperCase(), chassi2:'', cor:m2[3].trim().toUpperCase(), selecionada:true });
     }
   });
 
-  // Fallback: busca qualquer linha com dois códigos alfanuméricos longos + cor
+  // Fallback: qualquer par de códigos longos + cor
   if(motosEncontradas.length === 0){
     linhas.forEach(linha => {
-      const l = linha.trim();
-      const m3 = l.match(new RegExp(`([A-Z0-9]{12,22})\s+([A-Z0-9]{12,26})\s+(${cores})`, 'i'));
-      if(m3){
-        motosEncontradas.push({ modelo:'—', chassi1:m3[1], chassi2:m3[2], cor:m3[3].toUpperCase(), selecionada:true });
+      const l = linha.trim().replace(/\s+/g,' ');
+      const m3 = l.match(new RegExp(`([A-Za-z0-9]{12,22})\\s+([A-Za-z0-9]{12,26})\\s+(${cores})`, 'i'));
+      if(m3 && !vistos.has(m3[1].toUpperCase())){
+        vistos.add(m3[1].toUpperCase());
+        motosEncontradas.push({ modelo:'—', chassi1:m3[1].toUpperCase(), chassi2:m3[2].toUpperCase(), cor:m3[3].toUpperCase(), selecionada:true });
       }
     });
   }
 
-  // Remove duplicatas por chassi1
-  const vistos = new Set();
-  const unicas = motosEncontradas.filter(m=>{ if(vistos.has(m.chassi1)) return false; vistos.add(m.chassi1); return true; });
-
-  mostrarResultadoNF(numNF, emissao, '', unicas, nomeArquivo);
+  mostrarResultadoNF(numNF, emissao, '', motosEncontradas, nomeArquivo);
 }
 
 
 function processarTextoBruto(texto, nomeArq){
-  const numNF = texto.match(/035554|0*(\d{5,8})/)?.[1] || '';
+  const numNF = texto.match(/nNF[>\s]*(\d+)/)?.[1] || texto.match(/0*(\d{5,8})/)?.[1] || '';
   const emissao = texto.match(/(\d{4}-\d{2}-\d{2})/)?.[1] || '';
   const motosEncontradas = [];
   const vistas = new Set();
-  const cores = 'BRANCO|PRETO|AZUL|VERMELHO|VERDE|PRATA|CINZA|FANTASIA|CARBONO|UK|VINHO[\\w\\/]*|LARANJA|AMARELO';
-  const modelos = 'JET|X12-10|X12|MIA TRI|MIA|BIG TRI|BIG|JETMAX|DOT|SOMA|ROMA|FANTOM|P10|X11|MC20';
+  const cores = 'BRANCO|PRETO|AZUL|VERMELHO|VERDE|PRATA|CINZA|FANTASIA|CARBONO|UK|VINHO|LARANJA|AMARELO|ROXO|ROSA';
+  const modelos = 'JETMAX|JET MAX|JET|X12-10|X12|X15|X11 MINI|X11 PRO|X11|MIA TRI|MIA|BIG TRI|BIG|DOT|SOMA|ROMA|FANTOM|GRID|GIGA|SOFIA|SPACE|SHARK|BOB|POP|P10|P8|RET|SOL|MC20 MINI|MC20|SUPER JOY|JOY BASIC|JOY TRICICLO|CHOOPER|RETRO|DUDU|FERINHA|TRI 1000|PIX|BAW|ECO II|DRIFT CAR|VT B-2|PATINETE';
   const linhas = texto.split(/[;\n]/);
   linhas.forEach(linha => {
-    const l = linha.trim();
-    const m = l.match(new RegExp('^(' + modelos + ')\\s+([A-Z0-9]{10,22})\\s+([A-Z0-9]{10,26})\\s+(' + cores + ')$', 'i'));
-    if(m && !vistas.has(m[2])){
-      vistas.add(m[2]);
-      motosEncontradas.push({ modelo:m[1].toUpperCase(), chassi1:m[2], chassi2:m[3], cor:m[4].toUpperCase(), selecionada:true });
+    const l = linha.trim().replace(/\s+/g,' ');
+    if(!l) return;
+    const m = l.match(new RegExp('^(' + modelos + ')\\s+([A-Za-z0-9]{8,22})\\s+([A-Za-z0-9]{8,26})\\s+(' + cores + ')', 'i'));
+    if(m && !vistas.has(m[2].toUpperCase())){
+      vistas.add(m[2].toUpperCase());
+      motosEncontradas.push({ modelo:m[1].toUpperCase(), chassi1:m[2].toUpperCase(), chassi2:m[3].toUpperCase(), cor:m[4].toUpperCase(), selecionada:true });
+      return;
+    }
+    const m2 = l.match(new RegExp('^(' + modelos + ')\\s+([A-Za-z0-9]{8,22})\\s+(' + cores + ')', 'i'));
+    if(m2 && !vistas.has(m2[2].toUpperCase())){
+      vistas.add(m2[2].toUpperCase());
+      motosEncontradas.push({ modelo:m2[1].toUpperCase(), chassi1:m2[2].toUpperCase(), chassi2:'', cor:m2[3].toUpperCase(), selecionada:true });
     }
   });
   mostrarResultadoNF(numNF, emissao, '', motosEncontradas, nomeArq);
@@ -1520,101 +1561,69 @@ function processarXML(xml){
   const parser = new DOMParser();
   const doc = parser.parseFromString(xml, 'text/xml');
 
-  // Número e data da NF — tenta DOM primeiro, depois regex no texto bruto
+  // Número NF e data
   let numNF = doc.querySelector('nNF')?.textContent || '';
   let dhEmi = doc.querySelector('dhEmi')?.textContent || '';
   if(!numNF) { const m = xml.match(/<nNF>(\d+)<\/nNF>/); if(m) numNF = m[1]; }
   if(!dhEmi) { const m = xml.match(/<dhEmi>([^<]+)<\/dhEmi>/); if(m) dhEmi = m[1]; }
   const emissao = dhEmi ? dhEmi.substring(0,10) : '';
-  const valorTotal = doc.querySelector('vNF')?.textContent || '';
 
   const motosEncontradas = [];
   const vistas = new Set();
+  const cores = 'BRANCO|PRETO|AZUL|VERMELHO|VERDE|PRATA|CINZA|FANTASIA|CARBONO|UK|VINHO|LARANJA|AMARELO|ROXO|ROSA';
+  const modelos = 'JETMAX|JET MAX|JET|X12-10|X12|X15|X11 MINI|X11 PRO|X11|MIA TRI|MIA|BIG TRI|BIG|DOT|SOMA|ROMA|FANTOM|GRID|GIGA|SOFIA|SPACE|SHARK|BOB|POP|P10|P8|RET|SOL|MC20 MINI|MC20|SUPER JOY|JOY BASIC|JOY TRICICLO|CHOOPER|RETRO|DUDU|FERINHA|TRI 1000|PIX|BAW|ECO II|DRIFT CAR|VT B-2|PATINETE';
 
-  // Método 1: tag <veicProd> — padrão XML NF-e para veículos
-  const veics = doc.querySelectorAll('veicProd');
-  veics.forEach(v => {
-    const chassi = v.querySelector('chassi')?.textContent?.trim() || '';
-    const cor    = v.querySelector('xCor')?.textContent?.trim() || '';
-    const det    = v.closest('det');
-    const xProd  = det?.querySelector('xProd')?.textContent || '';
-    const modelo = xProd.match(/^([A-Z][A-Z0-9\- ]{1,12})/i)?.[1]?.trim() || xProd.split(' ')[0];
+  // Método 1: tag <veicProd>
+  doc.querySelectorAll('veicProd').forEach(v => {
+    const chassi = v.querySelector('chassi')?.textContent?.trim().toUpperCase() || '';
+    const cor = v.querySelector('xCor')?.textContent?.trim().toUpperCase() || '';
+    const det = v.closest('det');
+    const xProd = det?.querySelector('xProd')?.textContent || '';
+    const modelo = xProd.match(new RegExp(`(${modelos})`, 'i'))?.[1]?.toUpperCase() || xProd.split(' ')[0].toUpperCase();
     if(chassi && !vistas.has(chassi)){
       vistas.add(chassi);
-      motosEncontradas.push({ modelo, chassi1: chassi, chassi2: '', cor, selecionada: true });
+      motosEncontradas.push({ modelo, chassi1:chassi, chassi2:'', cor, selecionada:true });
     }
   });
 
-  // Método 2: infCpl — onde a Laiouns coloca os chassi
-  // Tenta DOM, depois regex no texto bruto (XML comprimido sem tags)
-  let infCpl = doc.querySelector('infCpl')?.textContent || 
-               doc.querySelector('infAdic infCpl')?.textContent || '';
-  if(!infCpl) {
-    const m = xml.match(/<infCpl>([^<]+)<\/infCpl>/);
-    if(m) infCpl = m[1];
-  }
-  // Se ainda não achou, busca direto no texto por padrão BOB/JET/JETMAX etc
-  if(!infCpl) {
-    const mRaw = xml.match(/([A-Z]+(?:\s[A-Z]+)?\s+[A-Z0-9]{8,}\s+[A-Za-z0-9]{8,}\s+(?:BRANCO|PRETO|AZUL|VERMELHO|CINZA|VERDE|FANTASIA)[;\s])/gi);
-    if(mRaw) infCpl = mRaw.join(';');
-  }
-  
+  // Método 2: infCpl — formato Laiouns: MODELO CHASSI1 CHASSI2 COR
+  let infCpl = doc.querySelector('infCpl')?.textContent || doc.querySelector('infAdic infCpl')?.textContent || '';
+  if(!infCpl) { const m = xml.match(/<infCpl>([\s\S]*?)<\/infCpl>/); if(m) infCpl = m[1]; }
+
   if(infCpl){
-    const cores = 'BRANCO|PRETO|AZUL|VERMELHO|VERDE|PRATA|CINZA|FANTASIA|CARBONO|UK|VINHO[\w\/]*|LARANJA|AMARELO|ROXO|ROSA';
-    const modelos = 'JET MAX|JETMAX|JET|X12-10|X12|X15|X11 MINI|X11 PRO|X11|MIA TRI|MIA|BIG TRI|BIG|DOT|SOMA|ROMA|FANTOM|GRID|GIGA|SOFIA|SPACE|SHARK|BOB|POP|P10|P8|RET|SOL|MC20 MINI|MC20|SUPER JOY|JOY BASIC|JOY TRICICLO|CHOOPER|RETRO|DUDU|FERINHA|TRI 1000|PIX|BAW|ECO II|DRIFT CAR|VT B-2|PATINETE';
-    
-    // Separa por ; ou quebra de linha
     const linhas = infCpl.split(/[;\n]/);
     linhas.forEach(linha => {
-      const l = linha.trim();
-      // Tenta padrão: MODELO CHASSI1 CHASSI2 COR
-      const m = l.match(new RegExp(`^(${modelos})\s+([A-Z0-9]{8,22})\s+([A-Z0-9]{8,26})\s+(${cores})`, 'i'));
-      if(m && !vistas.has(m[2])){
-        vistas.add(m[2]);
-        motosEncontradas.push({
-          modelo: m[1].trim().toUpperCase(),
-          chassi1: m[2].trim(),
-          chassi2: m[3].trim(),
-          cor: m[4].trim().toUpperCase(),
-          selecionada: true
-        });
+      const l = linha.trim().replace(/\s+/g,' ');
+      if(!l) return;
+      const m = l.match(new RegExp(`^(${modelos})\s+([A-Za-z0-9]{8,22})\s+([A-Za-z0-9]{8,26})\s+(${cores})`, 'i'));
+      if(m && !vistas.has(m[2].toUpperCase())){
+        vistas.add(m[2].toUpperCase());
+        motosEncontradas.push({ modelo:m[1].toUpperCase(), chassi1:m[2].toUpperCase(), chassi2:m[3].toUpperCase(), cor:m[4].toUpperCase(), selecionada:true });
         return;
       }
-      // Tenta padrão: MODELO CHASSI COR (sem chassi2)
-      const m2 = l.match(new RegExp(`^(${modelos})\s+([A-Z0-9]{8,22})\s+(${cores})`, 'i'));
-      if(m2 && !vistas.has(m2[2])){
-        vistas.add(m2[2]);
-        motosEncontradas.push({
-          modelo: m2[1].trim().toUpperCase(),
-          chassi1: m2[2].trim(),
-          chassi2: '',
-          cor: m2[3].trim().toUpperCase(),
-          selecionada: true
-        });
+      const m2 = l.match(new RegExp(`^(${modelos})\s+([A-Za-z0-9]{8,22})\s+(${cores})`, 'i'));
+      if(m2 && !vistas.has(m2[2].toUpperCase())){
+        vistas.add(m2[2].toUpperCase());
+        motosEncontradas.push({ modelo:m2[1].toUpperCase(), chassi1:m2[2].toUpperCase(), chassi2:'', cor:m2[3].toUpperCase(), selecionada:true });
       }
     });
   }
 
-  // Método 3: busca direta no texto do XML por padrão de chassi
+  // Método 3: fallback no texto bruto do XML
   if(motosEncontradas.length === 0){
-    const cores = 'BRANCO|PRETO|AZUL|VERMELHO|VERDE|PRATA|CINZA|FANTASIA|CARBONO';
-    const regex = new RegExp('([A-Z][A-Z0-9\- ]{1,12})\s+([A-Z0-9]{12,22})\s+([A-Z0-9]{12,26})\s+('+cores+')', 'gi');
+    const regex = new RegExp(`(${modelos})\s+([A-Za-z0-9]{8,22})\s+([A-Za-z0-9]{8,26})\s+(${cores})`, 'gi');
     let m;
     while((m = regex.exec(xml)) !== null){
-      if(!vistas.has(m[2])){
-        vistas.add(m[2]);
-        motosEncontradas.push({ modelo:m[1].trim(), chassi1:m[2].trim(), chassi2:m[3].trim(), cor:m[4].trim(), selecionada:true });
+      if(!vistas.has(m[2].toUpperCase())){
+        vistas.add(m[2].toUpperCase());
+        motosEncontradas.push({ modelo:m[1].toUpperCase(), chassi1:m[2].toUpperCase(), chassi2:m[3].toUpperCase(), cor:m[4].toUpperCase(), selecionada:true });
       }
     }
   }
 
-  // Se não achou nada com XML parser, tenta como texto bruto
-  if(motosEncontradas.length === 0){
-    processarTextoBruto(xml, 'arquivo.xml');
-    return;
-  }
-  mostrarResultadoNF(numNF, emissao, valorTotal, motosEncontradas, 'arquivo.xml');
+  mostrarResultadoNF(numNF, emissao, '', motosEncontradas, 'arquivo.xml');
 }
+
 
 function mostrarResultadoNF(numNF, emissao, valorTotal, motosEnc, nomeArq){
   nfMotosDetectadas = motosEnc;
@@ -2123,21 +2132,27 @@ function renderMontagens(){
 
   // Filtra motos montadas
   const fMontador = document.getElementById('fMontador')?.value||'';
+  // Pega motos com evento de montagem no histórico
   const montadas = motos.filter(m => {
-    if(!m.dataMontagem && !m.dataStatus) return false;
-    const dataRef = m.dataMontagem || m.dataStatus || '';
+    // Tem evento de MONTADA no histórico?
+    const histMontada = (m.historico||[]).find(h=>h.acao==='MONTADA' && !h.detalhes?.includes('garantia'));
+    if(!histMontada && !m.montador) return false;
+    // Determinar data de referência
+    const dataRef = m.dataMontagem || (histMontada?.data?.substring(0,10)) || m.dataStatus || '';
     if(!dataRef) return false;
-    const d = new Date(dataRef+'T12:00:00');
+    const d = new Date(dataRef.substring(0,10)+'T12:00:00');
     if(ano && d.getFullYear() !== ano) return false;
     if(mes && d.getMonth()+1 !== mes) return false;
-    if(fMontador && m.montador !== fMontador) return false;
-    return m.montador || m.historico?.some(h=>h.acao==='MONTADA');
+    const montadorRef = m.montador || histMontada?.detalhes?.match(/Montador: ([^·]+)/)?.[1]?.trim() || '';
+    if(fMontador && montadorRef !== fMontador) return false;
+    return true;
   });
 
-  // Agrupa por montador
+  // Agrupa por montador — pega do campo direto ou do historico
   const porMontador = {};
   montadas.forEach(m => {
-    const montador = m.montador || '—';
+    const montador = m.montador || 
+      m.historico?.find(h=>h.acao==='MONTADA')?.detalhes?.match(/Montador:\s*([^·]+)/)?.[1]?.trim() || '—';
     if(!porMontador[montador]) porMontador[montador] = [];
     porMontador[montador].push(m);
   });
@@ -2594,7 +2609,7 @@ function renderDemandas(){
         </div>
         <div style="display:flex;gap:6px;align-items:center">
           <span style="font-size:11px;background:var(--bg3);padding:3px 8px;border-radius:6px;color:var(--text2)">${d.loja}</span>
-          ${isAdmU()&&d.status==='PENDENTE'?`<button class="btn btn-sm btn-g" onclick="aprovarDemanda(${d.id})" title="Aprovar demanda">✓ Aprovar</button>`:''}
+
           ${isAdmU()?`<button class="btn btn-sm btn-r" onclick="excluirDemanda(${d.id})" title="Excluir demanda">🗑</button>`:''}
         </div>
       </div>
