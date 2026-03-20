@@ -242,6 +242,8 @@ textarea.fc{resize:vertical;min-height:70px;}
       <optgroup label="ADMs de Loja">
         <option value="tiago">Tiago — ECOMOV Lavras</option>
         <option value="carlos">Carlos — MOTOCHEFE Itajubá</option>
+        <option value="juninho">Juninho — MOTOCHEFE Itajubá</option>
+        <option value="marcos">Marcos — Montador Itajubá</option>
         <option value="julia_s">Julia Sampaio — MOTOCHEFE Poços</option>
         <option value="pablo">Pablo — MOTOCHEFE Varginha</option>
         <option value="pedro">Pedro Henrique — ECOMOV Pouso Alegre</option>
@@ -329,9 +331,9 @@ textarea.fc{resize:vertical;min-height:70px;}
           <option value="">Todos os modelos</option>
         </select>
         <div class="tsp"></div>
-        <button class="btn btn-sm" id="btnDisp" onclick="toggleDisponíveis()" 
+        <button class="btn btn-sm" id="btnVendidas" onclick="toggleVendidas()" 
           style="background:rgba(22,163,74,.1);color:var(--green);border:1px solid rgba(22,163,74,.3);font-weight:700">
-          🟢 Disponíveis
+          ✅ Vendidas
         </button>
         <button class="btn btn-p btn-sm" id="btnEntradaNF2" onclick="abrirEntradaNF()" style="display:none">+ Entrada NF</button>
         <button class="btn btn-s btn-sm" id="btnManual2" onclick="abrirNovaMoto()" style="display:none">+ Manual</button>
@@ -715,6 +717,7 @@ textarea.fc{resize:vertical;min-height:70px;}
               <option>Fernando</option>
               <option>Alexander</option>
               <option>Murilo</option>
+              <option>Marcos (Itajubá)</option>
               <option>Outros</option>
             </select>
           </div>
@@ -733,6 +736,26 @@ textarea.fc{resize:vertical;min-height:70px;}
           <div class="fg">
             <label class="fl">Data da Reserva <span>*</span></label>
             <input type="date" class="fc" id="dataReserva">
+          </div>
+        </div>
+        <div class="frow">
+          <div class="fg">
+            <label class="fl">Vendedor</label>
+            <select class="fsel" id="vendedorReserva">
+              <option value="">Selecione...</option>
+              <option>Pablo Albinati</option><option>Karla Souza Chagas</option><option>Murilo Belo</option>
+              <option>Julia Nascimento</option><option>Rayssa Martins</option><option>Fernando Lopes</option>
+              <option>Julia Sampaio</option><option>Emanuel Paiva</option><option>Tiago Souza Gomes</option>
+              <option>Kawan Manso</option><option>Charles Carvalho</option><option>Pedro Henrique</option>
+              <option>Cesar Rodrigues</option><option>Luiz Paulo Arouca</option><option>Juninho (Itajubá)</option>
+            </select>
+          </div>
+          <div class="fg">
+            <label class="fl">Destino</label>
+            <select class="fsel" id="destinoReserva">
+              <option>VGA</option><option>POÇOS</option><option>LAVRAS</option>
+              <option>ITAJUBÁ</option><option>POUSO ALEGRE</option><option>GALPÃO</option>
+            </select>
           </div>
         </div>
         <div class="fg">
@@ -758,6 +781,7 @@ textarea.fc{resize:vertical;min-height:70px;}
               <option>Julia Sampaio</option><option>Emanuel Paiva</option><option>Tiago Souza Gomes</option>
               <option>Kawan Manso</option><option>Charles Carvalho</option><option>Pedro Henrique</option>
               <option>Cesar Rodrigues</option><option>Luiz Paulo Arouca</option>
+              <option>Juninho (Itajubá)</option>
             </select>
           </div>
           <div class="fg">
@@ -902,21 +926,20 @@ textarea.fc{resize:vertical;min-height:70px;}
 // CONFIGURAÇÕES
 // ══════════════════════════════════════════════
 const SENHAS = {
-  // Gestores
+  // Gestores — mesma senha do caixa
   cesar:'CR$Mg26!gest', luiz:'LP$Mg26!gest', matheus:'MT$Mg26!gest', joao:'JB$Mg26!gest',
-  // ADMs
+  // ADMs — mesma senha da loja no caixa
   tiago:'LAV@2k26#tz', carlos:'ITJ@2k26#mc', julia_s:'POC@2k26#js',
   pablo:'VRG@2k26#pa', pedro:'PSA@2k26#ph',
-  // Vendedores Varginha
+  // Vendedores — mesma senha do simulador
   karla:'KS#Chefe7', murilo:'MB!Vrg2026',
-  // Vendedores Poços
   julia_n:'JN*Poc831', rayssa:'RM@Day526', fernando:'FL#Poc77x',
-  // Vendedores Lavras
+  julia_s2:'JS!Sam26k',
   emanuel:'EP@Lav314',
-  // Vendedores Pouso Alegre
   kawan:'KM!Pso26m', charles:'CC@Pso5k2',
-  // Vendedores Matriz
-  cesar_v:'CR@Mtz26x', luiz_v:'LP!Mtz77k',
+  cesar_v:'CR$Mg26!gest', luiz_v:'LP$Mg26!gest',
+  // Itajubá
+  juninho:'JN@Itj26v', marcos:'MK@Itj26m',
 };
 const NOMES = {
   cesar:'César Rodrigues', luiz:'Luiz Paulo Arouca', matheus:'Matheus', joao:'João Brito',
@@ -927,11 +950,13 @@ const NOMES = {
   emanuel:'Emanuel Paiva',
   kawan:'Kawan Manso', charles:'Charles Carvalho',
   cesar_v:'Cesar Rodrigues', luiz_v:'Luiz Paulo Arouca',
+  juninho:'Juninho (Itajubá)', marcos:'Marcos (Montador Itajubá)',
 };
 // PERFIS: gestor > adm > vendedor
 const GESTORES  = ['cesar','luiz','matheus','joao'];
 const ADMS      = ['tiago','carlos','julia_s','pablo','pedro'];
-const VENDEDORES_LIST = ['karla','murilo','julia_n','rayssa','fernando','emanuel','kawan','charles','cesar_v','luiz_v'];
+const MONTADORES_LIST = ['marcos']; // montadores — só montam, não vendem
+const VENDEDORES_LIST = ['karla','murilo','julia_n','rayssa','fernando','emanuel','kawan','charles','cesar_v','luiz_v','juninho'];
 
 function getPerfil(){ 
   if(GESTORES.includes(currentUser)) return 'gestor';
@@ -1044,9 +1069,16 @@ async function saveItem(tabela, item) {
   // Salva local imediatamente
   const dados = tabela==='ESTOQUE'?motos:tabela==='DEMANDAS'?demandas:tabela==='GARANTIAS'?garantias:tabela==='PECAS'?pecas:[];
   localStorage.setItem('mc_estoque_'+tabela.toLowerCase(), JSON.stringify(dados));
-  // Envia ao Sheets em background
+  // Envia ao Sheets via Image ping (sem CORS)
   try {
-    await fetch(`${AS}?action=estoque_save&tabela=${tabela}&data=${encodeURIComponent(JSON.stringify(item))}`);
+    const url = `${AS}?action=estoque_save&tabela=${tabela}&data=${encodeURIComponent(JSON.stringify(item))}`;
+    if(url.length < 8000) {
+      const img = new Image();
+      img.src = url;
+    } else {
+      // Item muito grande — tenta fetch no-cors
+      fetch(url, {mode:'no-cors'}).catch(()=>{});
+    }
   } catch(e) { console.warn('Sync falhou, dados salvos localmente'); }
 }
 
@@ -1183,20 +1215,19 @@ function renderAll(){
 
 
 let mostraDisp = false;
-function toggleDisponíveis(){
-  mostraDisp = !mostraDisp;
-  const btn = document.getElementById('btnDisp');
-  if(mostraDisp){
-    btn.style.background='var(--green)';
-    btn.style.color='#fff';
-    btn.style.border='1px solid var(--green)';
-    btn.textContent='🟢 Disponíveis';
-    document.getElementById('fStatus').value='';
+function toggleVendidas(){
+  const sel = document.getElementById('fStatus');
+  const btn = document.getElementById('btnVendidas');
+  if(sel.value === 'VENDIDA') {
+    sel.value = '';
+    btn.style.background = 'rgba(22,163,74,.1)';
+    btn.style.color = 'var(--green)';
+    btn.style.border = '1px solid rgba(22,163,74,.3)';
   } else {
-    btn.style.background='rgba(22,163,74,.1)';
-    btn.style.color='var(--green)';
-    btn.style.border='1px solid rgba(22,163,74,.3)';
-    btn.textContent='🟢 Disponíveis';
+    sel.value = 'VENDIDA';
+    btn.style.background = 'var(--green)';
+    btn.style.color = '#fff';
+    btn.style.border = 'none';
   }
   renderEstoque();
 }
@@ -1277,8 +1308,8 @@ function renderEstoque(){
         <span class="${isGestorU()?'cell-edit':''}">${m.localizacao||'—'}</span>
         <span class="cell-edit-date">${m.dataLocalizacao?fmtData(m.dataLocalizacao):''}</span>
       </td>
-      <td onclick="event.stopPropagation();editarCampo(event,'destino','${m.id}')" title="Clique para alterar destino">
-        <span class="cell-edit" style="font-size:11px;color:var(--text3)">${m.destino||'—'}</span>
+      <td ${isAdmU()?`onclick="event.stopPropagation();editarCampo(event,'destino','${m.id}')" title="Clique para alterar destino"`:'title="Somente ADMs podem alterar destino"'}>
+        <span class="${isAdmU()?'cell-edit':''}" style="font-size:11px;color:var(--text3)">${m.destino||'—'}</span>
       </td>
       <td ${isAdmU()?`onclick="event.stopPropagation();editarCampo(event,'vendedor','${m.id}')" title="Clique para alterar vendedor"`:'title="Somente ADMs podem alterar vendedor"'}>
         <span class="cell-edit" style="font-size:12px">${m.vendedor||'—'}</span>
@@ -1511,13 +1542,14 @@ function processarXML(xml){
   
   if(infCpl){
     const cores = 'BRANCO|PRETO|AZUL|VERMELHO|VERDE|PRATA|CINZA|FANTASIA|CARBONO|UK|VINHO[\w\/]*|LARANJA|AMARELO|ROXO|ROSA';
-    const modelos = 'JET|X12-10|X12|MIA TRI|MIA|BIG TRI|BIG|JETMAX|DOT|SOMA|ROMA|FANTOM|P10|X11|MC20';
+    const modelos = 'JET MAX|JETMAX|JET|X12-10|X12|X15|X11 MINI|X11 PRO|X11|MIA TRI|MIA|BIG TRI|BIG|DOT|SOMA|ROMA|FANTOM|GRID|GIGA|SOFIA|SPACE|SHARK|BOB|POP|P10|P8|RET|SOL|MC20 MINI|MC20|SUPER JOY|JOY BASIC|JOY TRICICLO|CHOOPER|RETRO|DUDU|FERINHA|TRI 1000|PIX|BAW|ECO II|DRIFT CAR|VT B-2|PATINETE';
     
     // Separa por ; ou quebra de linha
     const linhas = infCpl.split(/[;\n]/);
     linhas.forEach(linha => {
       const l = linha.trim();
-      const m = l.match(new RegExp(`^(${modelos})\s+([A-Z0-9]{10,22})\s+([A-Z0-9]{10,26})\s+(${cores})$`, 'i'));
+      // Tenta padrão: MODELO CHASSI1 CHASSI2 COR
+      const m = l.match(new RegExp(`^(${modelos})\s+([A-Z0-9]{8,22})\s+([A-Z0-9]{8,26})\s+(${cores})`, 'i'));
       if(m && !vistas.has(m[2])){
         vistas.add(m[2]);
         motosEncontradas.push({
@@ -1525,6 +1557,19 @@ function processarXML(xml){
           chassi1: m[2].trim(),
           chassi2: m[3].trim(),
           cor: m[4].trim().toUpperCase(),
+          selecionada: true
+        });
+        return;
+      }
+      // Tenta padrão: MODELO CHASSI COR (sem chassi2)
+      const m2 = l.match(new RegExp(`^(${modelos})\s+([A-Z0-9]{8,22})\s+(${cores})`, 'i'));
+      if(m2 && !vistas.has(m2[2])){
+        vistas.add(m2[2]);
+        motosEncontradas.push({
+          modelo: m2[1].trim().toUpperCase(),
+          chassi1: m2[2].trim(),
+          chassi2: '',
+          cor: m2[3].trim().toUpperCase(),
           selecionada: true
         });
       }
@@ -1685,6 +1730,11 @@ function abrirAlterarStatus(id){
   document.getElementById('obsStatus').value = '';
   document.getElementById('dataMontagem').value = hoje();
   document.getElementById('dataReserva').value = hoje();
+  // Pré-preencher vendedor/destino se já tem
+  const vr = document.getElementById('vendedorReserva');
+  if(vr && m.vendedor) vr.value = m.vendedor;
+  const dr = document.getElementById('destinoReserva');
+  if(dr && m.destino) dr.value = m.destino;
   // Limpar comprovante de reserva
   reservaComprovante = null;
   const rn = document.getElementById('reservaCompNome');
@@ -1697,7 +1747,16 @@ function abrirAlterarStatus(id){
 
 function onNovoStatus(){
   const s = document.getElementById('novoStatus').value;
-  document.getElementById('camposMontada').style.display   = s==='MONTADA'?'block':'none';
+  const statusAtual = motoEditando ? motoEditando.status : '';
+  const vemDeGarantia = statusAtual === 'GARANTIA' && s === 'MONTADA';
+  // Campos de montada: ocultar se vem de garantia (não cobra montador de novo)
+  const camposMontada = document.getElementById('camposMontada');
+  if(camposMontada) {
+    camposMontada.style.display = s==='MONTADA' && !vemDeGarantia ? 'block' : 'none';
+    if(vemDeGarantia && s==='MONTADA') {
+      camposMontada.innerHTML = '<div style="padding:8px;background:rgba(234,179,8,.1);border-radius:6px;font-size:12px;color:#ca8a04">⚠️ Retorno de garantia — montador original mantido, sem novo pagamento.</div>';
+    }
+  }
   document.getElementById('camposReservada').style.display = s==='RESERVADA'?'block':'none';
   document.getElementById('camposVendida').style.display   = s==='VENDIDA'?'block':'none';
   document.getElementById('camposTransfer').style.display  = s==='TRANSFERÊNCIA'?'block':'none';
@@ -1711,26 +1770,39 @@ function confirmarStatus(){
   const statusAnt = m.status;
 
   if(novo==='MONTADA'){
-    const montador = document.getElementById('montador').value;
-    const data = document.getElementById('dataMontagem').value;
-    if(!montador){ showToast('Selecione o montador!','err'); return; }
-    m.montador = montador;
-    m.dataMontagem = data;
-    m.dataStatus = data;
-    addHistorico(m, 'MONTADA', `Montador: ${montador} · Data: ${fmtData(data)}${obs?' · '+obs:''}`);
+    const vemDeGarantia = statusAnt === 'GARANTIA';
+    if(vemDeGarantia) {
+      // Retorno de garantia — mantém montador original, não cobra de novo
+      m.dataStatus = hoje();
+      addHistorico(m, 'MONTADA', `Retorno de garantia — montador original: ${m.montador||'—'}${obs?' · '+obs:''}`);
+    } else {
+      const montador = document.getElementById('montador').value;
+      const data = document.getElementById('dataMontagem').value;
+      if(!montador){ showToast('Selecione o montador!','err'); return; }
+      m.montador = montador;
+      m.dataMontagem = data;
+      m.dataStatus = data;
+      addHistorico(m, 'MONTADA', `Montador: ${montador} · Data: ${fmtData(data)}${obs?' · '+obs:''}`);
+    }
 
   } else if(novo==='RESERVADA'){
     const numPedido = document.getElementById('numPedidoReserva').value.trim();
     const dataRes = document.getElementById('dataReserva').value;
     const cliente = document.getElementById('clienteReserva').value.trim();
+    const vendRes = document.getElementById('vendedorReserva').value;
+    const destRes = document.getElementById('destinoReserva').value;
     if(!numPedido){ showToast('Informe o número do pedido!','err'); return; }
-    if(!reservaComprovante){ showToast('Anexe o comprovante de pagamento!','err'); return; }
+    // Comprovante obrigatório só se for nova reserva (não aprovação de pendência)
+    const aprovando = m.status === 'PEND. RESERVA';
+    if(!aprovando && !reservaComprovante){ showToast('Anexe o comprovante de pagamento!','err'); return; }
     m.numPedidoReserva = numPedido;
     m.dataReserva = dataRes;
     m.clienteReserva = cliente;
+    if(vendRes) m.vendedor = vendRes;
+    if(destRes) m.destino = destRes;
     m.dataStatus = dataRes;
     m.comprovantePedido = reservaComprovante;
-    addHistorico(m, 'RESERVADA', `Pedido #${numPedido} · Cliente: ${cliente||'—'} · Data: ${fmtData(dataRes)} · Comp: ${reservaComprovante.nome}${obs?' · '+obs:''}`);
+    addHistorico(m, 'RESERVADA', `Pedido #${numPedido} · Cliente: ${cliente||'—'} · Vendedor: ${vendRes||'—'} · Dest: ${destRes} · Data: ${fmtData(dataRes)} · Comp: ${reservaComprovante.nome}${obs?' · '+obs:''}`);
 
   } else if(novo==='VENDIDA'){
     const vendedor = document.getElementById('vendedorVenda').value;
@@ -1768,6 +1840,16 @@ function confirmarStatus(){
   save(); fecharModal('modalStatus'); renderAll();
   saveItem('ESTOQUE', m);
   showToast('✓ Status atualizado para '+novo);
+
+  // Se mudou para VENDIDA, redireciona para filtro de vendidas
+  if(novo === 'VENDIDA') {
+    setTimeout(() => {
+      const sel = document.getElementById('fStatus');
+      if(sel) { sel.value = 'VENDIDA'; renderEstoque(); }
+      const btn = document.getElementById('btnVendidas');
+      if(btn) { btn.style.background='var(--green)'; btn.style.color='#fff'; btn.style.border='none'; }
+    }, 300);
+  }
 }
 
 // ══════════════════════════════════════════════
