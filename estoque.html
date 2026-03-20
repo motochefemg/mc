@@ -320,7 +320,7 @@ textarea.fc{resize:vertical;min-height:70px;}
           <option value="VENDIDA">✅ Vendida</option>
           <option value="GARANTIA">🔴 Garantia</option>
           <option value="TRANSFERÊNCIA">🚚 Transferência</option>
-          <option value="ENTREGUE">📦 Entregue</option>
+
         </select>
         <select class="f-sel" id="fLoja" onchange="renderEstoque();renderKPIs()">
           <option value="">Todas as lojas</option>
@@ -1072,7 +1072,7 @@ const STATUS_CFG = {
   'VENDIDA':        { label:'✅ Vendida',          cls:'s-vendida',   dot:'#16a34a' },
   'GARANTIA':       { label:'🔴 Garantia',        cls:'s-garantia',  dot:'#dc2626' },
   'TRANSFERÊNCIA':  { label:'🚚 Transfer.',       cls:'s-transfer',  dot:'#6b7280' },
-  'ENTREGUE':       { label:'📦 Entregue',        cls:'s-entregue',  dot:'#0891b2' },
+
   'PEND. TRANSFER': { label:'🔄 Pend. Transfer',  cls:'s-pend',      dot:'#f59e0b' },
 };
 
@@ -1553,6 +1553,7 @@ function renderEstoque(){
         ${fmtData(ultimaMovimentacao(m))}
       </td>
       <td onclick="event.stopPropagation()">
+        ${m.status==='VENDIDA'&&isAdmU()?`<button class="btn btn-sm" style="font-size:11px;padding:2px 7px;background:rgba(8,145,178,.1);color:#0891b2;border:1px solid rgba(8,145,178,.3)" onclick="event.stopPropagation();registrarEntregaRapida('${m.id}')" title="Registrar entrega">📦</button>`:''}
         ${isGestorU()?`<button class="btn btn-sm btn-r" onclick="excluirMoto('${m.id}')" title="Excluir moto">🗑</button>`:''}
       </td>
     </tr>`).join('');
@@ -2076,20 +2077,6 @@ function confirmarStatus(){
     m.dataStatus = hoje();
     addHistorico(m,'TRANSFERÊNCIA',`${ant} → ${dest}${obs?' · '+obs:''}`);
 
-  } else if(novo==='ENTREGUE'){
-    const detEnt = obs||`Entregue — ${statusAnt} → ENTREGUE`;
-    m.dataStatus = hoje();
-    addHistorico(m, 'ENTREGUE', detEnt);
-    // Registra na logística automaticamente
-    entregas.push({
-      id: nextId(entregas), data: hoje(), status: 'AGUARDANDO',
-      chassi: m.chassi, modelo: m.modelo, cor: m.cor,
-      nfSaida: m.nfeSaida||'', dataSaida: hoje(),
-      origem: m.localizacao||'GALPÃO', destino: m.destino||'',
-      freteTipo:'GRATIS', freteValor:0,
-      criadoPor: NOMES[currentUser]||currentUser, obs: obs||''
-    });
-    saveEntregas();
   } else {
     m.dataStatus = hoje();
     const detGar = statusAnt==='GARANTIA' && novo==='MONTADA' 
@@ -2314,67 +2301,42 @@ function salvarCampoInline(campo, m){
     if(!valor) return;
     const ant = m.localizacao;
     if(ant === valor) return;
-    // Qualquer mudança de localização → pendência de transferência
+    // SEMPRE vira PEND. TRANSFER — independente do perfil
+    m.status = 'PEND. TRANSFER';
     m.destinoTransferSolicitado = valor;
     m.dataStatus = dt;
-    if(isGestorU()){
-      m.localizacao = valor;
-      m.destino = valor;
-      addHistorico(m, 'TRANSFERÊNCIA', `Localização: ${ant} → ${valor} · ${fmtData(dt)} · Gestor: ${NOMES[currentUser]||currentUser}`);
-    } else {
-      m.status = 'PEND. TRANSFER';
-      addHistorico(m, 'PEND. TRANSFER', `Mudança de localização: ${ant} → ${valor} · aguardando gestor`);
-    }
+    addHistorico(m, 'PEND. TRANSFER', `Mudança de localização: ${ant} → ${valor} · solicitado por ${NOMES[currentUser]||currentUser}`);
     transferencias.push({
       id: nextId(transferencias), data: dt||hoje(), tipo: 'TRANSFERÊNCIA',
       motoId: m.id, chassi: m.chassi, modelo: m.modelo, cor: m.cor,
       localizacao: ant, destino: valor, vendedor: m.vendedor||'',
-      cliente:'', numPedido:'',
-      status: isGestorU()?'APROVADA':'PENDENTE',
+      cliente:'', numPedido:'', status: 'PENDENTE',
       criadoPor: NOMES[currentUser]||currentUser,
-      aprovadoPor: isGestorU()?(NOMES[currentUser]||currentUser):'',
-      dataAprovacao: isGestorU()?dt:'', obs:''
+      aprovadoPor: '', dataAprovacao: '', obs:''
     });
     saveTransferencias();
-    if(!isGestorU()) showToast('Transferência solicitada! Aguardando gestor.','warn');
+    showToast('Transferência registrada! Pendente na aba Transferências.','warn');
 
   } else if(campo === 'destino'){
     if(!valor) return;
     const ant = m.destino || m.localizacao;
-    if(valor === ant) return; // sem mudança
-    // Toda mudança de destino vira PEND. TRANSFER para o gestor acompanhar
+    if(valor === ant) return;
+    // SEMPRE vira PEND. TRANSFER — independente do perfil
     m.destino = valor;
-    if(isGestorU()){
-      // Gestor aprova direto → atualiza registro de transferência
-      addHistorico(m, 'TRANSFERÊNCIA', `Destino: ${ant} → ${valor} · Aprovado por ${NOMES[currentUser]||currentUser}`);
-      const trf = transferencias.find(t=>t.motoId==m.id && t.status==='PENDENTE');
-      if(trf){ trf.status='APROVADA'; trf.aprovadoPor=NOMES[currentUser]||currentUser; trf.dataAprovacao=hoje(); }
-      saveTransferencias();
-    } else {
-      m.status = 'PEND. TRANSFER';
-      m.destinoTransferSolicitado = valor;
-      addHistorico(m, 'PEND. TRANSFER', `Destino solicitado: ${ant} → ${valor} · aguardando gestor`);
-      // Cria registro na aba Transferências
-      transferencias.push({
-        id: nextId(transferencias),
-        data: hoje(),
-        tipo: 'TRANSFERÊNCIA',
-        motoId: m.id,
-        chassi: m.chassi,
-        modelo: m.modelo,
-        cor: m.cor,
-        localizacao: m.localizacao,
-        destino: valor,
-        vendedor: m.vendedor || '',
-        cliente: '',
-        numPedido: '',
-        status: 'PENDENTE',
-        criadoPor: NOMES[currentUser]||currentUser,
-        obs: ''
-      });
-      saveTransferencias();
-      showToast('Transferência solicitada! Aguardando aprovação do gestor.','warn');
-    }
+    m.status = 'PEND. TRANSFER';
+    m.destinoTransferSolicitado = valor;
+    m.dataStatus = dt;
+    addHistorico(m, 'PEND. TRANSFER', `Destino: ${ant} → ${valor} · solicitado por ${NOMES[currentUser]||currentUser}`);
+    transferencias.push({
+      id: nextId(transferencias), data: dt||hoje(), tipo: 'TRANSFERÊNCIA',
+      motoId: m.id, chassi: m.chassi, modelo: m.modelo, cor: m.cor,
+      localizacao: m.localizacao, destino: valor, vendedor: m.vendedor||'',
+      cliente: '', numPedido: '', status: 'PENDENTE',
+      criadoPor: NOMES[currentUser]||currentUser,
+      aprovadoPor: '', dataAprovacao: '', obs: ''
+    });
+    saveTransferencias();
+    showToast('Transferência registrada! Pendente na aba Transferências.','warn');
   } else if(campo === 'vendedor'){
     const ant = m.vendedor;
     m.vendedor = valor;
@@ -3135,6 +3097,25 @@ function renderLogistica(){
       </div>
     </div>`;
   }).join('');
+}
+
+function registrarEntregaRapida(motoId){
+  const m = motos.find(x=>x.id==motoId);
+  if(!m) return;
+  // Pré-preenche o modal com dados da moto
+  document.getElementById('entregaTitulo').textContent = 'Registrar Entrega — '+m.chassi;
+  document.getElementById('eLogChassi').value = m.chassi;
+  document.getElementById('eLogModelo').value = m.modelo+' '+m.cor;
+  document.getElementById('eLogNF').value = m.nfeSaida||'';
+  document.getElementById('eLogDataSaida').value = hoje();
+  document.getElementById('eLogOrigem').value = m.localizacao||'GALPÃO';
+  document.getElementById('eLogDestino').value = m.destino||'';
+  document.getElementById('eLogFreteTipo').value = 'GRATIS';
+  document.getElementById('eLogFreteValorWrap').style.display='none';
+  document.getElementById('eLogObs').value = '';
+  document.getElementById('eLogChassiSug').style.display='none';
+  document.getElementById('modalEntrega').dataset.editId = '';
+  document.getElementById('modalEntrega').style.display='flex';
 }
 
 function abrirNovaEntrega(){
