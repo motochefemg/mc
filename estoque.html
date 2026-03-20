@@ -407,7 +407,7 @@ textarea.fc{resize:vertical;min-height:70px;}
           <table>
             <thead><tr>
               <th>DATA</th><th>MODELO</th><th>CHASSI</th><th>DESCRIÇÃO</th>
-              <th>LOJA</th><th>CLIENTE</th><th>SITUAÇÃO</th><th>NF MC</th><th>AÇÕES</th>
+              <th>LOJA</th><th>CLIENTE</th><th>SITUAÇÃO</th><th>ID PEDIDO</th><th>AÇÕES</th>
             </tr></thead>
             <tbody id="tbodyGarantias"></tbody>
           </table>
@@ -911,7 +911,7 @@ textarea.fc{resize:vertical;min-height:70px;}
             <option>SEPARADO</option><option>AGUARDANDO POSTAGEM</option>
           </select>
         </div>
-        <div class="fg"><label class="fl">NF MC</label><input class="fc" id="gNFMC"></div>
+        <div class="fg"><label class="fl">ID Pedido</label><input class="fc" id="gNFMC"></div>
       </div>
     </div>
     <div class="mf">
@@ -1098,11 +1098,14 @@ async function saveItem(tabela, item) {
 }
 
 async function deleteItem(tabela, id) {
-  localStorage.setItem('mc_estoque_'+tabela.toLowerCase(), JSON.stringify(
-    tabela==='ESTOQUE'?motos:tabela==='DEMANDAS'?demandas:garantias
-  ));
+  // Salva localmente primeiro
+  const dados = tabela==='ESTOQUE'?motos:tabela==='DEMANDAS'?demandas:tabela==='GARANTIAS'?garantias:pecas;
+  localStorage.setItem('mc_estoque_'+tabela.toLowerCase(), JSON.stringify(dados));
+  // Envia exclusão ao Sheets via Image ping
   try {
-    await fetch(`${AS}?action=estoque_del&tabela=${tabela}&id=${id}`);
+    const url = `${AS}?action=estoque_del&tabela=${tabela}&id=${id}`;
+    const img = new Image();
+    img.src = url;
   } catch(e) {}
 }
 
@@ -2194,15 +2197,20 @@ function renderMontagens(){
         <div class="twrap">
           <table>
             <thead><tr>
-              <th>CHASSI</th><th>MODELO</th><th>COR</th><th>DATA MONTAGEM</th><th>STATUS ATUAL</th>
+              <th>MODELO</th><th>COR</th><th>CHASSI</th><th>MONTADOR</th><th>DATA</th>
             </tr></thead>
             <tbody>
-              ${lista.map(m=>`<tr>
+              ${lista.map(m=>{
+                const hMontada = (m.historico||[]).find(h=>h.acao==='MONTADA' && !h.detalhes?.includes('garantia'));
+                const montadorRef = m.montador || hMontada?.detalhes?.match(/Montador: ([^·]+)/)?.[1]?.trim() || '—';
+                const dataRef = m.dataMontagem || (hMontada?.data?.substring(0,10)) || m.dataStatus || '';
+                return `<tr>
+                <td><b>${m.modelo}</b></td>
+                <td style="font-size:12px">${m.cor}</td>
                 <td><span class="chassi-link" onclick="abrirHistorico('${m.id}')">${m.chassi}</span></td>
-                <td>${m.modelo}</td><td>${m.cor}</td>
-                <td style="font-size:11px">${fmtData(m.dataMontagem||m.dataStatus)}</td>
-                <td>${statusBadge(m.status)}</td>
-              </tr>`).join('')}
+                <td style="font-size:12px">${montadorRef}</td>
+                <td style="font-size:11px;white-space:nowrap">${dataRef?fmtData(dataRef):'—'}</td>
+              </tr>`;}).join('')}
             </tbody>
           </table>
         </div>
@@ -2734,7 +2742,7 @@ function renderGarantias(){
       <td style="font-size:11px">${g.loja||'—'}</td>
       <td style="font-size:12px">${g.cliente||'—'}</td>
       <td><span class="gstatus" style="background:${sc.bg};color:${sc.color}">${g.situacao}</span></td>
-      <td style="font-size:11px;color:var(--text3)">${g.nfMC||'—'}</td>
+      <td style="font-size:11px;color:var(--text3)">${g.idPedido||g.nfMC||'—'}</td>
       <td>
         <select class="f-sel" style="font-size:11px;padding:4px 6px" onchange="alterarSituacaoGarantia(${g.id},this.value)">
           ${Object.keys(GSTATUS_CFG).map(s=>`<option ${s===g.situacao?'selected':''}>${s}</option>`).join('')}
@@ -2759,6 +2767,7 @@ function salvarGarantia(){
     descricao:desc, loja:document.getElementById('gLoja').value,
     cliente:document.getElementById('gCliente').value.trim(),
     situacao:document.getElementById('gSituacao').value,
+    idPedido:document.getElementById('gNFMC').value.trim(),
     nfMC:document.getElementById('gNFMC').value.trim(),
   });
   const novaGar = garantias[garantias.length-1];
