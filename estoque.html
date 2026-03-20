@@ -1071,13 +1071,21 @@ async function saveItem(tabela, item) {
   localStorage.setItem('mc_estoque_'+tabela.toLowerCase(), JSON.stringify(dados));
   // Envia ao Sheets via Image ping (sem CORS)
   try {
-    const url = `${AS}?action=estoque_save&tabela=${tabela}&data=${encodeURIComponent(JSON.stringify(item))}`;
+    // Serializa historico como string para não quebrar URL
+    const itemParaSalvar = tabela === 'ESTOQUE' ? {
+      ...item,
+      historico: JSON.stringify(item.historico||[])
+    } : item;
+    const url = `${AS}?action=estoque_save&tabela=${tabela}&data=${encodeURIComponent(JSON.stringify(itemParaSalvar))}`;
     if(url.length < 8000) {
       const img = new Image();
       img.src = url;
     } else {
-      // Item muito grande — tenta fetch no-cors
-      fetch(url, {mode:'no-cors'}).catch(()=>{});
+      // Item muito grande — salva sem historico para caber na URL
+      const itemSemHist = {...itemParaSalvar, historico: '[]'};
+      const url2 = `${AS}?action=estoque_save&tabela=${tabela}&data=${encodeURIComponent(JSON.stringify(itemSemHist))}`;
+      const img = new Image();
+      img.src = url2;
     }
   } catch(e) { console.warn('Sync falhou, dados salvos localmente'); }
 }
@@ -1229,7 +1237,7 @@ function toggleVendidas(){
     btn.style.color = '#fff';
     btn.style.border = 'none';
   }
-  renderEstoque();
+  renderEstoque(); renderKPIs();
 }
 
 // ══════════════════════════════════════════════
@@ -1512,9 +1520,11 @@ function processarXML(xml){
   const parser = new DOMParser();
   const doc = parser.parseFromString(xml, 'text/xml');
 
-  // Número e data da NF
-  const numNF = doc.querySelector('nNF')?.textContent || '';
-  const dhEmi = doc.querySelector('dhEmi')?.textContent || '';
+  // Número e data da NF — tenta DOM primeiro, depois regex no texto bruto
+  let numNF = doc.querySelector('nNF')?.textContent || '';
+  let dhEmi = doc.querySelector('dhEmi')?.textContent || '';
+  if(!numNF) { const m = xml.match(/<nNF>(\d+)<\/nNF>/); if(m) numNF = m[1]; }
+  if(!dhEmi) { const m = xml.match(/<dhEmi>([^<]+)<\/dhEmi>/); if(m) dhEmi = m[1]; }
   const emissao = dhEmi ? dhEmi.substring(0,10) : '';
   const valorTotal = doc.querySelector('vNF')?.textContent || '';
 
@@ -1535,10 +1545,19 @@ function processarXML(xml){
     }
   });
 
-  // Método 2: infCpl (informações complementares) — onde a Laiouns coloca os chassi
-  // Formato: "JET LA25860V1000W1413 QS60V30H25111000335 BRANCO"
-  const infCpl = doc.querySelector('infCpl')?.textContent || 
-                 doc.querySelector('infAdic infCpl')?.textContent || '';
+  // Método 2: infCpl — onde a Laiouns coloca os chassi
+  // Tenta DOM, depois regex no texto bruto (XML comprimido sem tags)
+  let infCpl = doc.querySelector('infCpl')?.textContent || 
+               doc.querySelector('infAdic infCpl')?.textContent || '';
+  if(!infCpl) {
+    const m = xml.match(/<infCpl>([^<]+)<\/infCpl>/);
+    if(m) infCpl = m[1];
+  }
+  // Se ainda não achou, busca direto no texto por padrão BOB/JET/JETMAX etc
+  if(!infCpl) {
+    const mRaw = xml.match(/([A-Z]+(?:\s[A-Z]+)?\s+[A-Z0-9]{8,}\s+[A-Za-z0-9]{8,}\s+(?:BRANCO|PRETO|AZUL|VERMELHO|CINZA|VERDE|FANTASIA)[;\s])/gi);
+    if(mRaw) infCpl = mRaw.join(';');
+  }
   
   if(infCpl){
     const cores = 'BRANCO|PRETO|AZUL|VERMELHO|VERDE|PRATA|CINZA|FANTASIA|CARBONO|UK|VINHO[\w\/]*|LARANJA|AMARELO|ROXO|ROSA';
