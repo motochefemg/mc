@@ -1568,7 +1568,10 @@ function renderEstoque(){
         <span class="${isAdmU()?'cell-edit':''}" style="font-size:11px">${m.numPedidoReserva?'#'+m.numPedidoReserva:'—'}</span>
         <span class="cell-edit-date">${m.dataReserva?fmtData(m.dataReserva):''}</span>
       </td>
-      <td style="font-size:11px;color:var(--text3)">${m.nfEntrada||'—'}</td>
+      <td ${isAdmU()?`onclick="event.stopPropagation();editarCampo(event,'nfEntrada','${m.id}')" title="Clique para editar NF de entrada"`:''}
+        style="font-size:11px;color:var(--text3);${isAdmU()?'cursor:pointer;border-bottom:1px dashed var(--border2)':''}">
+        ${m.nfEntrada||'—'}
+      </td>
       <td onclick="event.stopPropagation();editarCampo(event,'nfeSaida','${m.id}')" title="Clique para lançar NF de saída + recibo">
         <span class="cell-edit" style="font-size:11px;color:${m.nfeSaida?'var(--green)':'var(--text3)'}">${m.nfeSaida||'+ NF Saída'}</span>
         <span class="cell-edit-date">${m.dataNF?fmtData(m.dataNF):''}</span>
@@ -2220,6 +2223,9 @@ function editarCampo(event, campo, motoId){
       <option value="">—</option>
       ${DESTINOS.map(d=>`<option value="${d}" ${m.destino===d?'selected':''}>${d}</option>`).join('')}
     </select>`;
+  } else if(campo === 'nfEntrada'){
+    titulo = 'NF de Entrada';
+    html = `<input type="text" id="mmInput" value="${m.nfEntrada||''}" placeholder="Número da NF de entrada" style="text-transform:uppercase">`;
   } else if(campo === 'nfeSaida'){
     titulo = 'NF de Saída + Recibo';
     html = `<input type="text" id="mmInput" value="${m.nfeSaida||''}" placeholder="Número da NF de saída">
@@ -2362,6 +2368,10 @@ function salvarCampoInline(campo, m){
     });
     saveTransferencias();
     showToast('Transferência registrada! Pendente na aba Transferências.','warn');
+  } else if(campo === 'nfEntrada'){
+    const ant = m.nfEntrada;
+    m.nfEntrada = valor.trim().toUpperCase();
+    addHistorico(m, 'ENTRADA', `NF entrada: ${ant||'—'} → ${m.nfEntrada||'—'}`);
   } else if(campo === 'vendedor'){
     const ant = m.vendedor;
     m.vendedor = valor;
