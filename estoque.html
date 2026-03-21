@@ -3216,12 +3216,12 @@ function aprovarTransferencia(id){
     const novaLoc = t.destino || m.destino || m.localizacao;
     const locAnt = m.localizacao;
     m.status = 'MONTADA';
-    m.localizacao = novaLoc;
+    // NÃO muda localizacao — só destino. Localização muda quando ADM confirma recebimento
     m.destino = novaLoc;
     m.destinoTransferSolicitado = '';
     m.statusAntesTrf = '';
     m.dataStatus = hoje();
-    addHistorico(m, 'TRANSFERÊNCIA', `✓ Aprovada por ${t.aprovadoPor} · ${locAnt} → ${novaLoc} · Saída prevista: ${t.dataPrevista}`);
+    addHistorico(m, 'TRANSFERÊNCIA', `✓ Aprovada por ${t.aprovadoPor} · Destino: ${locAnt} → ${novaLoc} · Saída prevista: ${t.dataPrevista} · Aguardando recebimento`);
     save(); saveItem('ESTOQUE', m);
   }
   saveTransferencias(); renderTransferencias(); renderKPIs(); renderBadgePendencias();
@@ -3235,10 +3235,13 @@ function confirmarRecebimento(id){
   t.dataRecebimento = hoje();
   t.recebidoPor = NOMES[currentUser]||currentUser;
   t.status = 'CONCLUÍDA';
-  // Registra no histórico da moto
+  // AQUI muda a localização — moto chegou fisicamente
   const m = motos.find(x=>x.id===t.motoId);
   if(m){
-    addHistorico(m, 'TRANSFERÊNCIA', `📦 Recebido em ${t.destino} por ${t.recebidoPor} em ${fmtData(t.dataRecebimento)}`);
+    const locAnt = m.localizacao;
+    m.localizacao = t.destino || m.destino || m.localizacao;
+    m.destino = m.localizacao;
+    addHistorico(m, 'TRANSFERÊNCIA', `📦 Recebido em ${m.localizacao} por ${t.recebidoPor} · Localização atualizada: ${locAnt} → ${m.localizacao}`);
     save(); saveItem('ESTOQUE', m);
   }
   saveTransferencias(); renderTransferencias();
