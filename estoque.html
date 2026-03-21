@@ -1385,9 +1385,9 @@ function logout(){
 // ══════════════════════════════════════════════
 function goTab(id, el){
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
-  ['estoque','demandas','garantias','montagens','pecas'].forEach(v=>{
-    const el = document.getElementById('view-'+v);
-    if(el) el.style.display = v===id?'block':'none';
+  ['estoque','demandas','garantias','montagens','pecas','transferencias','logistica'].forEach(v=>{
+    const vEl = document.getElementById('view-'+v);
+    if(vEl) vEl.style.display = v===id?'block':'none';
   });
   if(el) el.classList.add('active');
   if(id==='estoque') renderEstoque();
