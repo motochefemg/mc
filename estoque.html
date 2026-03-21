@@ -318,6 +318,7 @@ textarea.fc{resize:vertical;min-height:70px;}
           <option value="MONTADA">🔧 Montada</option>
           <option value="RESERVADA">🔒 Reservada</option>
           <option value="VENDIDA">✅ Vendida</option>
+          <option value="PEND. TRANSFER">🔄 Pend. Transfer</option>
           <option value="GARANTIA">🔴 Garantia</option>
           <option value="TRANSFERÊNCIA">🚚 Transferência</option>
 
@@ -394,6 +395,7 @@ textarea.fc{resize:vertical;min-height:70px;}
           <option value="PENDENTE">⏳ Pendentes</option>
           <option value="APROVADA">✅ Aprovadas</option>
           <option value="CONCLUÍDA">📦 Concluídas</option>
+          <option value="APROVADA">🚛 Em trânsito</option>
           <option value="REPROVADA">✗ Reprovadas</option>
         </select>
         <select id="fTrfTipo" class="f-sel" onchange="renderTransferencias()">
@@ -1557,6 +1559,7 @@ function renderEstoque(){
     if(mostraDisp && m.status!=='CAIXA' && m.status!=='MONTADA') return false;
     if(!mostraDisp && fStatus && m.status!==fStatus) return false;
     if(!mostraDisp && !fStatus && m.status==='VENDIDA') return false; // vendidas ocultas por padrão
+    if(!mostraDisp && !fStatus && m.status==='PEND. TRANSFER') return false; // pend. transfer só na aba Transferências
     if(fLoja && m.localizacao!==fLoja) return false;
     if(fModelo && m.modelo!==fModelo) return false;
     if(busca){
@@ -3144,8 +3147,11 @@ function renderTransferencias(){
               ${t.vendedor?` · 🧑 ${t.vendedor}`:''}
             </div>
             <div style="font-size:11px;color:var(--text3);margin-top:2px">
-              📅 ${fmtData(t.data)} · Solicitado por ${t.criadoPor||'—'}
-              ${t.aprovadoPor?` · ✅ Aprovado por ${t.aprovadoPor} em ${fmtData(t.dataAprovacao)}`:''}
+              📅 Solicitado: ${fmtData(t.data)} · por ${t.criadoPor||'—'}
+              ${t.aprovadoPor?`<br>✅ Aprovado por ${t.aprovadoPor} em ${fmtData(t.dataAprovacao)}`:''}
+              ${t.dataPrevista?`<br>🚛 Saída prevista: <b style="color:var(--text)">${t.dataPrevista}</b>`:''}
+              ${t.dataRecebimento?`<br>📦 Recebido em: <b style="color:var(--green)">${fmtData(t.dataRecebimento)}</b> por ${t.recebidoPor||'—'}`:''}
+              ${t.motivoReprovacao?`<br>✗ Motivo: <i style="color:var(--red)">${t.motivoReprovacao}</i>`:''}
             </div>
           </div>
         </div>
@@ -3154,8 +3160,8 @@ function renderTransferencias(){
           <div style="display:flex;gap:6px">
             ${t.status==='PENDENTE'&&isGestorU()?`<button class="btn btn-sm" style="font-size:11px;background:rgba(37,99,235,.1);color:var(--blue)" onclick="aprovarTransferencia(${t.id})">✓ Aprovar</button>`:''}
             ${t.status==='PENDENTE'&&isGestorU()?`<button class="btn btn-sm btn-r" style="font-size:11px" onclick="reprovarTransferencia(${t.id})">✗ Reprovar</button>`:''}
-            ${t.status==='APROVADA'&&isGestorU()?`<button class="btn btn-sm" style="font-size:11px;background:rgba(22,163,74,.1);color:var(--green)" onclick="concluirTransferencia(${t.id})">📦 Concluída</button>`:''}
-            ${t.status==='REPROVADA'?`<span style="font-size:11px;color:var(--red);font-style:italic">✗ ${t.motivoReprovacao||'Reprovada'}</span>`:''}
+            ${t.status==='APROVADA'&&!t.dataRecebimento&&isAdmU()?`<button class="btn btn-sm" style="font-size:11px;background:rgba(22,163,74,.1);color:var(--green)" onclick="confirmarRecebimento(${t.id})">📦 Recebi</button>`:''}
+            ${t.status==='APROVADA'&&isGestorU()?`<button class="btn btn-sm" style="font-size:11px;background:rgba(107,114,128,.1);color:var(--text3)" onclick="concluirTransferencia(${t.id})">✓ Concluir</button>`:''}
           </div>
         </div>
       </div>
@@ -3194,19 +3200,49 @@ function reprovarTransferencia(id){
 function aprovarTransferencia(id){
   const t = transferencias.find(x=>x.id===id);
   if(!t||!isGestorU()) return;
+
+  // Modal para data prevista de saída
+  const dataPrev = prompt('Data prevista de saída (dd/mm/aaaa):', fmtData(hoje()));
+  if(dataPrev === null) return; // cancelou
+
   t.status = 'APROVADA';
   t.aprovadoPor = NOMES[currentUser]||currentUser;
   t.dataAprovacao = hoje();
-  // Atualiza moto
+  t.dataPrevista = dataPrev.trim();
+
+  // Atualiza moto: MONTADA com nova localização
   const m = motos.find(x=>x.id===t.motoId);
   if(m){
-    m.status = t.tipo==='RESERVA' ? 'RESERVADA' : 'TRANSFERÊNCIA';
-    if(t.destino) m.destino = t.destino;
-    addHistorico(m, m.status, `Aprovado por ${t.aprovadoPor} · Destino: ${t.destino}`);
+    const novaLoc = t.destino || m.destino || m.localizacao;
+    const locAnt = m.localizacao;
+    m.status = 'MONTADA';
+    m.localizacao = novaLoc;
+    m.destino = novaLoc;
+    m.destinoTransferSolicitado = '';
+    m.statusAntesTrf = '';
+    m.dataStatus = hoje();
+    addHistorico(m, 'TRANSFERÊNCIA', `✓ Aprovada por ${t.aprovadoPor} · ${locAnt} → ${novaLoc} · Saída prevista: ${t.dataPrevista}`);
+    save(); saveItem('ESTOQUE', m);
+  }
+  saveTransferencias(); renderTransferencias(); renderKPIs(); renderBadgePendencias();
+  showToast('✓ Aprovada! Saída prevista: '+t.dataPrevista);
+}
+
+function confirmarRecebimento(id){
+  const t = transferencias.find(x=>x.id===id);
+  if(!t || !isAdmU()) return;
+  if(!confirm(`Confirmar recebimento da ${t.modelo} ${t.cor} (${t.chassi})?`)) return;
+  t.dataRecebimento = hoje();
+  t.recebidoPor = NOMES[currentUser]||currentUser;
+  t.status = 'CONCLUÍDA';
+  // Registra no histórico da moto
+  const m = motos.find(x=>x.id===t.motoId);
+  if(m){
+    addHistorico(m, 'TRANSFERÊNCIA', `📦 Recebido em ${t.destino} por ${t.recebidoPor} em ${fmtData(t.dataRecebimento)}`);
     save(); saveItem('ESTOQUE', m);
   }
   saveTransferencias(); renderTransferencias();
-  showToast('✓ Transferência aprovada!');
+  showToast('✓ Recebimento confirmado!');
 }
 
 function concluirTransferencia(id){
