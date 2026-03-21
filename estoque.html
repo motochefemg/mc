@@ -1222,31 +1222,41 @@ async function subirDadosIniciais(){
 }
 
 async function saveItem(tabela, item) {
-  // Salva local imediatamente
+  // 1. Salva localmente sempre
   const dados = tabela==='ESTOQUE'?motos:tabela==='DEMANDAS'?demandas:tabela==='GARANTIAS'?garantias:tabela==='PECAS'?pecas:[];
   localStorage.setItem('mc_estoque_'+tabela.toLowerCase(), JSON.stringify(dados));
-  // Envia ao Sheets via POST (garante entrega)
+
+  // 2. Monta payload — histórico como string resumida para caber na URL
+  const itemParaSalvar = tabela === 'ESTOQUE'
+    ? {...item, historico: JSON.stringify((item.historico||[]).slice(-5))} // últimos 5 eventos
+    : {...item};
+
+  // 3. Tenta fetch GET (contorna CORS do Apps Script)
+  const url = `${AS}?action=estoque_save&tabela=${tabela}&data=${encodeURIComponent(JSON.stringify(itemParaSalvar))}`;
   try {
-    const itemParaSalvar = tabela === 'ESTOQUE'
-      ? {...item, historico: JSON.stringify(item.historico||[])}
-      : {...item};
-    const body = new URLSearchParams({
-      action: 'estoque_save',
-      tabela: tabela,
-      data: JSON.stringify(itemParaSalvar)
-    });
-    const r = await fetch(AS, {method:'POST', body, redirect:'follow'});
-    const txt = await r.text();
-    const res = JSON.parse(txt);
-    if(!res.success) console.warn('Sheets save falhou:', tabela, res.error);
-    else console.log('✓ Salvo no Sheets:', tabela, item.id||item.chassi||'');
+    if(url.length <= 8000) {
+      const r = await fetch(url, {redirect:'follow'});
+      const txt = await r.text();
+      try {
+        const res = JSON.parse(txt);
+        if(res.success) { console.log('✓ Sheets OK:', tabela, item.chassi||item.id); return; }
+        console.warn('Sheets retornou erro:', res.error);
+      } catch(je) { console.warn('Resposta não-JSON:', txt.substring(0,100)); }
+    }
+    // URL muito grande — salva sem histórico
+    const itemMin = {...itemParaSalvar, historico:'[]'};
+    const urlMin = `${AS}?action=estoque_save&tabela=${tabela}&data=${encodeURIComponent(JSON.stringify(itemMin))}`;
+    const r2 = await fetch(urlMin, {redirect:'follow'});
+    const txt2 = await r2.text();
+    const res2 = JSON.parse(txt2);
+    if(res2.success) console.log('✓ Sheets OK (sem hist):', tabela, item.chassi||item.id);
+    else console.warn('Sheets falhou:', res2.error);
   } catch(e) {
-    console.warn('Sync falhou, tentando Image Ping como backup:', e.message);
-    try {
-      const itemSemHist = tabela==='ESTOQUE' ? {...item, historico:'[]'} : item;
-      const img = new Image();
-      img.src = `${AS}?action=estoque_save&tabela=${tabela}&data=${encodeURIComponent(JSON.stringify(itemSemHist))}`;
-    } catch(e2){}
+    // Último recurso: Image Ping (sem confirmação)
+    console.warn('fetch falhou, usando Image Ping:', e.message);
+    const itemMin = {...itemParaSalvar, historico:'[]'};
+    const urlMin = `${AS}?action=estoque_save&tabela=${tabela}&data=${encodeURIComponent(JSON.stringify(itemMin))}`;
+    if(urlMin.length <= 8000) { const img=new Image(); img.src=urlMin; }
   }
 }
 
