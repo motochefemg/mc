@@ -1129,16 +1129,31 @@ async function load() {
   showSyncStatus('⟳ Carregando do servidor...', false);
   try {
     // Busca dados do Google Sheets via Apps Script
+    const fetchAS = async url => {
+      try {
+        const r = await fetch(url);
+        const txt = await r.text();
+        try { return JSON.parse(txt); } catch(je){ console.error('JSON parse falhou:', url, txt.substring(0,200)); return {data:[]}; }
+      } catch(fe){ console.error('Fetch falhou:', url, fe.message); return {data:[]}; }
+    };
+    showSyncStatus('⟳ Carregando dados...', false);
     const [r1,r2,r3,r4,r5] = await Promise.all([
-      fetch(`${AS}?action=estoque_get&tabela=ESTOQUE`).then(r=>r.json()).catch(()=>({data:[]})),
-      fetch(`${AS}?action=estoque_get&tabela=DEMANDAS`).then(r=>r.json()).catch(()=>({data:[]})),
-      fetch(`${AS}?action=estoque_get&tabela=GARANTIAS`).then(r=>r.json()).catch(()=>({data:[]})),
-      fetch(`${AS}?action=estoque_get&tabela=PECAS`).then(r=>r.json()).catch(()=>({data:[]})),
-      fetch(`${AS}?action=transferencias_get`).then(r=>r.json()).catch(()=>({data:[]})),
+      fetchAS(`${AS}?action=estoque_get&tabela=ESTOQUE`),
+      fetchAS(`${AS}?action=estoque_get&tabela=DEMANDAS`),
+      fetchAS(`${AS}?action=estoque_get&tabela=GARANTIAS`),
+      fetchAS(`${AS}?action=estoque_get&tabela=PECAS`),
+      fetchAS(`${AS}?action=transferencias_get`),
     ]);
+    console.log('Sheets retornou — ESTOQUE:', r1?.data?.length, 'DEMANDAS:', r2?.data?.length, 'GARANTIAS:', r3?.data?.length, 'PECAS:', r4?.data?.length, 'TRANSF:', r5?.data?.length);
 
     // Motos — usa Sheets se tiver dados, senão dados iniciais
-    const sheetsMotos = (r1.data||[]).map(m=>({...m, historico: typeof m.historico==='string' ? JSON.parse(m.historico||'[]') : (m.historico||[])}));
+    const sheetsMotos = (r1.data||[]).map(m=>{
+      let hist = m.historico||[];
+      if(typeof hist === 'string'){
+        try { hist = JSON.parse(hist); } catch(e){ hist = []; }
+      }
+      return {...m, historico: Array.isArray(hist) ? hist : []};
+    });
     if(sheetsMotos.length > 0){
       motos = sheetsMotos;
       localStorage.setItem('mc_estoque_motos', JSON.stringify(motos));
@@ -1200,7 +1215,7 @@ async function subirDadosIniciais(){
   // Sobe as 196 motos iniciais pro Sheets (só roda uma vez)
   try {
     for(const m of motos){
-      await fetch(`${AS}?action=estoque_save&tabela=ESTOQUE&data=${encodeURIComponent(JSON.stringify({...m, historico: JSON.stringify(m.historico||[])}))}`);
+      await fetch(`${AS}?action=estoque_save&tabela=ESTOQUE&data=${encodeURIComponent(JSON.stringify({...m, historico: JSON.stringify(m.historico||[])}))}`, {redirect:'follow'});
     }
     console.log('Dados iniciais subidos pro Sheets!');
   } catch(e){ console.warn('Erro ao subir dados iniciais:', e); }
