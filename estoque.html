@@ -1225,25 +1225,29 @@ async function saveItem(tabela, item) {
   // Salva local imediatamente
   const dados = tabela==='ESTOQUE'?motos:tabela==='DEMANDAS'?demandas:tabela==='GARANTIAS'?garantias:tabela==='PECAS'?pecas:[];
   localStorage.setItem('mc_estoque_'+tabela.toLowerCase(), JSON.stringify(dados));
-  // Envia ao Sheets via Image ping (sem CORS)
+  // Envia ao Sheets via POST (garante entrega)
   try {
-    // Serializa historico como string para não quebrar URL
-    const itemParaSalvar = tabela === 'ESTOQUE' ? {
-      ...item,
-      historico: JSON.stringify(item.historico||[])
-    } : item;
-    const url = `${AS}?action=estoque_save&tabela=${tabela}&data=${encodeURIComponent(JSON.stringify(itemParaSalvar))}`;
-    if(url.length < 8000) {
+    const itemParaSalvar = tabela === 'ESTOQUE'
+      ? {...item, historico: JSON.stringify(item.historico||[])}
+      : {...item};
+    const body = new URLSearchParams({
+      action: 'estoque_save',
+      tabela: tabela,
+      data: JSON.stringify(itemParaSalvar)
+    });
+    const r = await fetch(AS, {method:'POST', body, redirect:'follow'});
+    const txt = await r.text();
+    const res = JSON.parse(txt);
+    if(!res.success) console.warn('Sheets save falhou:', tabela, res.error);
+    else console.log('✓ Salvo no Sheets:', tabela, item.id||item.chassi||'');
+  } catch(e) {
+    console.warn('Sync falhou, tentando Image Ping como backup:', e.message);
+    try {
+      const itemSemHist = tabela==='ESTOQUE' ? {...item, historico:'[]'} : item;
       const img = new Image();
-      img.src = url;
-    } else {
-      // Item muito grande — salva sem historico para caber na URL
-      const itemSemHist = {...itemParaSalvar, historico: '[]'};
-      const url2 = `${AS}?action=estoque_save&tabela=${tabela}&data=${encodeURIComponent(JSON.stringify(itemSemHist))}`;
-      const img = new Image();
-      img.src = url2;
-    }
-  } catch(e) { console.warn('Sync falhou, dados salvos localmente'); }
+      img.src = `${AS}?action=estoque_save&tabela=${tabela}&data=${encodeURIComponent(JSON.stringify(itemSemHist))}`;
+    } catch(e2){}
+  }
 }
 
 async function deleteItem(tabela, id) {
@@ -1530,7 +1534,12 @@ function renderEstoque(){
     if(fLoja && m.localizacao!==fLoja) return false;
     if(fModelo && m.modelo!==fModelo) return false;
     if(busca){
-      const txt=(m.chassi+m.modelo+m.cor+m.vendedor+m.localizacao).toLowerCase();
+      const txt=(
+        (m.chassi||'')+(m.modelo||'')+(m.cor||'')+(m.vendedor||'')+
+        (m.localizacao||'')+(m.nfEntrada||'')+(m.nfeSaida||'')+
+        (m.clienteReserva||'')+(m.numPedidoReserva||'')+(m.destino||'')+
+        (m.motor||'')+(m.dataEntrada||'')+(m.dataVenda||'')+(m.obs||'')
+      ).toLowerCase();
       if(!txt.includes(busca)) return false;
     }
     return true;
@@ -1568,9 +1577,8 @@ function renderEstoque(){
         <span class="${isAdmU()?'cell-edit':''}" style="font-size:11px">${m.numPedidoReserva?'#'+m.numPedidoReserva:'—'}</span>
         <span class="cell-edit-date">${m.dataReserva?fmtData(m.dataReserva):''}</span>
       </td>
-      <td ${isAdmU()?`onclick="event.stopPropagation();editarCampo(event,'nfEntrada','${m.id}')" title="Clique para editar NF de entrada"`:''}
-        style="font-size:11px;color:var(--text3);${isAdmU()?'cursor:pointer;border-bottom:1px dashed var(--border2)':''}">
-        ${m.nfEntrada||'—'}
+      <td style="font-size:11px;color:var(--text3)">
+        ${isAdmU() ? `<span class="cell-edit" onclick="event.stopPropagation();editarCampo(event,'nfEntrada','${m.id}')" title="Editar NF de entrada">${m.nfEntrada||'—'} <span style="font-size:10px;opacity:.5">✏️</span></span>` : (m.nfEntrada||'—')}
       </td>
       <td onclick="event.stopPropagation();editarCampo(event,'nfeSaida','${m.id}')" title="Clique para lançar NF de saída + recibo">
         <span class="cell-edit" style="font-size:11px;color:${m.nfeSaida?'var(--green)':'var(--text3)'}">${m.nfeSaida||'+ NF Saída'}</span>
@@ -1910,13 +1918,21 @@ function confirmarEntradaNF(){
   });
 
   save(); fecharModal('modalNF'); renderAll();
-  // Salvar cada moto adicionada/atualizada no Sheets
-  selecionadas.forEach(m => {
-    const chassi = (m.chassi1 || m.chassi2 || '').toUpperCase();
-    const motoSalva = motos.find(x => x.chassi === chassi);
-    if(motoSalva) saveItem('ESTOQUE', motoSalva);
-  });
-  showToast('✓ '+selecionadas.length+' moto(s) adicionada(s) ao estoque!');
+  // Salvar em sequência (não paralelo) para não sobrecarregar o Sheets
+  showToast('⟳ Sincronizando '+selecionadas.length+' moto(s)...','warn');
+  (async () => {
+    let ok = 0;
+    for(const m of selecionadas) {
+      const chassi = (m.chassi1 || m.chassi2 || '').toUpperCase();
+      const motoSalva = motos.find(x => x.chassi === chassi);
+      if(motoSalva) {
+        await saveItem('ESTOQUE', motoSalva);
+        ok++;
+        if(ok % 5 === 0) showToast('⟳ Sincronizando... '+ok+'/'+selecionadas.length,'warn');
+      }
+    }
+    showToast('✓ '+ok+' moto(s) sincronizadas com sucesso!');
+  })();
 }
 
 // ══════════════════════════════════════════════
