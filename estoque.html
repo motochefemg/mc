@@ -2148,10 +2148,25 @@ function confirmarStatus(){
   } else if(novo==='TRANSFERÊNCIA'){
     const dest = document.getElementById('destinoTransfer').value;
     const ant = m.localizacao;
-    m.localizacao = dest;
-    m.dataLocalizacao = hoje();
+    // Status TRANSFERÊNCIA via modal — cria registro na aba Transferências
+    const _stAnt = m.status;
+    m.destino = dest;
+    m.destinoTransferSolicitado = dest;
+    m.status = 'PEND. TRANSFER';
+    m.statusAntesTrf = _stAnt;
     m.dataStatus = hoje();
-    addHistorico(m,'TRANSFERÊNCIA',`${ant} → ${dest}${obs?' · '+obs:''}`);
+    addHistorico(m, 'PEND. TRANSFER', `Transferência solicitada: ${ant} → ${dest} · por ${NOMES[currentUser]||currentUser}${obs?' · '+obs:''}`);
+    transferencias.push({
+      id: nextId(transferencias), data: hoje(), tipo: 'TRANSFERÊNCIA',
+      motoId: m.id, chassi: m.chassi, modelo: m.modelo, cor: m.cor,
+      localizacao: ant, destino: dest,
+      destinoOriginal: m.destino||ant,
+      statusAnterior: _stAnt,
+      vendedor: m.vendedor||'', cliente:'', numPedido:'', status:'PENDENTE',
+      criadoPor: NOMES[currentUser]||currentUser,
+      aprovadoPor:'', dataAprovacao:'', obs: obs||''
+    });
+    saveTransferencias();
 
   } else {
     m.dataStatus = hoje();
@@ -2161,7 +2176,8 @@ function confirmarStatus(){
     addHistorico(m, novo, detGar);
   }
 
-  m.status = novo;
+  // Se já foi setado como PEND.TRANSFER pelo bloco TRANSFERÊNCIA, não sobrescreve
+  if(novo !== 'TRANSFERÊNCIA') m.status = novo;
 
   save(); fecharModal('modalStatus'); renderAll();
   // Salva sem comprovante na URL (base64 muito grande)
@@ -2250,7 +2266,8 @@ function editarCampo(event, campo, motoId){
     html = `<select id="mmSelect">
       ${LOJAS.map(l=>`<option value="${l}" ${m.localizacao===l?'selected':''}>${l}</option>`).join('')}
     </select>
-    <input type="date" id="mmData" value="${hoje()}" style="margin-bottom:0">`;
+    <input type="date" id="mmData" value="${hoje()}" style="margin-bottom:0">
+    <div style="margin-top:6px;font-size:11px;color:var(--text3)">💡 Edição direta — sem criar transferência</div>`;
   } else if(campo === 'vendedor'){
     titulo = 'Alterar Vendedor';
     html = `<select id="mmSelect">
@@ -2273,9 +2290,10 @@ function editarCampo(event, campo, motoId){
     titulo = 'Destino';
     const DESTINOS = ['GALPÃO','VARGINHA','POÇOS','LAVRAS','ITAJUBÁ','POUSO ALEGRE'];
     html = `<select id="mmSelect">
-      <option value="">—</option>
+      <option value="">— (sem destino)</option>
       ${DESTINOS.map(d=>`<option value="${d}" ${m.destino===d?'selected':''}>${d}</option>`).join('')}
-    </select>`;
+    </select>
+    <div style="margin-top:6px;font-size:11px;color:var(--text3)">💡 Edição direta — sem criar transferência</div>`;
   } else if(campo === 'nfEntrada'){
     titulo = 'NF de Entrada';
     html = `<input type="text" id="mmInput" value="${m.nfEntrada||''}" placeholder="Número da NF de entrada" style="text-transform:uppercase">`;
@@ -2384,59 +2402,23 @@ function salvarCampoInline(campo, m){
 
   } else if(campo === 'localizacao'){
     if(!valor) return;
-    const ant = m.destino || m.localizacao;
+    const ant = m.localizacao;
     if(ant === valor) return;
-    // NÃO muda m.localizacao (localização física) — só registra destino solicitado
-    const _statusAnt = m.status;
-    const _destinoAnt = m.destino || m.localizacao;
-    m.statusAntesTrf = _statusAnt;
-    m.destino = valor;
-    m.status = 'PEND. TRANSFER';
-    m.destinoTransferSolicitado = valor;
+    // Edição livre — só registra no histórico, sem criar transferência
+    m.localizacao = valor;
     m.dataStatus = dt;
-    addHistorico(m, 'PEND. TRANSFER', `Transferência solicitada: ${m.localizacao} → ${valor} · por ${NOMES[currentUser]||currentUser}`);
-    transferencias.push({
-      id: nextId(transferencias), data: dt||hoje(), tipo: 'TRANSFERÊNCIA',
-      motoId: m.id, chassi: m.chassi, modelo: m.modelo, cor: m.cor,
-      localizacao: m.localizacao, destino: valor,
-      destinoOriginal: _destinoAnt,
-      statusAnterior: _statusAnt,
-      vendedor: m.vendedor||'', cliente:'', numPedido:'', status: 'PENDENTE',
-      criadoPor: NOMES[currentUser]||currentUser,
-      aprovadoPor: '', dataAprovacao: '', obs:''
-    });
-    saveTransferencias();
-    showToast('Transferência solicitada! Aguardando aprovação do gestor.','warn');
+    addHistorico(m, 'LOCALIZAÇÃO', `${ant||'—'} → ${valor} · por ${NOMES[currentUser]||currentUser}`);
 
   } else if(campo === 'destino'){
-    const ant = m.destino || m.localizacao;
+    const ant = m.destino;
+    if(ant === valor) return;
+    // Edição livre — só registra no histórico, sem criar transferência
+    m.destino = valor;
+    m.dataStatus = dt;
     if(!valor){
-      // Limpar destino — volta para sem destino definido
-      m.destino = '';
-      m.dataStatus = dt;
       addHistorico(m, 'DESTINO', `Destino removido (era: ${ant||'—'})`);
     } else {
-      if(valor === ant) return;
-      // SEMPRE vira PEND. TRANSFER — independente do perfil
-      const _statusAntD = m.status;
-      m.statusAntesTrf = _statusAntD;
-      m.destino = valor;
-      m.status = 'PEND. TRANSFER';
-      m.destinoTransferSolicitado = valor;
-      m.dataStatus = dt;
-      addHistorico(m, 'PEND. TRANSFER', `Destino: ${ant||'—'} → ${valor} · solicitado por ${NOMES[currentUser]||currentUser}`);
-      transferencias.push({
-        id: nextId(transferencias), data: dt||hoje(), tipo: 'TRANSFERÊNCIA',
-        motoId: m.id, chassi: m.chassi, modelo: m.modelo, cor: m.cor,
-        localizacao: m.localizacao, destino: valor,
-        destinoOriginal: ant||m.localizacao,
-        statusAnterior: _statusAntD,
-        vendedor: m.vendedor||'', cliente: '', numPedido: '', status: 'PENDENTE',
-        criadoPor: NOMES[currentUser]||currentUser,
-        aprovadoPor: '', dataAprovacao: '', obs: ''
-      });
-      saveTransferencias();
-      showToast('Transferência registrada! Pendente na aba Transferências.','warn');
+      addHistorico(m, 'DESTINO', `${ant||'—'} → ${valor} · por ${NOMES[currentUser]||currentUser}`);
     }
   } else if(campo === 'nfEntrada'){
     const ant = m.nfEntrada;
