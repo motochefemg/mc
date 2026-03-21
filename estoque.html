@@ -1170,19 +1170,29 @@ async function load() {
       pecas = typeof PECAS_INICIAIS!=='undefined' ? PECAS_INICIAIS.map(p=>({...p})) : [];
     }
 
+    // Cache local para uso offline
+    localStorage.setItem('mc_estoque_motos', JSON.stringify(motos));
+    localStorage.setItem('mc_estoque_garantias', JSON.stringify(garantias));
+    localStorage.setItem('mc_estoque_pecas', JSON.stringify(pecas));
     showSyncStatus('✓ '+motos.length+' motos · '+demandas.length+' demandas · '+garantias.length+' garantias · '+pecas.length+' peças · '+transferencias.length+' transf.', true);
   } catch(e) {
-    // Fallback localStorage
-    console.warn('Sheets indisponível, usando localStorage:', e);
-    motos = typeof DADOS_INICIAIS!=='undefined' ? DADOS_INICIAIS.map(m=>({...m,historico:m.historico||[]})) : [];
-    try { const loc=JSON.parse(localStorage.getItem('mc_estoque_motos')||'[]'); if(loc.length>motos.length) motos=loc; } catch(ex){}
-    // Usa localStorage para demandas/garantias/peças (preserva exclusões)
-    try { const loc=JSON.parse(localStorage.getItem('mc_estoque_demandas')||'[]'); demandas=loc; } catch(ex){ demandas=[];}
-    try { transferencias=JSON.parse(localStorage.getItem('mc_estoque_transferencias')||'[]'); } catch(ex){ transferencias=[];}
-    try { entregas=JSON.parse(localStorage.getItem('mc_estoque_entregas')||'[]'); } catch(ex){ entregas=[];}
-    try { const loc=JSON.parse(localStorage.getItem('mc_estoque_garantias')||'[]'); garantias=loc.length>0?loc:(typeof GARANTIAS_INICIAIS!=='undefined'?GARANTIAS_INICIAIS.map(g=>({...g})):[]); } catch(ex){ garantias=typeof GARANTIAS_INICIAIS!=='undefined'?GARANTIAS_INICIAIS.map(g=>({...g})):[];}
-    try { const loc=JSON.parse(localStorage.getItem('mc_estoque_pecas')||'[]'); pecas=loc.length>0?loc:(typeof PECAS_INICIAIS!=='undefined'?PECAS_INICIAIS.map(p=>({...p})):[]); } catch(ex){ pecas=typeof PECAS_INICIAIS!=='undefined'?PECAS_INICIAIS.map(p=>({...p})):[];}
-    showSyncStatus('⚠ Offline — dados locais', false);
+    // Falha na conexão com Sheets — mostrar erro, NÃO usar dados hardcoded
+    console.error('Erro ao carregar do Sheets:', e);
+    showSyncStatus('❌ Erro de conexão com servidor. Recarregue a página.', false);
+    // Tenta localStorage como último recurso (dados da última sessão online)
+    try {
+      const loc = JSON.parse(localStorage.getItem('mc_estoque_motos')||'[]');
+      if(loc.length > 0){
+        motos = loc.map(m=>({...m, historico: typeof m.historico==='string' ? JSON.parse(m.historico||'[]') : (m.historico||[])}));
+        try { demandas=JSON.parse(localStorage.getItem('mc_estoque_demandas')||'[]'); } catch(ex){ demandas=[];}
+        try { garantias=JSON.parse(localStorage.getItem('mc_estoque_garantias')||'[]'); } catch(ex){ garantias=[];}
+        try { pecas=JSON.parse(localStorage.getItem('mc_estoque_pecas')||'[]'); } catch(ex){ pecas=[];}
+        try { transferencias=JSON.parse(localStorage.getItem('mc_estoque_transferencias')||'[]'); } catch(ex){ transferencias=[];}
+        try { entregas=JSON.parse(localStorage.getItem('mc_estoque_entregas')||'[]'); } catch(ex){ entregas=[];}
+        showSyncStatus('⚠ Sem conexão — exibindo dados do cache local ('+motos.length+' motos). Recarregue quando tiver internet.', false);
+        renderAll();
+      }
+    } catch(ex){ console.error('Erro no cache local:', ex); }
   }
 }
 
