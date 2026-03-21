@@ -908,8 +908,10 @@ tbody tr:last-child td{border-bottom:none}
 // ═══════════════════════════════════════════════════════════
 // DADOS & ESTADO
 // ═══════════════════════════════════════════════════════════
-let rawMotos = [];
+let rawMotos = [];       // dados do ano selecionado
 let rawCapacetes = [];
+let rawTodosAnos = {};  // { '2024': [...], '2025': [...], '2026': [...] } — histórico completo
+let oaoAnotacoes = [];  // anotações one a one vindas do Sheets
 let dadosHistoricos = { 2024: { motos:[], caps:[] }, 2025: { motos:[], caps:[] }, 2026: { motos:[], caps:[] } };
 let compCarregado = false;
 let currentMonth = 'all';
@@ -932,6 +934,159 @@ const FOTOS_VENDEDORES = {
   // 'Julia Nascimento': 'https://example.com/julia.jpg',
   // 'Pablo Albinati': 'data:image/jpeg;base64,...',
 };
+
+// ═══════════════════════════════════════════════════════════
+// TABELA DE COMISSÃO / PRÊMIO (mesma do simulador)
+// ═══════════════════════════════════════════════════════════
+const TABELA_COMISSAO = [
+  {v:112000,p:0,   a:0},    {v:122000,p:50,  a:50},   {v:132000,p:60,  a:110},
+  {v:142000,p:70,  a:180},  {v:152000,p:80,  a:260},  {v:162000,p:800, a:1060},
+  {v:172000,p:100, a:1160}, {v:182000,p:120, a:1280}, {v:192000,p:140, a:1420},
+  {v:202000,p:160, a:1580}, {v:212000,p:180, a:1760}, {v:222000,p:900, a:2660},
+  {v:232000,p:200, a:2860}, {v:242000,p:210, a:3070}, {v:252000,p:220, a:3290},
+  {v:262000,p:1000,a:4290}, {v:272000,p:240, a:4530}, {v:282000,p:250, a:4780},
+  {v:292000,p:260, a:5040}, {v:302000,p:1200,a:6240}, {v:312000,p:280, a:6520},
+  {v:322000,p:290, a:6810}, {v:332000,p:300, a:7110}, {v:342000,p:310, a:7420},
+  {v:352000,p:1500,a:8920},
+];
+const PERC_COMISSAO = 0.005; // 0,5% base
+
+function calcComissao(faturamento) {
+  if (!faturamento || faturamento <= 0) return { comissao: 0, premio: 0, acumulado: 0, total: 0 };
+  const comissao = faturamento * PERC_COMISSAO;
+  let premio = 0, acumulado = 0;
+  for (let i = TABELA_COMISSAO.length - 1; i >= 0; i--) {
+    if (faturamento >= TABELA_COMISSAO[i].v) {
+      premio = TABELA_COMISSAO[i].p;
+      acumulado = TABELA_COMISSAO[i].a;
+      break;
+    }
+  }
+  return { comissao, premio, acumulado, total: comissao + acumulado };
+}
+
+// ═══════════════════════════════════════════════════════════
+// ONE A ONE — MODAL
+// ═══════════════════════════════════════════════════════════
+// ─── One a One: anotações sincronizadas no Sheets ───────────
+async function salvarAnotacao(vendedor, mes, ano, texto) {
+  // Atualiza local imediatamente para UX responsiva
+  const idx = oaoAnotacoes.findIndex(a => a.vendedor===vendedor && a.ano===ano && a.mes===mes);
+  if (idx >= 0) oaoAnotacoes[idx].anotacao = texto;
+  else oaoAnotacoes.push({ vendedor, ano, mes, anotacao: texto });
+
+  // Salva no Sheets via Apps Script
+  try {
+    const params = new URLSearchParams({ action:'oneaone_save', vendedor, ano, mes, anotacao: texto });
+    await fetch(APPS_SCRIPT_URL + '?' + params.toString());
+  } catch(e) { console.warn('Falha ao salvar anotação no Sheets:', e); }
+}
+
+function carregarAnotacao(vendedor, mes, ano) {
+  const item = oaoAnotacoes.find(a => a.vendedor===vendedor && a.ano===ano && a.mes===mes);
+  return item ? item.anotacao : '';
+}
+
+async function carregarAnotacoesDoSheets() {
+  try {
+    const r = await fetch(APPS_SCRIPT_URL + '?action=oneaone_get');
+    const j = await r.json();
+    if (j.success && j.data) oaoAnotacoes = j.data;
+  } catch(e) { console.warn('Não carregou anotações:', e); }
+}
+
+function abrirOneAOne(nome) {
+  // Combinar dados do ano atual (rawMotos) + anos históricos (rawTodosAnos)
+  const todosDados = [...rawMotos];
+  Object.values(rawTodosAnos).forEach(arr => {
+    arr.forEach(r => {
+      // Evita duplicar dados do ano atual que já estão em rawMotos
+      if (!todosDados.find(m => m.num && m.num === r.num && r.num)) todosDados.push(r);
+    });
+  });
+
+  const todosAnos = [...new Set(todosDados.map(r => r.data ? r.data.substring(0,4) : null).filter(Boolean))].sort();
+
+  // Gerar histórico: para cada mês com vendas do vendedor (todos os anos)
+  const historicoMeses = [];
+  todosAnos.forEach(a => {
+    for (let m = 1; m <= 12; m++) {
+      const vendasMes = todosDados.filter(r => r.vendedor === nome && r.mes === m && r.data && r.data.startsWith(a));
+      if (vendasMes.length > 0) {
+        const fat = vendasMes.reduce((s, r) => s + r.valor, 0);
+        const calc = calcComissao(fat);
+        historicoMeses.push({ ano: parseInt(a), mes: m, qtd: vendasMes.length, fat, ...calc });
+      }
+    }
+  });
+  historicoMeses.sort((a, b) => b.ano !== a.ano ? b.ano - a.ano : b.mes - a.mes);
+
+  const mesAtualNum = new Date().getMonth() + 1;
+  const anoAtualNum = new Date().getFullYear();
+
+  const foto = FOTOS_VENDEDORES[nome];
+  const avatarHtml = foto
+    ? `<img src="${foto}" alt="${nome}" style="width:52px;height:52px;border-radius:50%;object-fit:cover;border:2px solid var(--accent)">`
+    : `<div style="width:52px;height:52px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue';font-size:22px;color:#fff">${nome.split(' ').slice(0,2).map(w=>w[0]).join('')}</div>`;
+
+  const rowsHtml = historicoMeses.map(h => {
+    const notaAtual = carregarAnotacao(nome, h.mes, h.ano);
+    const isMesAtual = h.mes === mesAtualNum && h.ano === anoAtualNum;
+    const keyId = `nota_${h.ano}_${h.mes}`;
+    return `
+    <div style="background:var(--card2);border:1px solid ${isMesAtual?'var(--accent)':'var(--border)'};border-radius:12px;padding:16px;margin-bottom:12px">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">
+        <div style="flex:1">
+          <span style="font-family:'Bebas Neue';font-size:18px;letter-spacing:1px">${MONTH_NAMES[h.mes]} ${h.ano}</span>
+          ${isMesAtual ? '<span style="margin-left:8px;background:var(--accent);color:#fff;font-size:9px;letter-spacing:2px;padding:2px 8px;border-radius:4px;text-transform:uppercase">Atual</span>' : ''}
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:10px;color:var(--text3);letter-spacing:1px;text-transform:uppercase">Faturamento</div>
+          <div style="font-family:'Bebas Neue';font-size:20px;color:var(--accent)">${fmtCurrency(h.fat)}</div>
+          <div style="font-size:11px;color:var(--text3)">${h.qtd} moto${h.qtd!==1?'s':''}</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">
+        <div style="flex:1;min-width:90px;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 10px;text-align:center">
+          <div style="font-size:9px;color:var(--text3);letter-spacing:1px;text-transform:uppercase">Comissão</div>
+          <div style="font-family:'Bebas Neue';font-size:18px;color:var(--green)">${fmtCurrency(h.comissao)}</div>
+        </div>
+        <div style="flex:1;min-width:90px;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 10px;text-align:center">
+          <div style="font-size:9px;color:var(--text3);letter-spacing:1px;text-transform:uppercase">Prêmio mês</div>
+          <div style="font-family:'Bebas Neue';font-size:18px;color:var(--gold)">${h.premio > 0 ? fmtCurrency(h.premio) : '—'}</div>
+        </div>
+        <div style="flex:1;min-width:90px;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 10px;text-align:center">
+          <div style="font-size:9px;color:var(--text3);letter-spacing:1px;text-transform:uppercase">Acumulado</div>
+          <div style="font-family:'Bebas Neue';font-size:18px;color:var(--blue)">${h.acumulado > 0 ? fmtCurrency(h.acumulado) : '—'}</div>
+        </div>
+        <div style="flex:1;min-width:90px;background:rgba(22,163,74,0.08);border:1px solid rgba(22,163,74,0.25);border-radius:8px;padding:8px 10px;text-align:center">
+          <div style="font-size:9px;color:var(--green);letter-spacing:1px;text-transform:uppercase">Total</div>
+          <div style="font-family:'Bebas Neue';font-size:18px;color:var(--green)">${fmtCurrency(h.total)}</div>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:9px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin-bottom:5px">📝 Anotação da reunião</div>
+        <textarea id="${keyId}" 
+          placeholder="Pontos discutidos, metas, feedbacks..."
+          onblur="salvarAnotacao('${nome.replace(/'/g,"\\'")}', ${h.mes}, ${h.ano}, this.value)"
+          style="width:100%;padding:8px 10px;background:var(--card);border:1px solid var(--border2);border-radius:8px;color:var(--text);font-family:'Barlow';font-size:12px;resize:vertical;min-height:60px;outline:none"
+        >${notaAtual}</textarea>
+      </div>
+    </div>`;
+  }).join('');
+
+  const semHistorico = historicoMeses.length === 0
+    ? '<div style="text-align:center;padding:40px;color:var(--text3)">Sem vendas registradas para este vendedor</div>'
+    : '';
+
+  document.getElementById('oneaoneNome').innerHTML = `${avatarHtml}<span style="font-family:\'Bebas Neue\';font-size:26px;letter-spacing:2px">${nome}</span>`;
+  document.getElementById('oneaoneBody').innerHTML = rowsHtml + semHistorico;
+  document.getElementById('oneaoneModal').style.display = 'flex';
+}
+
+function fecharOneAOne() {
+  document.getElementById('oneaoneModal').style.display = 'none';
+}
 
 const MONTH_NAMES = ['','Janeiro','Fevereiro','Março','Abril','Maio','Junho',
                      'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
@@ -1304,9 +1459,13 @@ function renderVendedores(motos,caps){
     const avatarBg = foto
       ? 'background:var(--card2)'
       : isSelected ? 'background:var(--accent);color:#fff' : 'background:var(--card2);color:var(--text2)';
-    html += `<div class="vendedor-card${isSelected?' selected':''}" onclick="selectVendedor('${nome.replace(/'/g,"\\'")}')">
+    html += `<div class="vendedor-card${isSelected?' selected':''}" onclick="selectVendedor('${nome.replace(/'/g,"\\'")}') " style="position:relative">
       <div class="vc-avatar" style="${avatarBg};overflow:hidden">${avatarInner}</div>
       <div class="vc-name">${shortName(nome)}</div>
+      <button onclick="event.stopPropagation();abrirOneAOne('${nome.replace(/'/g,"\\'")}' )" 
+        title="One a One"
+        style="position:absolute;top:6px;right:6px;background:var(--accent);border:none;border-radius:6px;color:#fff;font-size:9px;padding:3px 7px;cursor:pointer;font-family:'Barlow';font-weight:700;letter-spacing:1px;opacity:0.85"
+      >1:1</button>
     </div>`;
   });
 
@@ -1887,6 +2046,13 @@ async function syncData(){
       const m = parseInt(btn.dataset.month);
       if(m && mesesComDados.has(m)){ btn.disabled=false; btn.style.opacity=''; }
     });
+
+    // Buscar dados históricos (anos anteriores) via Apps Script em paralelo
+    carregarHistoricoAnos(statusEl);
+
+    // Carregar anotações One a One do Sheets
+    carregarAnotacoesDoSheets();
+
     renderAll();
   }catch(e){
     statusEl.textContent = '✗ Erro: '+e.message;
@@ -1895,6 +2061,43 @@ async function syncData(){
     showLoading(false);
     countdown = 300;
   }
+}
+
+// Carrega dados de anos históricos (MOTOS_2024, MOTOS_2025...) via Apps Script
+async function carregarHistoricoAnos(statusEl) {
+  try {
+    // 1. Descobrir quais anos estão disponíveis no Sheets
+    const rAnos = await fetch(APPS_SCRIPT_URL + '?action=motos_listar_anos');
+    const jAnos = await rAnos.json();
+    if (!jAnos.success || !jAnos.anos || jAnos.anos.length === 0) return;
+
+    const anos = jAnos.anos.filter(a => a !== 'current'); // anos históricos
+    if (anos.length === 0) return;
+
+    statusEl.textContent += ' · carregando histórico...';
+
+    // 2. Buscar cada ano (em paralelo, mas limita a 3 por vez para não sobrecarregar)
+    for (let i = 0; i < anos.length; i += 3) {
+      const lote = anos.slice(i, i + 3);
+      await Promise.all(lote.map(async ano => {
+        try {
+          const r = await fetch(APPS_SCRIPT_URL + '?action=motos_get_ano&ano=' + ano);
+          const j = await r.json();
+          if (!j.success || !j.data) return;
+          const parsed = j.data.map(parseMotosRow).filter(Boolean)
+            .filter(r => !VENDEDORES_EXCLUIDOS.includes(r.vendedor));
+          rawTodosAnos[ano] = parsed;
+        } catch(e) { console.warn('Erro ao carregar ano ' + ano + ':', e); }
+      }));
+    }
+
+    // Também armazena o ano corrente no rawTodosAnos para o comparativo ser completo
+    const anoAtual = new Date().getFullYear().toString();
+    rawTodosAnos[anoAtual] = rawMotos;
+
+    statusEl.textContent = statusEl.textContent.replace(' · carregando histórico...', '') + ' · histórico OK (' + Object.keys(rawTodosAnos).join(', ') + ')';
+    renderAll(); // re-renderiza com histórico disponível
+  } catch(e) { console.warn('Erro histórico anos:', e); }
 }
 
 function connectSheets(){
@@ -2185,22 +2388,37 @@ function parseMotosHistorico(rows) {
 async function carregarHistorico() {
   const statusEl = document.getElementById('compStatus');
   try {
-    // Carrega um ano por vez para não travar
-    for (const ano of [2025, 2024]) {
-      statusEl.innerHTML = `<div style="padding:20px;text-align:center;color:var(--text2)">⟳ Carregando ${ano}...</div>`;
-      const ctrl = new AbortController();
-      const timer = setTimeout(() => ctrl.abort(), 55000);
-      const r = await fetch(`${APPS_SCRIPT_URL}?action=getdata&ano=${ano}`, { signal: ctrl.signal });
-      clearTimeout(timer);
-      const json = await r.json();
-      if (json.motos) {
-        dadosHistoricos[ano].motos = parseMotosHistorico(json.motos || []);
-        dadosHistoricos[ano].caps  = json.caps || [];
-      }
+    // 1. Descobrir anos disponíveis no Sheets
+    statusEl.innerHTML = `<div style="padding:20px;text-align:center;color:var(--text2)">⟳ Verificando anos disponíveis...</div>`;
+    const rAnos = await fetch(APPS_SCRIPT_URL + '?action=motos_listar_anos');
+    const jAnos = await rAnos.json();
+    const anosHistoricos = (jAnos.anos || []).filter(a => a !== 'current').sort();
+
+    // 2. Carrega cada ano histórico via motos_get_ano (usa abas MOTOS_AAAA)
+    for (const ano of anosHistoricos) {
+      statusEl.innerHTML = `<div style="padding:20px;text-align:center;color:var(--text2)">⟳ Carregando ${ano}... (${anosHistoricos.indexOf(ano)+1}/${anosHistoricos.length})</div>`;
+      try {
+        const r = await fetch(APPS_SCRIPT_URL + '?action=motos_get_ano&ano=' + ano);
+        const j = await r.json();
+        if (j.success && j.data) {
+          const parsed = j.data.map(parseMotosRow).filter(Boolean)
+            .filter(r => !VENDEDORES_EXCLUIDOS.includes(r.vendedor));
+          rawTodosAnos[ano] = parsed;
+          // Compatibilidade com dadosHistoricos
+          if (!dadosHistoricos[ano]) dadosHistoricos[ano] = { motos: [], caps: [] };
+          dadosHistoricos[ano].motos = parsed;
+        }
+      } catch(err) { console.warn('Erro ao carregar ' + ano + ':', err); }
     }
-    // 2026 já está em rawMotos
-    dadosHistoricos[2026].motos = rawMotos;
-    dadosHistoricos[2026].caps  = rawCapacetes;
+
+    // 3. Ano corrente sempre vem do rawMotos (aba MOTOS — CSV publicado)
+    const anoAtual = new Date().getFullYear();
+    const anoAtualStr = String(anoAtual);
+    rawTodosAnos[anoAtualStr] = rawMotos;
+    if (!dadosHistoricos[anoAtual]) dadosHistoricos[anoAtual] = { motos: [], caps: [] };
+    dadosHistoricos[anoAtual].motos = rawMotos;
+    dadosHistoricos[anoAtual].caps  = rawCapacetes;
+
     compCarregado = true;
     statusEl.textContent = '';
     renderComparativo();
@@ -2223,18 +2441,34 @@ function renderComparativo() {
   document.getElementById('compStatus').innerHTML = '';
 
   const MESES = ['','Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
-  const CORES = { 2024: '#60a5fa', 2025: '#d4920a', 2026: '#ff4b00' };
-  const ANOS  = [2024, 2025, 2026];
+  // Cores dinâmicas por ano — gera paleta conforme os anos disponíveis
+  const PALETA = ['#60a5fa','#d4920a','#ff4b00','#a855f7','#16a34a','#e11d48'];
+  const ANOS_DISP = Object.keys(dadosHistoricos)
+    .map(a => parseInt(a))
+    .filter(a => dadosHistoricos[a] && dadosHistoricos[a].motos && dadosHistoricos[a].motos.length > 0)
+    .sort();
+  // Garante no mínimo os últimos 3 anos (mesmo sem dados)
+  const anoAtualComp = new Date().getFullYear();
+  [anoAtualComp, anoAtualComp-1, anoAtualComp-2].forEach(a => {
+    if (!ANOS_DISP.includes(a)) {
+      if (!dadosHistoricos[a]) dadosHistoricos[a] = { motos: [], caps: [] };
+      ANOS_DISP.unshift(a);
+    }
+  });
+  ANOS_DISP.sort();
+  const CORES = {};
+  ANOS_DISP.forEach((a, i) => { CORES[a] = PALETA[i % PALETA.length]; });
+  const ANOS = ANOS_DISP;
 
   // Lojas presentes nos dados
-  const lojasList = [...new Set(ANOS.flatMap(a => dadosHistoricos[a].motos.map(r=>r.loja)).filter(Boolean))].sort();
+  const lojasList = [...new Set(ANOS.flatMap(a => (dadosHistoricos[a]?.motos||[]).map(r=>r.loja)).filter(Boolean))].sort();
 
   // ── KPIs anuais ────────────────────────────────────────────
   let kpiHtml = '';
   for (const ano of ANOS) {
-    const total = dadosHistoricos[ano].motos.reduce((s,r)=>s+r.valor,0);
-    const qtd   = dadosHistoricos[ano].motos.length;
-    const totalAnt = dadosHistoricos[ano-1]?.motos?.reduce((s,r)=>s+r.valor,0)||0;
+    const total = (dadosHistoricos[ano]?.motos||[]).reduce((s,r)=>s+r.valor,0);
+    const qtd   = (dadosHistoricos[ano]?.motos||[]).length;
+    const totalAnt = (dadosHistoricos[ano-1]?.motos||[]).reduce((s,r)=>s+r.valor,0)||0;
     const cresc = totalAnt>0 ? (total-totalAnt)/totalAnt*100 : null;
     const cor = CORES[ano];
     const crescHtml = cresc!==null ? ' · <span style="color:'+(cresc>=0?'var(--green)':'var(--red)')+';font-weight:700">'+(cresc>=0?'+':'')+cresc.toFixed(1)+'%</span>' : '';
@@ -2300,7 +2534,7 @@ function renderComparativo() {
 
   const lojaAtiva = window._compLojaAtiva;
   // Meses que têm algum dado para essa loja
-  const mesesLoja = [...new Set(ANOS.flatMap(a => dadosHistoricos[a].motos.filter(r=>r.loja===lojaAtiva).map(r=>r.mes)))].sort((a,b)=>a-b);
+  const mesesLoja = [...new Set(ANOS.flatMap(a => (dadosHistoricos[a]?.motos||[]).filter(r=>r.loja===lojaAtiva).map(r=>r.mes)))].sort((a,b)=>a-b);
 
   if (mesesLoja.length > 0) {
     // Monta dados loja × mês × ano
@@ -2425,5 +2659,22 @@ function exportarDashboard(){
 }
 
 </script>
+
+<!-- ═══ MODAL ONE A ONE ═══ -->
+<div id="oneaoneModal" onclick="if(event.target===this)fecharOneAOne()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:9999;align-items:center;justify-content:center;padding:16px">
+  <div style="background:var(--bg);border-radius:18px;width:100%;max-width:600px;max-height:92vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 12px 48px rgba(0,0,0,0.3)">
+    <!-- Header -->
+    <div style="padding:20px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:14px;background:var(--card)">
+      <div id="oneaoneNome" style="display:flex;align-items:center;gap:12px;flex:1"></div>
+      <div style="text-align:right;margin-right:12px">
+        <div style="font-size:9px;color:var(--text3);letter-spacing:2px;text-transform:uppercase">ONE A ONE</div>
+        <div style="font-size:10px;color:var(--accent);letter-spacing:1px">Histórico · Comissão · Reuniões</div>
+      </div>
+      <button onclick="fecharOneAOne()" style="background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:6px 14px;cursor:pointer;color:var(--text2);font-family:'Barlow';font-size:13px">✕ Fechar</button>
+    </div>
+    <!-- Corpo rolável -->
+    <div id="oneaoneBody" style="overflow-y:auto;padding:20px 24px;flex:1"></div>
+  </div>
+</div>
 </body>
 </html>
