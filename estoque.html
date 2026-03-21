@@ -2078,7 +2078,7 @@ function confirmarStatus(){
     }
     // Comprovante obrigatório só se for nova reserva (não aprovação de pendência)
     const aprovando = m.status === 'PEND. RESERVA';
-    if(!aprovando && !reservaComprovante){ showToast('Anexe o comprovante de pagamento!','err'); return; }
+    if(!aprovando && !reservaComprovante && !m.comprovantePedido){ showToast('Anexe o comprovante de pagamento!','err'); return; }
     m.numPedidoReserva = numPedido;
     m.dataReserva = dataRes;
     m.clienteReserva = cliente;
@@ -2142,7 +2142,11 @@ function confirmarStatus(){
   m.status = novo;
 
   save(); fecharModal('modalStatus'); renderAll();
-  saveItem('ESTOQUE', m);
+  // Salva sem comprovante na URL (base64 muito grande)
+  const mParaSalvar = {...m};
+  if(mParaSalvar.comprovantePedido) delete mParaSalvar.comprovantePedido;
+  if(mParaSalvar.comprovantePagamento) delete mParaSalvar.comprovantePagamento;
+  saveItem('ESTOQUE', mParaSalvar);
   showToast('✓ Status atualizado para '+novo);
 
   // Se mudou para VENDIDA, redireciona para filtro de vendidas
@@ -2563,7 +2567,9 @@ function editarCampoStatus(motoId){
       m.dataStatus = hoje();
       m.vendedorSolicitante = NOMES[currentUser]||currentUser;
       addHistorico(m, 'PEND. RESERVA', `Solicitação de reserva por ${NOMES[currentUser]} — aguardando aprovação do ADM`);
-      save(); renderAll(); saveItem('ESTOQUE', m);
+      save(); renderAll();
+      const mPend = {...m}; delete mPend.comprovantePedido; delete mPend.comprovantePagamento;
+      saveItem('ESTOQUE', mPend);
       showToast('✓ Solicitação enviada! ADM será notificado.');
     }
     return;
@@ -3044,7 +3050,21 @@ function renderTransferencias(){
   const el = document.getElementById('listaTrf');
   if(!el) return;
 
-  let lista = [...transferencias].sort((a,b)=>b.data.localeCompare(a.data));
+  // Sincroniza array transferencias com motos que têm PEND. TRANSFER mas não têm registro
+  motos.filter(m=>m.status==='PEND. TRANSFER').forEach(m=>{
+    const jaExiste = transferencias.find(t=>t.motoId==m.id && t.status==='PENDENTE');
+    if(!jaExiste){
+      transferencias.push({
+        id: nextId(transferencias), data: m.dataStatus||hoje(), tipo:'TRANSFERÊNCIA',
+        motoId: m.id, chassi: m.chassi, modelo: m.modelo, cor: m.cor,
+        localizacao: m.localizacao, destino: m.destinoTransferSolicitado||m.destino||'',
+        vendedor: m.vendedor||'', cliente:'', numPedido:'',
+        status:'PENDENTE', criadoPor:'—', aprovadoPor:'', dataAprovacao:'', obs:''
+      });
+    }
+  });
+
+  let lista = [...transferencias].sort((a,b)=>(b.data||'').localeCompare(a.data||''));
   if(fStatus) lista = lista.filter(t=>t.status===fStatus);
   if(fTipo)   lista = lista.filter(t=>t.tipo===fTipo);
 
