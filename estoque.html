@@ -299,7 +299,7 @@ textarea.fc{resize:vertical;min-height:70px;}
     <button class="tab" onclick="goTab('garantias',this)">🔴 Garantias</button>
     <button class="tab" onclick="goTab('montagens',this)">🔧 Montagens</button>
     <button class="tab" onclick="goTab('pecas',this)">🔩 Peças</button>
-    <button class="tab" onclick="goTab('transferencias',this)">🚚 Transferências</button>
+    <button class="tab" id="tabTransferencias" onclick="goTab('transferencias',this)">🚚 Transferências</button>
     <button class="tab" onclick="goTab('logistica',this)">📦 Logística</button>
   </div>
 
@@ -1068,12 +1068,12 @@ const STATUS_CFG = {
   'CAIXA':          { label:'📦 Caixa',          cls:'s-caixa',     dot:'#2563eb' },
   'MONTADA':        { label:'🔧 Montada',         cls:'s-montada',   dot:'#7c3aed' },
   'RESERVADA':      { label:'🔒 Reservada',       cls:'s-reservada', dot:'#ea580c' },
-  'PEND. RESERVA':  { label:'⏳ Pend. Reserva',   cls:'s-pend',      dot:'#f59e0b' },
+  // PEND. RESERVA — mostrado em card separado, não no loop principal
   'VENDIDA':        { label:'✅ Vendida',          cls:'s-vendida',   dot:'#16a34a' },
   'GARANTIA':       { label:'🔴 Garantia',        cls:'s-garantia',  dot:'#dc2626' },
   'TRANSFERÊNCIA':  { label:'🚚 Transfer.',       cls:'s-transfer',  dot:'#6b7280' },
 
-  'PEND. TRANSFER': { label:'🔄 Pend. Transfer',  cls:'s-pend',      dot:'#f59e0b' },
+  // PEND. TRANSFER — mostrado em card separado, não no loop principal
 };
 
 // ══════════════════════════════════════════════
@@ -1504,8 +1504,8 @@ function renderKPIs(){
         <div class="kv" style="color:${cfg.dot}">${counts[s]}</div>
         <div class="ks">unidades</div>
       </div>`).join('')}
-    ${isAdmU() && (pendTransfer>0||pendReserva>0) ? `
-      ${pendTransfer>0?`<div class="kpi" style="border:2px solid #f59e0b;cursor:pointer" onclick="document.getElementById('fStatus').value='PEND. TRANSFER';renderEstoque();renderKPIs()">
+    ${(isAdmU()||isGestorU()) && (pendTransfer>0||pendReserva>0) ? `
+      ${pendTransfer>0?`<div class="kpi" style="border:2px solid #f59e0b;cursor:pointer" onclick="goTab('transferencias',document.getElementById('tabTransferencias'));document.getElementById('fTrfStatus').value='PENDENTE';renderTransferencias()">
         <div class="kl" style="color:#b45309">🔄 Pend. Transfer</div>
         <div class="kv" style="color:#b45309">${pendTransfer}</div>
         <div class="ks" style="color:#b45309">aguardando gestor</div>
@@ -1513,7 +1513,7 @@ function renderKPIs(){
       ${pendReserva>0?`<div class="kpi" style="border:2px solid #f59e0b;cursor:pointer" onclick="document.getElementById('fStatus').value='PEND. RESERVA';renderEstoque();renderKPIs()">
         <div class="kl" style="color:#b45309">⏳ Pend. Reserva</div>
         <div class="kv" style="color:#b45309">${pendReserva}</div>
-        <div class="ks" style="color:#b45309">aguardando ADM</div>
+        <div class="ks" style="color:#b45309">clique para ver</div>
       </div>`:''}
     ` : ''}`;
 }
@@ -2356,23 +2356,24 @@ function salvarCampoInline(campo, m){
 
   } else if(campo === 'localizacao'){
     if(!valor) return;
-    const ant = m.localizacao;
+    const ant = m.destino || m.localizacao;
     if(ant === valor) return;
-    // SEMPRE vira PEND. TRANSFER — independente do perfil
+    // NÃO muda m.localizacao (localização física) — só registra destino solicitado
+    m.destino = valor;
     m.status = 'PEND. TRANSFER';
     m.destinoTransferSolicitado = valor;
     m.dataStatus = dt;
-    addHistorico(m, 'PEND. TRANSFER', `Mudança de localização: ${ant} → ${valor} · solicitado por ${NOMES[currentUser]||currentUser}`);
+    addHistorico(m, 'PEND. TRANSFER', `Transferência solicitada: ${m.localizacao} → ${valor} · por ${NOMES[currentUser]||currentUser}`);
     transferencias.push({
       id: nextId(transferencias), data: dt||hoje(), tipo: 'TRANSFERÊNCIA',
       motoId: m.id, chassi: m.chassi, modelo: m.modelo, cor: m.cor,
-      localizacao: ant, destino: valor, vendedor: m.vendedor||'',
+      localizacao: m.localizacao, destino: valor, vendedor: m.vendedor||'',
       cliente:'', numPedido:'', status: 'PENDENTE',
       criadoPor: NOMES[currentUser]||currentUser,
       aprovadoPor: '', dataAprovacao: '', obs:''
     });
     saveTransferencias();
-    showToast('Transferência registrada! Pendente na aba Transferências.','warn');
+    showToast('Transferência solicitada! Aguardando aprovação do gestor.','warn');
 
   } else if(campo === 'destino'){
     if(!valor) return;
@@ -2617,17 +2618,33 @@ function aprovarTransfer(motoId){
 
 // Badge de pendências no topo
 function renderBadgePendencias(){
-  const pends = motos.filter(m=>m.status==='PEND. RESERVA'||m.status==='PEND. TRANSFER').length;
+  const pendTransfer = motos.filter(m=>m.status==='PEND. TRANSFER').length;
+  const pendReserva  = motos.filter(m=>m.status==='PEND. RESERVA').length;
+  const totalPends   = pendTransfer + pendReserva;
+
+  // Badge no menu Estoque
   let badge = document.getElementById('badgePend');
   if(!badge){
     badge = document.createElement('span');
     badge.id = 'badgePend';
-    badge.style.cssText='background:var(--red);color:#fff;border-radius:10px;padding:1px 8px;font-size:11px;font-weight:700;margin-left:8px';
+    badge.style.cssText='background:var(--red);color:#fff;border-radius:10px;padding:1px 8px;font-size:11px;font-weight:700;margin-left:6px';
     const tabEstoque = document.querySelector('.tab[onclick*="estoque"]');
-    if(tabEstoque) tabEstoque.appendChild(badge);
+    if(tabEstoque) { badge.style.cursor='pointer'; badge.onclick=()=>{goTab('transferencias',document.getElementById('tabTransferencias'));document.getElementById('fTrfStatus').value='PENDENTE';renderTransferencias();}; tabEstoque.appendChild(badge); }
   }
-  badge.textContent = pends > 0 ? pends : '';
-  badge.style.display = pends > 0 ? 'inline' : 'none';
+  badge.textContent = totalPends > 0 ? totalPends : '';
+  badge.style.display = totalPends > 0 ? 'inline' : 'none';
+
+  // Badge no menu Transferências
+  let badgeTrf = document.getElementById('badgeTrf');
+  if(!badgeTrf){
+    badgeTrf = document.createElement('span');
+    badgeTrf.id = 'badgeTrf';
+    badgeTrf.style.cssText='background:var(--red);color:#fff;border-radius:10px;padding:1px 8px;font-size:11px;font-weight:700;margin-left:6px';
+    const tabTrf = document.querySelector('.tab[onclick*="transferencias"]');
+    if(tabTrf) tabTrf.appendChild(badgeTrf);
+  }
+  badgeTrf.textContent = pendTransfer > 0 ? pendTransfer : '';
+  badgeTrf.style.display = pendTransfer > 0 ? 'inline' : 'none';
 }
 
 
