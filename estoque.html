@@ -1616,6 +1616,8 @@ function renderEstoque(){
       </td>
       <td onclick="event.stopPropagation()">
         ${m.status==='VENDIDA'&&isAdmU()?`<button class="btn btn-sm" style="font-size:11px;padding:2px 7px;background:rgba(8,145,178,.1);color:#0891b2;border:1px solid rgba(8,145,178,.3)" onclick="event.stopPropagation();registrarEntregaRapida('${m.id}')" title="Registrar entrega">📦</button>`:''}
+        ${isAdmU()&&(m.status==='RESERVADA'||m.status==='PEND. RESERVA'||m.status==='PEND. TRANSFER')?`<button class="btn btn-sm" style="font-size:11px;padding:2px 7px;background:rgba(124,58,237,.1);color:#7c3aed" onclick="event.stopPropagation();abrirAlterarStatus('${m.id}')" title="Alterar status">✏️</button>`:''}
+        ${isGestorU()?`<button class="btn btn-sm" style="font-size:11px;padding:2px 7px;background:rgba(124,58,237,.1);color:#7c3aed" onclick="event.stopPropagation();abrirAlterarStatus('${m.id}')" title="Alterar status">✏️</button>`:''} 
         ${isGestorU()?`<button class="btn btn-sm btn-r" onclick="excluirMoto('${m.id}')" title="Excluir moto">🗑</button>`:''}
       </td>
     </tr>`).join('');
@@ -2382,6 +2384,9 @@ function salvarCampoInline(campo, m){
     const ant = m.destino || m.localizacao;
     if(ant === valor) return;
     // NÃO muda m.localizacao (localização física) — só registra destino solicitado
+    const _statusAnt = m.status;
+    const _destinoAnt = m.destino || m.localizacao;
+    m.statusAntesTrf = _statusAnt;
     m.destino = valor;
     m.status = 'PEND. TRANSFER';
     m.destinoTransferSolicitado = valor;
@@ -2390,8 +2395,10 @@ function salvarCampoInline(campo, m){
     transferencias.push({
       id: nextId(transferencias), data: dt||hoje(), tipo: 'TRANSFERÊNCIA',
       motoId: m.id, chassi: m.chassi, modelo: m.modelo, cor: m.cor,
-      localizacao: m.localizacao, destino: valor, vendedor: m.vendedor||'',
-      cliente:'', numPedido:'', status: 'PENDENTE',
+      localizacao: m.localizacao, destino: valor,
+      destinoOriginal: _destinoAnt,
+      statusAnterior: _statusAnt,
+      vendedor: m.vendedor||'', cliente:'', numPedido:'', status: 'PENDENTE',
       criadoPor: NOMES[currentUser]||currentUser,
       aprovadoPor: '', dataAprovacao: '', obs:''
     });
@@ -2408,6 +2415,8 @@ function salvarCampoInline(campo, m){
     } else {
       if(valor === ant) return;
       // SEMPRE vira PEND. TRANSFER — independente do perfil
+      const _statusAntD = m.status;
+      m.statusAntesTrf = _statusAntD;
       m.destino = valor;
       m.status = 'PEND. TRANSFER';
       m.destinoTransferSolicitado = valor;
@@ -2416,8 +2425,10 @@ function salvarCampoInline(campo, m){
       transferencias.push({
         id: nextId(transferencias), data: dt||hoje(), tipo: 'TRANSFERÊNCIA',
         motoId: m.id, chassi: m.chassi, modelo: m.modelo, cor: m.cor,
-        localizacao: m.localizacao, destino: valor, vendedor: m.vendedor||'',
-        cliente: '', numPedido: '', status: 'PENDENTE',
+        localizacao: m.localizacao, destino: valor,
+        destinoOriginal: ant||m.localizacao,
+        statusAnterior: _statusAntD,
+        vendedor: m.vendedor||'', cliente: '', numPedido: '', status: 'PENDENTE',
         criadoPor: NOMES[currentUser]||currentUser,
         aprovadoPor: '', dataAprovacao: '', obs: ''
       });
@@ -3099,8 +3110,10 @@ function renderTransferencias(){
         id: nextId(transferencias), data: m.dataStatus||hoje(), tipo:'TRANSFERÊNCIA',
         motoId: m.id, chassi: m.chassi, modelo: m.modelo, cor: m.cor,
         localizacao: m.localizacao, destino: m.destinoTransferSolicitado||m.destino||'',
+        destinoOriginal: m.destino||m.localizacao,
+        statusAnterior: m.statusAntesTrf||'MONTADA',
         vendedor: m.vendedor||'', cliente:'', numPedido:'',
-        status:'PENDENTE', criadoPor:'—', aprovadoPor:'', dataAprovacao:'', obs:''
+        status:'PENDENTE', criadoPor: m.vendedor||'—', aprovadoPor:'', dataAprovacao:'', obs:''
       });
     }
   });
@@ -3163,12 +3176,15 @@ function reprovarTransferencia(id){
   // Volta moto para status anterior
   const m = motos.find(x=>x.id===t.motoId);
   if(m){
-    const statusAnterior = t.tipo==='RESERVA' ? 'RESERVADA' : 'MONTADA';
+    // Restaura status anterior (guardado no momento da solicitação)
+    const statusAnterior = t.statusAnterior || (t.tipo==='RESERVA' ? 'RESERVADA' : 'MONTADA');
+    const destinoOriginal = t.destinoOriginal || t.localizacao || m.localizacao;
     m.status = statusAnterior;
-    m.destino = t.localizacao; // volta destino para localização original
+    m.destino = destinoOriginal;
     m.destinoTransferSolicitado = '';
+    m.statusAntesTrf = '';
     m.dataStatus = hoje();
-    addHistorico(m, statusAnterior, `Transferência reprovada por ${t.reprovadoPor} · Motivo: ${motivo}`);
+    addHistorico(m, statusAnterior, `Transferência reprovada · Motivo: ${motivo} · Status: ${statusAnterior} · Destino: ${destinoOriginal}`);
     save(); saveItem('ESTOQUE', m);
   }
   saveTransferencias(); renderTransferencias(); renderKPIs(); renderBadgePendencias();
