@@ -1967,7 +1967,16 @@ function parseMotosRow(row){
   } else return null;
   if(!mes || mes < 1 || mes > 12) return null;
   const valorStr = findCol(row, 'Valor total', 'Valor') || '0';
-  const valor = parseFloat(String(valorStr).replace(/\./g,'').replace(',','.'))||0;
+  // Suporta formato BR "1.850,50", inglês "1850.5" e número puro
+  function parseValor(s) {
+    s = String(s).trim();
+    if (!s || s === '0') return 0;
+    // Se tem vírgula → formato BR: remove pontos, troca vírgula por ponto
+    if (s.includes(',')) return parseFloat(s.replace(/\./g,'').replace(',','.')) || 0;
+    // Se tem ponto → formato inglês (decimal): usar direto
+    return parseFloat(s) || 0;
+  }
+  const valor = parseValor(valorStr);
   if(valor <= 0) return null;
   const descontoStr = findCol(row, 'Desconto') || '0,00%';
   return {
