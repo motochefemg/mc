@@ -951,18 +951,25 @@ const TABELA_COMISSAO = [
 ];
 const PERC_COMISSAO = 0.005; // 0,5% base
 
+const META_VENDEDOR = 162000; // meta mensal individual
+
 function calcComissao(faturamento) {
-  if (!faturamento || faturamento <= 0) return { comissao: 0, premio: 0, acumulado: 0, total: 0 };
+  if (!faturamento || faturamento <= 0) return { comissao: 0, premioParcela: 0, acumulado: 0, total: 0, pctMeta: 0, faixaIdx: -1 };
   const comissao = faturamento * PERC_COMISSAO;
-  let premio = 0, acumulado = 0;
+  const pctMeta  = (faturamento / META_VENDEDOR) * 100;
+  let faixaIdx = -1, premioParcela = 0, acumulado = 0;
   for (let i = TABELA_COMISSAO.length - 1; i >= 0; i--) {
     if (faturamento >= TABELA_COMISSAO[i].v) {
-      premio = TABELA_COMISSAO[i].p;
-      acumulado = TABELA_COMISSAO[i].a;
+      faixaIdx      = i;
+      premioParcela = TABELA_COMISSAO[i].p;  // prêmio parcial desta faixa
+      acumulado     = TABELA_COMISSAO[i].a;  // total acumulado (comissão + prêmio)
       break;
     }
   }
-  return { comissao, premio, acumulado, total: comissao + acumulado };
+  // próxima faixa
+  const proximaFaixa = faixaIdx < TABELA_COMISSAO.length - 1 ? TABELA_COMISSAO[faixaIdx + 1] : null;
+  const faltaProxima = proximaFaixa ? proximaFaixa.v - faturamento : 0;
+  return { comissao, premioParcela, acumulado, total: comissao + acumulado, pctMeta, faixaIdx, proximaFaixa, faltaProxima };
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -1033,41 +1040,53 @@ function abrirOneAOne(nome) {
     const notaAtual = carregarAnotacao(nome, h.mes, h.ano);
     const isMesAtual = h.mes === mesAtualNum && h.ano === anoAtualNum;
     const keyId = `nota_${h.ano}_${h.mes}`;
+    const pctMeta = h.pctMeta || 0;
+    const corMeta = pctMeta >= 140 ? '#16a34a' : pctMeta >= 120 ? '#22c55e' : pctMeta >= 100 ? '#eab308' : pctMeta >= 70 ? '#f97316' : '#dc2626';
+    const proxHtml = h.proximaFaixa && h.faltaProxima > 0
+      ? `<div style="font-size:10px;color:var(--text3);margin-top:6px">📈 Faltam <b style="color:var(--accent)">${fmtCurrency(h.faltaProxima)}</b> para próxima faixa (prêmio acumulado +${fmtCurrency(h.proximaFaixa.a)})</div>`
+      : (h.faixaIdx >= 0 ? '<div style="font-size:10px;color:var(--green);margin-top:6px">🏆 Faixa máxima atingida!</div>' : '');
     return `
     <div style="background:var(--card2);border:1px solid ${isMesAtual?'var(--accent)':'var(--border)'};border-radius:12px;padding:16px;margin-bottom:12px">
-      <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">
+      <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:12px">
         <div style="flex:1">
-          <span style="font-family:'Bebas Neue';font-size:18px;letter-spacing:1px">${MONTH_NAMES[h.mes]} ${h.ano}</span>
-          ${isMesAtual ? '<span style="margin-left:8px;background:var(--accent);color:#fff;font-size:9px;letter-spacing:2px;padding:2px 8px;border-radius:4px;text-transform:uppercase">Atual</span>' : ''}
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <span style="font-family:'Bebas Neue';font-size:20px;letter-spacing:1px">${MONTH_NAMES[h.mes]} ${h.ano}</span>
+            ${isMesAtual ? '<span style="background:var(--accent);color:#fff;font-size:9px;letter-spacing:2px;padding:2px 8px;border-radius:4px;text-transform:uppercase">Mês atual</span>' : ''}
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;margin-top:8px">
+            <div style="flex:1;height:6px;background:var(--border2);border-radius:3px;overflow:hidden">
+              <div style="height:100%;width:${Math.min(pctMeta/160*100,100).toFixed(0)}%;background:${corMeta};border-radius:3px"></div>
+            </div>
+            <span style="font-family:'Bebas Neue';font-size:14px;color:${corMeta};white-space:nowrap">${pctMeta.toFixed(1)}% META</span>
+          </div>
+          ${proxHtml}
         </div>
-        <div style="text-align:right">
+        <div style="text-align:right;flex-shrink:0">
           <div style="font-size:10px;color:var(--text3);letter-spacing:1px;text-transform:uppercase">Faturamento</div>
-          <div style="font-family:'Bebas Neue';font-size:20px;color:var(--accent)">${fmtCurrency(h.fat)}</div>
+          <div style="font-family:'Bebas Neue';font-size:22px;color:var(--accent)">${fmtCurrency(h.fat)}</div>
           <div style="font-size:11px;color:var(--text3)">${h.qtd} moto${h.qtd!==1?'s':''}</div>
         </div>
       </div>
       <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">
-        <div style="flex:1;min-width:90px;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 10px;text-align:center">
-          <div style="font-size:9px;color:var(--text3);letter-spacing:1px;text-transform:uppercase">Comissão</div>
-          <div style="font-family:'Bebas Neue';font-size:18px;color:var(--green)">${fmtCurrency(h.comissao)}</div>
+        <div style="flex:1;min-width:80px;background:rgba(22,163,74,0.08);border:1px solid rgba(22,163,74,0.2);border-radius:8px;padding:8px 10px;text-align:center">
+          <div style="font-size:9px;color:var(--green);letter-spacing:1px;text-transform:uppercase">Comissão 0,5%</div>
+          <div style="font-family:'Bebas Neue';font-size:20px;color:var(--green)">${fmtCurrency(h.comissao)}</div>
         </div>
-        <div style="flex:1;min-width:90px;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 10px;text-align:center">
-          <div style="font-size:9px;color:var(--text3);letter-spacing:1px;text-transform:uppercase">Prêmio mês</div>
-          <div style="font-family:'Bebas Neue';font-size:18px;color:var(--gold)">${h.premio > 0 ? fmtCurrency(h.premio) : '—'}</div>
+        <div style="flex:1;min-width:80px;background:rgba(184,120,10,0.08);border:1px solid rgba(184,120,10,0.2);border-radius:8px;padding:8px 10px;text-align:center">
+          <div style="font-size:9px;color:var(--gold);letter-spacing:1px;text-transform:uppercase">Prêmio OTE</div>
+          <div style="font-family:'Bebas Neue';font-size:20px;color:var(--gold)">${h.acumulado > 0 ? fmtCurrency(h.acumulado) : '—'}</div>
+          <div style="font-size:9px;color:var(--text3)">${h.premioParcela > 0 ? '+'+fmtCurrency(h.premioParcela)+' nesta faixa' : 'sem prêmio ainda'}</div>
         </div>
-        <div style="flex:1;min-width:90px;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 10px;text-align:center">
-          <div style="font-size:9px;color:var(--text3);letter-spacing:1px;text-transform:uppercase">Acumulado</div>
-          <div style="font-family:'Bebas Neue';font-size:18px;color:var(--blue)">${h.acumulado > 0 ? fmtCurrency(h.acumulado) : '—'}</div>
-        </div>
-        <div style="flex:1;min-width:90px;background:rgba(22,163,74,0.08);border:1px solid rgba(22,163,74,0.25);border-radius:8px;padding:8px 10px;text-align:center">
-          <div style="font-size:9px;color:var(--green);letter-spacing:1px;text-transform:uppercase">Total</div>
-          <div style="font-family:'Bebas Neue';font-size:18px;color:var(--green)">${fmtCurrency(h.total)}</div>
+        <div style="flex:1;min-width:80px;background:rgba(37,99,235,0.08);border:1px solid rgba(37,99,235,0.2);border-radius:8px;padding:8px 10px;text-align:center">
+          <div style="font-size:9px;color:var(--blue);letter-spacing:1px;text-transform:uppercase">Total a receber</div>
+          <div style="font-family:'Bebas Neue';font-size:20px;color:var(--blue)">${fmtCurrency(h.total)}</div>
+          <div style="font-size:9px;color:var(--text3)">${h.fat>0?(h.total/h.fat*100).toFixed(2):'0'}% s/ vendas</div>
         </div>
       </div>
       <div>
-        <div style="font-size:9px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin-bottom:5px">📝 Anotação da reunião</div>
+        <div style="font-size:9px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin-bottom:5px">📝 Anotação da reunião <span style="color:var(--green)">(salva no Sheets — todos os gestores veem)</span></div>
         <textarea id="${keyId}" 
-          placeholder="Pontos discutidos, metas, feedbacks..."
+          placeholder="Pontos discutidos, metas acordadas, feedbacks, compromissos..."
           onblur="salvarAnotacao('${nome.replace(/'/g,"\\'")}', ${h.mes}, ${h.ano}, this.value)"
           style="width:100%;padding:8px 10px;background:var(--card);border:1px solid var(--border2);border-radius:8px;color:var(--text);font-family:'Barlow';font-size:12px;resize:vertical;min-height:60px;outline:none"
         >${notaAtual}</textarea>
@@ -1076,16 +1095,63 @@ function abrirOneAOne(nome) {
   }).join('');
 
   const semHistorico = historicoMeses.length === 0
-    ? '<div style="text-align:center;padding:40px;color:var(--text3)">Sem vendas registradas para este vendedor</div>'
+    ? `<div style="text-align:center;padding:40px;color:var(--text3)">
+        <div style="font-size:32px;margin-bottom:12px">📭</div>
+        <div style="font-family:'Bebas Neue';font-size:20px;color:var(--text2);margin-bottom:8px">Sem vendas no mês atual carregado</div>
+        <div style="font-size:13px;color:var(--text3);margin-bottom:16px">Para ver histórico de anos anteriores, carregue os dados históricos:</div>
+        <button onclick="carregarHistoricoEAtualizar('${nome.replace(/'/g,"\\'")}') " style="background:var(--accent);color:#fff;border:none;border-radius:8px;padding:10px 24px;font-family:'Barlow';font-size:13px;font-weight:700;cursor:pointer;letter-spacing:1px">⟳ Carregar histórico de anos anteriores</button>
+        <div style="font-size:11px;color:var(--text3);margin-top:12px">Isso buscará os dados de MOTOS_2025, MOTOS_2024... no Sheets</div>
+      </div>`
     : '';
 
-  document.getElementById('oneaoneNome').innerHTML = `${avatarHtml}<span style="font-family:\'Bebas Neue\';font-size:26px;letter-spacing:2px">${nome}</span>`;
-  document.getElementById('oneaoneBody').innerHTML = rowsHtml + semHistorico;
+  // Aviso se não há dados históricos carregados além do ano atual
+  const temHistorico = Object.keys(rawTodosAnos).length > 0;
+  const avisoHistorico = !temHistorico && historicoMeses.length > 0
+    ? `<div style="background:rgba(184,120,10,0.08);border:1px solid rgba(184,120,10,0.3);border-radius:10px;padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;gap:12px">
+        <span style="font-size:20px">📅</span>
+        <div style="flex:1">
+          <div style="font-size:12px;font-weight:700;color:var(--gold)">Só dados do mês atual carregados</div>
+          <div style="font-size:11px;color:var(--text3)">Para ver histórico completo de meses/anos anteriores:</div>
+        </div>
+        <button onclick="carregarHistoricoEAtualizar('${nome.replace(/'/g,"\\'")}') " style="background:var(--gold);color:#fff;border:none;border-radius:7px;padding:8px 16px;font-family:'Barlow';font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">⟳ Carregar histórico</button>
+      </div>`
+    : '';
+
+  document.getElementById('oneaoneNome').innerHTML = \`\${avatarHtml}<span style="font-family:'Bebas Neue';font-size:26px;letter-spacing:2px">\${nome}</span>\`;
+  document.getElementById('oneaoneBody').innerHTML = avisoHistorico + rowsHtml + semHistorico;
   document.getElementById('oneaoneModal').style.display = 'flex';
 }
 
 function fecharOneAOne() {
   document.getElementById('oneaoneModal').style.display = 'none';
+}
+
+async function carregarHistoricoEAtualizar(nome) {
+  // Botão dentro do modal — mostra loading e carrega
+  const body = document.getElementById('oneaoneBody');
+  body.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:32px;margin-bottom:12px">⟳</div>Carregando histórico de anos anteriores...</div>';
+  try {
+    const rAnos = await fetch(APPS_SCRIPT_URL + '?action=motos_listar_anos');
+    const jAnos = await rAnos.json();
+    const anosHist = (jAnos.anos || []).filter(a => a !== 'current').sort();
+    for (const ano of anosHist) {
+      body.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text2)">⟳ Carregando ' + ano + '...</div>';
+      try {
+        const r = await fetch(APPS_SCRIPT_URL + '?action=motos_get_ano&ano=' + ano);
+        const j = await r.json();
+        if (j.success && j.data) {
+          rawTodosAnos[ano] = j.data.map(parseMotosRow).filter(Boolean).filter(r => !VENDEDORES_EXCLUIDOS.includes(r.vendedor));
+          // Atualiza dadosHistoricos para o comparativo
+          const a = parseInt(ano);
+          if (!dadosHistoricos[a]) dadosHistoricos[a] = { motos: [], caps: [] };
+          dadosHistoricos[a].motos = rawTodosAnos[ano];
+        }
+      } catch(e) { console.warn('Erro ao carregar ' + ano, e); }
+    }
+    compCarregado = Object.keys(rawTodosAnos).length > 0;
+  } catch(e) { console.warn('Erro ao listar anos:', e); }
+  // Reabre o modal com dados atualizados
+  abrirOneAOne(nome);
 }
 
 const MONTH_NAMES = ['','Janeiro','Fevereiro','Março','Abril','Maio','Junho',
