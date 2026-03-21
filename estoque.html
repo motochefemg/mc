@@ -1155,7 +1155,22 @@ async function load() {
       return {...m, historico: Array.isArray(hist) ? hist : []};
     });
     if(sheetsMotos.length > 0){
-      motos = sheetsMotos;
+      // Mescla histórico do localStorage (completo) com dados do Sheets
+      let localMotos = [];
+      try { localMotos = JSON.parse(localStorage.getItem('mc_estoque_motos')||'[]'); } catch(e){}
+      const localMap = {};
+      localMotos.forEach(m=>{ localMap[m.id] = m; });
+      motos = sheetsMotos.map(m=>{
+        const local = localMap[m.id];
+        // Usa histórico local se for mais completo
+        if(local && (local.historico||[]).length > (m.historico||[]).length){
+          m.historico = local.historico;
+        }
+        // Preserva comprovantes do localStorage
+        if(local && local.comprovantePedido && !m.comprovantePedido) m.comprovantePedido = local.comprovantePedido;
+        if(local && local.comprovantePagamento && !m.comprovantePagamento) m.comprovantePagamento = local.comprovantePagamento;
+        return m;
+      });
       localStorage.setItem('mc_estoque_motos', JSON.stringify(motos));
     } else {
       // Primeira vez: carrega dados iniciais e sobe pro Sheets
@@ -1228,7 +1243,7 @@ async function saveItem(tabela, item) {
 
   // 2. Monta payload — histórico como string resumida para caber na URL
   const itemParaSalvar = tabela === 'ESTOQUE'
-    ? {...item, historico: JSON.stringify((item.historico||[]).slice(-5))} // últimos 5 eventos
+    ? {...item, historico: JSON.stringify(item.historico||[])} // histórico completo
     : {...item};
 
   // 3. Tenta fetch GET (contorna CORS do Apps Script)
@@ -2028,13 +2043,14 @@ function abrirAlterarStatus(id){
 function onNovoStatus(){
   const s = document.getElementById('novoStatus').value;
   const statusAtual = motoEditando ? motoEditando.status : '';
-  const vemDeGarantia = statusAtual === 'GARANTIA' && s === 'MONTADA';
-  // Campos de montada: ocultar se vem de garantia (não cobra montador de novo)
+  // Campos de montada: só obrigatório quando vem de CAIXA
+  const precisaMontador = s === 'MONTADA' && statusAtual === 'CAIXA';
   const camposMontada = document.getElementById('camposMontada');
   if(camposMontada) {
-    camposMontada.style.display = s==='MONTADA' && !vemDeGarantia ? 'block' : 'none';
-    if(vemDeGarantia && s==='MONTADA') {
-      camposMontada.innerHTML = '<div style="padding:8px;background:rgba(234,179,8,.1);border-radius:6px;font-size:12px;color:#ca8a04">⚠️ Retorno de garantia — montador original mantido, sem novo pagamento.</div>';
+    camposMontada.style.display = precisaMontador ? 'block' : 'none';
+    if(s === 'MONTADA' && statusAtual !== 'CAIXA') {
+      camposMontada.innerHTML = '<div style="padding:8px;background:rgba(234,179,8,.1);border-radius:6px;font-size:12px;color:#ca8a04">⚠️ Montador original mantido — não gera novo lançamento de montagem.</div>';
+      camposMontada.style.display = 'block';
     }
   }
   document.getElementById('camposReservada').style.display = s==='RESERVADA'?'block':'none';
@@ -2050,12 +2066,8 @@ function confirmarStatus(){
   const statusAnt = m.status;
 
   if(novo==='MONTADA'){
-    const vemDeGarantia = statusAnt === 'GARANTIA';
-    if(vemDeGarantia) {
-      // Retorno de garantia — mantém montador original, não cobra de novo
-      m.dataStatus = hoje();
-      addHistorico(m, 'MONTADA', `Retorno de garantia — montador original: ${m.montador||'—'}${obs?' · '+obs:''}`);
-    } else {
+    if(statusAnt === 'CAIXA') {
+      // Só cobra montador quando vem de CAIXA
       const montador = document.getElementById('montador').value;
       const data = document.getElementById('dataMontagem').value;
       if(!montador){ showToast('Selecione o montador!','err'); return; }
@@ -2063,6 +2075,10 @@ function confirmarStatus(){
       m.dataMontagem = data;
       m.dataStatus = data;
       addHistorico(m, 'MONTADA', `Montador: ${montador} · Data: ${fmtData(data)}${obs?' · '+obs:''}`);
+    } else {
+      // De RESERVADA, GARANTIA, etc → MONTADA: mantém montador, não cobra novo
+      m.dataStatus = hoje();
+      addHistorico(m, 'MONTADA', `Disponível para venda (${statusAnt} → MONTADA)${obs?' · '+obs:''}`);
     }
 
   } else if(novo==='RESERVADA'){
@@ -2237,12 +2253,13 @@ function editarCampo(event, campo, motoId){
     </select>`;
   } else if(campo === 'numPedidoReserva'){
     titulo = 'Nº Pedido de Venda';
-    html = `<input type="text" id="mmInput" value="${m.numPedidoReserva||''}" placeholder="Ex: 1910">
+    html = `<input type="text" id="mmInput" value="${m.numPedidoReserva||''}" placeholder="Deixe vazio para cancelar reserva">
     <input type="date" id="mmData" value="${m.dataReserva||hoje()}" style="margin-bottom:0">
+    <div style="margin-top:6px;font-size:11px;color:var(--text3)">💡 Deixe vazio e salve para cancelar a reserva</div>
     <div style="margin-top:8px">
-      <label style="font-size:10px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;display:block;margin-bottom:4px">Comprovante <span style="color:var(--red)">*</span></label>
+      <label style="font-size:10px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;display:block;margin-bottom:4px">Comprovante</label>
       <div style="border:1.5px dashed var(--border2);border-radius:8px;padding:10px;text-align:center;cursor:pointer" onclick="document.getElementById('mmFile').click()">
-        <span id="mmFileNome" style="font-size:12px;color:var(--text3)">📎 Clique para anexar</span>
+        <span id="mmFileNome" style="font-size:12px;color:var(--text3)">${m.comprovantePedido?'✓ '+m.comprovantePedido.nome:'📎 Clique para anexar'}</span>
       </div>
       <input type="file" id="mmFile" accept="image/*,.pdf" style="display:none" onchange="onMmFile(this)">
     </div>`;
@@ -2258,10 +2275,11 @@ function editarCampo(event, campo, motoId){
     html = `<input type="text" id="mmInput" value="${m.nfEntrada||''}" placeholder="Número da NF de entrada" style="text-transform:uppercase">`;
   } else if(campo === 'nfeSaida'){
     titulo = 'NF de Saída + Recibo';
-    html = `<input type="text" id="mmInput" value="${m.nfeSaida||''}" placeholder="Número da NF de saída">
+    html = `<input type="text" id="mmInput" value="${m.nfeSaida||''}" placeholder="Deixe vazio para remover NF">
     <input type="date" id="mmData" value="${m.dataNF||hoje()}">
+    <div style="margin-bottom:6px;font-size:11px;color:var(--text3)">💡 Deixe vazio e salve para remover a NF de saída</div>
     <div>
-      <label style="font-size:10px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;display:block;margin-bottom:4px">Recibo de Pagamento <span style="color:var(--red)">*</span></label>
+      <label style="font-size:10px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;display:block;margin-bottom:4px">Recibo de Pagamento</label>
       <div style="border:1.5px dashed var(--border2);border-radius:8px;padding:10px;text-align:center;cursor:pointer;background:var(--bg3)" onclick="document.getElementById('mmFile').click()">
         <span id="mmFileNome" style="font-size:12px;color:var(--text3)">${m.comprovantePagamento?'✓ '+m.comprovantePagamento.nome:'📎 Clique para anexar recibo'}</span>
       </div>
@@ -2380,25 +2398,31 @@ function salvarCampoInline(campo, m){
     showToast('Transferência solicitada! Aguardando aprovação do gestor.','warn');
 
   } else if(campo === 'destino'){
-    if(!valor) return;
     const ant = m.destino || m.localizacao;
-    if(valor === ant) return;
-    // SEMPRE vira PEND. TRANSFER — independente do perfil
-    m.destino = valor;
-    m.status = 'PEND. TRANSFER';
-    m.destinoTransferSolicitado = valor;
-    m.dataStatus = dt;
-    addHistorico(m, 'PEND. TRANSFER', `Destino: ${ant} → ${valor} · solicitado por ${NOMES[currentUser]||currentUser}`);
-    transferencias.push({
-      id: nextId(transferencias), data: dt||hoje(), tipo: 'TRANSFERÊNCIA',
-      motoId: m.id, chassi: m.chassi, modelo: m.modelo, cor: m.cor,
-      localizacao: m.localizacao, destino: valor, vendedor: m.vendedor||'',
-      cliente: '', numPedido: '', status: 'PENDENTE',
-      criadoPor: NOMES[currentUser]||currentUser,
-      aprovadoPor: '', dataAprovacao: '', obs: ''
-    });
-    saveTransferencias();
-    showToast('Transferência registrada! Pendente na aba Transferências.','warn');
+    if(!valor){
+      // Limpar destino — volta para sem destino definido
+      m.destino = '';
+      m.dataStatus = dt;
+      addHistorico(m, 'DESTINO', `Destino removido (era: ${ant||'—'})`);
+    } else {
+      if(valor === ant) return;
+      // SEMPRE vira PEND. TRANSFER — independente do perfil
+      m.destino = valor;
+      m.status = 'PEND. TRANSFER';
+      m.destinoTransferSolicitado = valor;
+      m.dataStatus = dt;
+      addHistorico(m, 'PEND. TRANSFER', `Destino: ${ant||'—'} → ${valor} · solicitado por ${NOMES[currentUser]||currentUser}`);
+      transferencias.push({
+        id: nextId(transferencias), data: dt||hoje(), tipo: 'TRANSFERÊNCIA',
+        motoId: m.id, chassi: m.chassi, modelo: m.modelo, cor: m.cor,
+        localizacao: m.localizacao, destino: valor, vendedor: m.vendedor||'',
+        cliente: '', numPedido: '', status: 'PENDENTE',
+        criadoPor: NOMES[currentUser]||currentUser,
+        aprovadoPor: '', dataAprovacao: '', obs: ''
+      });
+      saveTransferencias();
+      showToast('Transferência registrada! Pendente na aba Transferências.','warn');
+    }
   } else if(campo === 'nfEntrada'){
     const ant = m.nfEntrada;
     m.nfEntrada = valor.trim().toUpperCase();
@@ -2409,23 +2433,39 @@ function salvarCampoInline(campo, m){
     addHistorico(m, 'VENDEDOR', `${ant||'—'} → ${valor||'—'}`);
 
   } else if(campo === 'numPedidoReserva'){
-    if(!valor){ showToast('Informe o número do pedido!','err'); return; }
-    if(!mmFileData){ showToast('Anexe o comprovante!','err'); return; }
-    m.numPedidoReserva = valor;
-    m.dataReserva = dt;
-    m.comprovantePedido = mmFileData;
-    if(m.status !== 'RESERVADA' && m.status !== 'VENDIDA') m.status = 'RESERVADA';
-    m.dataStatus = dt;
-    addHistorico(m, 'PEDIDO', `Pedido #${valor} · ${fmtData(dt)} · Comprovante: ${mmFileData.nome}`);
+    if(!valor){
+      // Limpar pedido — cancela reserva
+      const antPed = m.numPedidoReserva;
+      m.numPedidoReserva = '';
+      m.dataReserva = '';
+      m.comprovantePedido = null;
+      if(m.status === 'RESERVADA') m.status = 'MONTADA';
+      m.dataStatus = hoje();
+      addHistorico(m, 'PEDIDO', `Pedido #${antPed||'—'} cancelado — moto voltou a MONTADA`);
+    } else {
+      m.numPedidoReserva = valor;
+      m.dataReserva = dt;
+      if(mmFileData) m.comprovantePedido = mmFileData;
+      if(m.status !== 'RESERVADA' && m.status !== 'VENDIDA') m.status = 'RESERVADA';
+      m.dataStatus = dt;
+      const compInfo = mmFileData ? ` · Comp: ${mmFileData.nome}` : '';
+      addHistorico(m, 'PEDIDO', `Pedido #${valor} · ${fmtData(dt)}${compInfo}`);
+    }
 
   } else if(campo === 'nfeSaida'){
-    if(!valor){ showToast('Informe o número da NF!','err'); return; }
-    if(!mmFileData && !m.comprovantePagamento){ showToast('Anexe o recibo de pagamento!','err'); return; }
     const ant = m.nfeSaida;
-    m.nfeSaida = valor;
-    m.dataNF = dt;
-    if(mmFileData) m.comprovantePagamento = mmFileData;
-    addHistorico(m, 'NF SAÍDA', `NF ${ant?ant+' → ':''} ${valor} · ${fmtData(dt)} · Recibo: ${(mmFileData||m.comprovantePagamento)?.nome||'—'}`);
+    if(!valor){
+      // Limpar NF de saída
+      m.nfeSaida = '';
+      m.dataNF = '';
+      m.comprovantePagamento = null;
+      addHistorico(m, 'NF SAÍDA', `NF ${ant||'—'} removida`);
+    } else {
+      m.nfeSaida = valor;
+      m.dataNF = dt;
+      if(mmFileData) m.comprovantePagamento = mmFileData;
+      addHistorico(m, 'NF SAÍDA', `NF ${ant?ant+' → ':''}${valor} · ${fmtData(dt)} · Recibo: ${(mmFileData||m.comprovantePagamento)?.nome||'—'}`);
+    }
   }
 
   fecharMiniModal();
