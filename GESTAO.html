@@ -761,6 +761,7 @@ tbody tr:last-child td{border-bottom:none}
       <button class="btn-filter" data-view="lojas" onclick="setView('lojas',this)">Lojas</button>
       <button class="btn-filter" data-view="produtos" onclick="setView('produtos',this)">Produtos</button>
       <button class="btn-filter" data-view="comparativo" onclick="setView('comparativo',this)">📊 Comparativo</button>
+      <button class="btn-filter" data-view="fechamento" onclick="setView('fechamento',this)">📅 Fechamento</button>
     </div>
   </div>
 </div>
@@ -862,7 +863,19 @@ tbody tr:last-child td{border-bottom:none}
   </div>
 
   <!-- VIEW: COMPARATIVO -->
-  <div class="view fade-in" id="view-comparativo">
+  <div class="view fade-in" id="view-fechamento">
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap">
+    <div style="font-family:'Bebas Neue';font-size:22px;letter-spacing:2px">📅 Fechamento do Dia</div>
+    <input type="date" id="fechamentoData" onchange="renderFechamento()" 
+      style="padding:8px 12px;background:var(--card);border:1px solid var(--border2);border-radius:8px;color:var(--text);font-family:'Barlow';font-size:14px;outline:none">
+    <button onclick="document.getElementById('fechamentoData').value=hojeStr();renderFechamento()" 
+      style="background:var(--accent);color:#fff;border:none;border-radius:8px;padding:8px 16px;font-family:'Barlow';font-size:13px;font-weight:700;cursor:pointer">Hoje</button>
+    <div id="fechamentoTotal" style="margin-left:auto;font-family:'Bebas Neue';font-size:20px;color:var(--accent)"></div>
+  </div>
+  <div id="fechamentoBody"></div>
+</div>
+
+<div class="view fade-in" id="view-comparativo">
     <div id="compStatus" style="text-align:center;padding:20px;color:var(--text3);font-size:13px"></div>
     <!-- KPIs anuais -->
     <div class="kpis" id="compKpis" style="margin-bottom:24px"></div>
@@ -1179,6 +1192,7 @@ function renderAll(){
   else if(currentView==='lojas') renderLojas(motos,caps);
   else if(currentView==='produtos') renderProdutos(motos,caps);
   else if(currentView==='comparativo') renderComparativo();
+  else if(currentView==='fechamento') renderFechamento();
 }
 
 // ── GERAL ──────────────────────────────────────────────────
@@ -2543,6 +2557,123 @@ function renderComparativo() {
   tabela += '</tbody></table></div><div style="font-size:10px;color:var(--text3);margin-top:8px">* 2026 parcial — apenas meses concluídos</div>';
   document.getElementById('compTabela').innerHTML = tabela;
 }
+
+// ════════════════════════════════════════
+// FECHAMENTO DO DIA
+// ════════════════════════════════════════
+function hojeStr() {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+
+function renderFechamento() {
+  const inputData = document.getElementById('fechamentoData');
+  if (!inputData.value) inputData.value = hojeStr();
+  const dataFiltro = inputData.value; // 'YYYY-MM-DD'
+
+  // Filtra rawMotos pelo dia selecionado
+  const vendas = rawMotos.filter(r => r.data === dataFiltro);
+
+  const totalEl = document.getElementById('fechamentoTotal');
+  const bodyEl  = document.getElementById('fechamentoBody');
+
+  if (vendas.length === 0) {
+    totalEl.textContent = '';
+    bodyEl.innerHTML = `
+      <div style="text-align:center;padding:60px 20px;color:var(--text3)">
+        <div style="font-size:48px;margin-bottom:12px">📭</div>
+        <div style="font-family:'Bebas Neue';font-size:22px;color:var(--text2)">Sem vendas registradas</div>
+        <div style="font-size:13px;margin-top:8px">para ${dataFiltro.split('-').reverse().join('/')}</div>
+      </div>`;
+    return;
+  }
+
+  // Agrupa por loja
+  const porLoja = {};
+  vendas.forEach(r => {
+    const loja = r.loja || 'Sem loja';
+    if (!porLoja[loja]) porLoja[loja] = { qtd: 0, total: 0 };
+    porLoja[loja].qtd++;
+    porLoja[loja].total += r.valor;
+  });
+
+  const totalGeral = vendas.reduce((s,r) => s + r.valor, 0);
+  const qtdGeral   = vendas.length;
+
+  totalEl.innerHTML = `<span style="font-size:13px;color:var(--text3);font-family:'Barlow';font-weight:600">${qtdGeral} motos · </span>${fmtCurrency(totalGeral)}`;
+
+  // Cards por loja
+  const lojas = Object.entries(porLoja).sort((a,b) => b[1].total - a[1].total);
+  const maxTotal = lojas[0][1].total;
+
+  let html = `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;margin-bottom:24px">`;
+  lojas.forEach(([loja, d]) => {
+    const lojaShort = loja.replace('MOTOCHEFE ','').replace('ECOMOV ','');
+    const pct = (d.total / maxTotal * 100).toFixed(0);
+    html += `
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:20px;box-shadow:0 1px 4px rgba(0,0,0,.04)">
+      <div style="font-family:'Bebas Neue';font-size:18px;letter-spacing:1px;margin-bottom:12px">${lojaShort}</div>
+      <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:10px">
+        <div>
+          <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1px">Faturamento</div>
+          <div style="font-family:'Bebas Neue';font-size:26px;color:var(--accent)">${fmtCurrency(d.total)}</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1px">Motos</div>
+          <div style="font-family:'Bebas Neue';font-size:26px;color:var(--text)">${d.qtd}</div>
+        </div>
+      </div>
+      <div style="height:6px;background:var(--border2);border-radius:3px;overflow:hidden">
+        <div style="height:100%;width:${pct}%;background:var(--accent);border-radius:3px;transition:.3s"></div>
+      </div>
+    </div>`;
+  });
+  html += `</div>`;
+
+  // Tabela consolidada
+  html += `
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden">
+    <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+      <div style="font-size:10px;color:var(--text3);letter-spacing:2px;text-transform:uppercase">Todas as vendas do dia</div>
+      <div style="font-size:12px;color:var(--text2)">${dataFiltro.split('-').reverse().join('/')}</div>
+    </div>
+    <div class="table-wrap">
+    <table>
+      <thead><tr>
+        <th>LOJA</th>
+        <th>VENDEDOR</th>
+        <th>PRODUTO</th>
+        <th>Nº NF</th>
+        <th style="text-align:right">VALOR</th>
+      </tr></thead>
+      <tbody>
+        ${vendas.sort((a,b) => a.loja.localeCompare(b.loja,'pt-BR')).map(r => `
+        <tr>
+          <td style="font-size:11px">${(r.loja||'').replace('MOTOCHEFE ','').replace('ECOMOV ','')}</td>
+          <td>${shortName(r.vendedor||'')}</td>
+          <td class="td-name" title="${r.desc}">${r.desc.length>35?r.desc.substring(0,33)+'…':r.desc}</td>
+          <td style="font-size:11px;color:var(--text3)">${r.num||'—'}</td>
+          <td class="td-val">${fmtCurrency(r.valor)}</td>
+        </tr>`).join('')}
+      </tbody>
+      <tfoot>
+        <tr style="font-weight:700;border-top:2px solid var(--border)">
+          <td colspan="4" style="padding:12px 8px;font-family:'Bebas Neue';letter-spacing:1px">TOTAL DO DIA</td>
+          <td class="td-val" style="font-family:'Bebas Neue';font-size:16px;color:var(--accent)">${fmtCurrency(totalGeral)}</td>
+        </tr>
+      </tfoot>
+    </table>
+    </div>
+  </div>`;
+
+  bodyEl.innerHTML = html;
+}
+
+// Inicializa data ao carregar
+window.addEventListener('load', () => {
+  const inp = document.getElementById('fechamentoData');
+  if (inp) inp.value = hojeStr();
+});
 
 </script>
 
