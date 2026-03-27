@@ -719,7 +719,7 @@ function atualizar(vendas){
   document.getElementById('tabBody').innerHTML=TABELA.map((l,i)=>{
     const com=l.v*0.005,tot=com+l.a,pv=tot/l.v*100,pm=l.v/META*100;
     const isReal = i === idxReal;           // faixa do faturamento REAL
-    const isSim  = i === idx && i !== idxReal; // faixa simulada (diferente do real)
+    const isSim  = i === idx && i !== idxReal && Math.abs(v - (fatReal||0)) > 5000; // só mostra SIM se usuário simulou algo diferente
     const isFut  = l.v > v && !isReal;
     const badge  = isReal ? `<span style="background:var(--green);color:#fff;font-size:9px;padding:1px 6px;border-radius:4px;margin-left:6px;letter-spacing:1px">ATUAL</span>` : '';
     const badgeSim = isSim ? `<span style="background:var(--accent);color:#fff;font-size:9px;padding:1px 6px;border-radius:4px;margin-left:6px;letter-spacing:1px">SIM</span>` : '';
