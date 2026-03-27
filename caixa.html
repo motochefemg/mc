@@ -2115,10 +2115,12 @@ function togglePeriodoExt() {
 // Busca movimentações de uma loja em um range de datas
 async function fetchMovsLoja(lojaKey, dataIni, dataFim) {
   try {
-    const url = `${APPS_SCRIPT_URL}?action=caixa_get&loja=${encodeURIComponent(lojaKey)}&data=${dataIni}&dataFim=${dataFim}`;
+    // Se dataIni === dataFim, não passa dataFim (evita bug no backend com range de 1 dia)
+    const rangeParam = dataFim && dataFim !== dataIni ? '&dataFim=' + dataFim : '';
+    const url = `${APPS_SCRIPT_URL}?action=caixa_get&loja=${encodeURIComponent(lojaKey)}&data=${dataIni}${rangeParam}`;
     const r = await fetch(url, {signal: AbortSignal.timeout(12000)});
     const j = await r.json();
-    return (j.movimentacoes||[]).map(m => ({...m, loja: lojaKey, valor: parseFloat(m.valor)||0}));
+    return (j.movimentacoes||[]).map(m => ({...m, loja: m.loja||lojaKey, valor: parseFloat(m.valor)||0}));
   } catch(e) { return []; }
 }
 
@@ -2396,20 +2398,21 @@ async function limparDuplicatas() {
     return;
   }
 
-  if(!confirm('Encontradas ' + parasExcluir.length + ' duplicata(s). Excluir?')) {
+  if(!confirm('Encontradas ' + parasExcluir.length + ' duplicata(s) (inclui triplicatas e mais). Excluir todas?')) {
     renderExtrato();
     return;
   }
 
+  el.innerHTML = '<div class="loading"><span class="spin"></span>Excluindo ' + parasExcluir.length + ' duplicata(s)...</div>';
+
   let excluidos = 0;
   for(const item of parasExcluir) {
     try {
-      const r = await fetch(`${APPS_SCRIPT_URL}?action=caixa_excluir_mov&id=${encodeURIComponent(item.id)}&loja=${encodeURIComponent(item.loja)}`);
+      // Passa todos=true para excluir TODAS as linhas com esse id (não só 1)
+      const r = await fetch(`${APPS_SCRIPT_URL}?action=caixa_excluir_mov&id=${encodeURIComponent(item.id)}&loja=${encodeURIComponent(item.loja)}&todos=true`);
       const j = await r.json();
-      if(j.success) {
-        movimentacoes = movimentacoes.filter(m => String(m.id) !== String(item.id));
-        excluidos++;
-      }
+      movimentacoes = movimentacoes.filter(m => String(m.id) !== String(item.id));
+      excluidos += j.removidas || 1;
     } catch(e) {
       movimentacoes = movimentacoes.filter(m => String(m.id) !== String(item.id));
       excluidos++;
@@ -2418,7 +2421,7 @@ async function limparDuplicatas() {
 
   saveData();
   renderExtrato();
-  showToast('✓ ' + excluidos + ' duplicata(s) removida(s)!');
+  showToast('✓ ' + excluidos + ' linha(s) removida(s)!');
 }
 
 </script>
