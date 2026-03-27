@@ -2145,9 +2145,9 @@ async function carregarTodasLojas() {
       <div class="kv tg">${fmtCurrency(totEntDia)}</div>
       <div class="ks">${dataHoje.split('-').reverse().join('/')}</div>
     </div>
-    <div class="kpi go" style="flex:1;min-width:150px">
-      <div class="kl">Entradas Mês — Todas</div>
-      <div class="kv" style="color:var(--gold)">${fmtCurrency(totEntMes)}</div>
+    <div class="kpi b" style="flex:1;min-width:150px">
+      <div class="kl">Saldo Mês — Todas</div>
+      <div class="kv" style="color:${totEntMes-dadosPorLoja.reduce((s,d)=>s+d.saiMes,0)>=0?'var(--blue)':'var(--red)'}">${fmtCurrency(totEntMes - dadosPorLoja.reduce((s,d)=>s+d.saiMes,0))}</div>
       <div class="ks">${mesSel}</div>
     </div>
   </div>`;
@@ -2180,9 +2180,9 @@ async function carregarTodasLojas() {
           <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1px">Saldo Hoje</div>
           <div style="font-family:'Bebas Neue';font-size:18px;color:${d.saldoDia>=0?'var(--green)':'var(--red)'}">${fmtCurrency(d.saldoDia)}</div>
         </div>
-        <div style="background:rgba(184,120,10,.08);border:1px solid rgba(184,120,10,.2);border-radius:8px;padding:8px;text-align:center">
-          <div style="font-size:9px;color:var(--gold);text-transform:uppercase;letter-spacing:1px">Entradas Mês</div>
-          <div style="font-family:'Bebas Neue';font-size:18px;color:var(--gold)">${fmtCurrency(d.entMes)}</div>
+        <div style="background:rgba(37,99,235,.08);border:1px solid rgba(37,99,235,.2);border-radius:8px;padding:8px;text-align:center">
+          <div style="font-size:9px;color:var(--blue);text-transform:uppercase;letter-spacing:1px">Saldo Mês</div>
+          <div style="font-family:'Bebas Neue';font-size:18px;color:${d.saldoMes>=0?'var(--blue)':'var(--red)'}">${fmtCurrency(d.saldoMes)}</div>
         </div>
       </div>
       ${d.topSai.length > 0 ? `
