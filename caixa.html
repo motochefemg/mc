@@ -561,6 +561,7 @@ tr:hover td{background:var(--bg2);}
           <div class="pt">Extrato do Caixa</div>
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
             <select class="fsel" id="filtroLojaExt" style="width:200px;padding:6px 10px;font-size:12px;display:none" onchange="renderExtrato()">
+              <option value="__todas__">🏪 Todas as lojas</option>
               <option value="MOTOCHEFE Varginha">MC Varginha</option>
               <option value="MOTOCHEFE Poços de Caldas">MC Poços de Caldas</option>
               <option value="MOTOCHEFE Itajubá">MC Itajubá</option>
@@ -1584,12 +1585,24 @@ async function renderExtrato(){
     const lojaFiltro = filtLojaEl.value;
     el.innerHTML = '<div class="loading"><span class="spin"></span>Buscando...</div>';
     try {
-      const r = await fetch(`${APPS_SCRIPT_URL}?action=caixa_get&loja=${encodeURIComponent(lojaFiltro)}&data=${filtData}`, {signal: AbortSignal.timeout(8000)});
-      const json = await r.json();
-      let movs = (json.movimentacoes||[]).map(m=>({...m, valor: parseFloat(m.valor)||0})).filter(m=>m.tipo!=='sistema');
-      if(filtTipo) movs = movs.filter(m=>m.tipo===filtTipo);
-      movs = [...movs].reverse();
-      renderExtratoHTML(movs, filtData, filtTipo, lojaFiltro);
+      if (lojaFiltro === '__todas__') {
+        // Busca todas as lojas físicas em paralelo e une
+        const todasMovs = await Promise.all(LOJAS_FISICAS.map(l =>
+          fetch(`${APPS_SCRIPT_URL}?action=caixa_get&loja=${encodeURIComponent(l.key)}&data=${filtData}`, {signal: AbortSignal.timeout(10000)})
+            .then(r => r.json()).catch(() => ({movimentacoes:[]}))
+        ));
+        let movs = todasMovs.flatMap(j => (j.movimentacoes||[]).map(m=>({...m, valor: parseFloat(m.valor)||0}))).filter(m=>m.tipo!=='sistema');
+        if(filtTipo) movs = movs.filter(m=>m.tipo===filtTipo);
+        movs = [...movs].sort((a,b) => (b.hora||'').localeCompare(a.hora||''));
+        renderExtratoHTML(movs, filtData, filtTipo, 'Todas as Lojas');
+      } else {
+        const r = await fetch(`${APPS_SCRIPT_URL}?action=caixa_get&loja=${encodeURIComponent(lojaFiltro)}&data=${filtData}`, {signal: AbortSignal.timeout(8000)});
+        const json = await r.json();
+        let movs = (json.movimentacoes||[]).map(m=>({...m, valor: parseFloat(m.valor)||0})).filter(m=>m.tipo!=='sistema');
+        if(filtTipo) movs = movs.filter(m=>m.tipo===filtTipo);
+        movs = [...movs].reverse();
+        renderExtratoHTML(movs, filtData, filtTipo, lojaFiltro);
+      }
     } catch(e) {
       el.innerHTML = `<div class="empty"><div class="empty-icon">⚠</div>Erro: ${e.message}</div>`;
     }
