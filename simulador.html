@@ -314,7 +314,12 @@ tr.futura td{color:var(--text3);}
         <div class="slider-header">
           <div>
             <div class="slider-label">Faturamento simulado</div>
-            <div class="slider-val" id="sliderVal">R$ 0</div>
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+              <div class="slider-val" id="sliderVal">R$ 0</div>
+              <input type="number" id="inputSimulado" placeholder="Digite um valor..." min="0" max="400000" step="1000"
+                oninput="onInputManual(+this.value)"
+                style="padding:6px 12px;border:1px solid var(--border2);border-radius:8px;background:var(--bg);color:var(--text);font-family:'Barlow';font-size:14px;font-weight:600;width:160px;outline:none">
+            </div>
             <div id="pctBadge" class="pct-badge" style="background:rgba(255,75,0,.1);color:var(--accent)">0%</div>
           </div>
           <div class="meta-box">
@@ -709,12 +714,17 @@ function atualizar(vendas){
     document.getElementById('proxVal').textContent='';
   }
 
-  // Tabela
+  // Tabela — marcador no valor REAL (fatReal), simulado em destaque diferente
+  const {idx: idxReal} = calcular(Math.max(MIN, Math.min(MAX, fatReal||0)));
   document.getElementById('tabBody').innerHTML=TABELA.map((l,i)=>{
     const com=l.v*0.005,tot=com+l.a,pv=tot/l.v*100,pm=l.v/META*100;
-    const isAt=i===idx,isFut=l.v>v;
-    return `<tr class="${isAt?'ativa':isFut?'futura':''}">
-      <td style="font-weight:600">${fmtR(l.v)}</td>
+    const isReal = i === idxReal;           // faixa do faturamento REAL
+    const isSim  = i === idx && i !== idxReal; // faixa simulada (diferente do real)
+    const isFut  = l.v > v && !isReal;
+    const badge  = isReal ? `<span style="background:var(--green);color:#fff;font-size:9px;padding:1px 6px;border-radius:4px;margin-left:6px;letter-spacing:1px">ATUAL</span>` : '';
+    const badgeSim = isSim ? `<span style="background:var(--accent);color:#fff;font-size:9px;padding:1px 6px;border-radius:4px;margin-left:6px;letter-spacing:1px">SIM</span>` : '';
+    return `<tr class="${isReal?'ativa':isSim?'futura':isFut?'futura':''}">
+      <td style="font-weight:600">${fmtR(l.v)}${badge}${badgeSim}</td>
       <td style="font-size:11px;color:var(--text3)">${pm.toFixed(0)}%</td>
       <td class="tvb" style="color:${l.p>0?'var(--gold)':'var(--text3)'}">${l.p>0?fmtR(l.p):'—'}</td>
       <td class="tvb" style="color:${l.a>0?'var(--blue)':'var(--text3)'}">${l.a>0?fmtR(l.a):'—'}</td>
@@ -733,7 +743,23 @@ function atualizar(vendas){
   }
 }
 
-function onSlider(v){ atualizar(v); }
+function onSlider(v){
+  // Sincroniza input manual com slider
+  const inp = document.getElementById('inputSimulado');
+  if(inp) inp.value = v || '';
+  atualizar(v);
+}
+
+function onInputManual(v){
+  if(!v || isNaN(v)) return;
+  const clamped = Math.max(MIN, Math.min(400000, v));
+  // Sincroniza slider
+  const slider = document.getElementById('slider');
+  if(slider) slider.value = Math.min(clamped, MAX);
+  const fill = (Math.min(clamped, MAX) - MIN) / (MAX - MIN) * 100;
+  document.getElementById('rangeFill').style.width = fill + '%';
+  atualizar(clamped);
+}
 function fmtR(v){ return 'R$ '+Math.round(v).toLocaleString('pt-BR'); }
 function fmtPct(v){ return v.toFixed(2).replace('.',',')+'%'; }
 
