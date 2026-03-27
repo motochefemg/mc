@@ -1447,13 +1447,14 @@ function renderTableDetail(motos,caps){
       <td class="td-name">${shortName(r.vendedor)}</td>
       <td style="color:var(--text3);font-size:11px">${r.loja.replace('MOTOCHEFE ','').replace('ECOMOV ','')}</td>
       <td class="td-val">${fmtCurrency(r.valor)}</td>
+      <td style="text-align:center"><button onclick="excluirNF('${r.num}',this)" title="Excluir NF ${r.num}" style="background:transparent;border:1px solid rgba(220,38,38,0.3);border-radius:5px;color:var(--red);cursor:pointer;padding:3px 8px;font-size:11px">✕</button></td>
     </tr>`;
   });
   document.getElementById('detailTable').innerHTML=`
     <div class="table-wrap">
     <table>
       <thead><tr>
-        <th>#</th><th>DATA</th><th>Nº NF</th><th>PRODUTO</th><th>TIPO</th><th>VENDEDOR</th><th>LOJA</th><th style="text-align:right">VALOR</th>
+        <th>#</th><th>DATA</th><th>Nº NF</th><th>PRODUTO</th><th>TIPO</th><th>VENDEDOR</th><th>LOJA</th><th style="text-align:right">VALOR</th><th></th>
       </tr></thead>
       <tbody>${rows}</tbody>
     </table>
@@ -2674,6 +2675,37 @@ window.addEventListener('load', () => {
   const inp = document.getElementById('fechamentoData');
   if (inp) inp.value = hojeStr();
 });
+
+// ════════════════════════════════════════
+// EXCLUIR NF DA PLANILHA
+// ════════════════════════════════════════
+async function excluirNF(numNF, btn) {
+  if (!numNF || numNF === '—') { showToast('NF inválida'); return; }
+  if (!confirm('Excluir NF ' + numNF + ' do relatório?')) return;
+
+  btn.disabled = true;
+  btn.textContent = '...';
+
+  try {
+    const r = await fetch(APPS_SCRIPT_URL + '?action=excluirnf&numero=' + encodeURIComponent(numNF));
+    const j = await r.json();
+    if (j.success) {
+      // Remove do rawMotos em memória
+      rawMotos = rawMotos.filter(m => String(m.num) !== String(numNF));
+      rawCapacetes = rawCapacetes.filter(m => String(m.num) !== String(numNF));
+      showToast('✓ NF ' + numNF + ' excluída!');
+      renderAll();
+    } else {
+      btn.disabled = false;
+      btn.textContent = '✕';
+      showToast('Erro: ' + (j.error || 'falha ao excluir'));
+    }
+  } catch(e) {
+    btn.disabled = false;
+    btn.textContent = '✕';
+    showToast('Erro de conexão');
+  }
+}
 
 </script>
 
