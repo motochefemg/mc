@@ -494,6 +494,19 @@ tr:hover td{background:var(--bg2);}
     <div class="panel" style="max-width:600px">
       <div class="ph"><div class="pt">Registrar Saída / Despesa</div></div>
       <div class="pb">
+        <div class="fg" id="saidaLojaField" style="display:none">
+          <label class="fl">Loja de destino <span style="color:var(--red)">*</span></label>
+          <select class="fsel" id="saidaLoja">
+            <option value="">Selecione a loja...</option>
+            <option value="MOTOCHEFE Varginha">MC Varginha</option>
+            <option value="MOTOCHEFE Poços de Caldas">MC Poços de Caldas</option>
+            <option value="MOTOCHEFE Itajubá">MC Itajubá</option>
+            <option value="MOTOCHEFE Pouso Alegre">MC Pouso Alegre</option>
+            <option value="MOTOCHEFE BH">MC BH</option>
+            <option value="ECOMOV LAV">EC Lavras</option>
+            <option value="ECOMOV Pouso Alegre">EC Pouso Alegre</option>
+          </select>
+        </div>
         <div class="fg">
           <label class="fl">Categoria</label>
           <select class="fsel" id="sCategoria">
@@ -558,13 +571,19 @@ tr:hover td{background:var(--bg2);}
     <div class="pgrid">
       <div class="panel full">
         <div class="ph">
-          <div class="pt">Extrato do Caixa</div>
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+            <div class="pt">Extrato do Caixa</div>
+            <button id="btnLimparDupl" onclick="limparDuplicatas()" class="btn btn-sm" style="background:rgba(220,38,38,.1);color:var(--red);border:1px solid rgba(220,38,38,.25);font-size:11px;padding:5px 12px;display:none">🧹 Limpar duplicatas</button>
+            <button id="btnExcluirSel" onclick="excluirSelecionados()" class="btn btn-sm" style="background:rgba(220,38,38,.1);color:var(--red);border:1px solid rgba(220,38,38,.25);font-size:11px;padding:5px 12px;display:none">✕ Excluir selecionados (<span id="countSel">0</span>)</button>
+          </div>
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
             <select class="fsel" id="filtroLojaExt" style="width:200px;padding:6px 10px;font-size:12px;display:none" onchange="renderExtrato()">
               <option value="__todas__">🏪 Todas as lojas</option>
               <option value="MOTOCHEFE Varginha">MC Varginha</option>
               <option value="MOTOCHEFE Poços de Caldas">MC Poços de Caldas</option>
               <option value="MOTOCHEFE Itajubá">MC Itajubá</option>
+              <option value="MOTOCHEFE Pouso Alegre">MC Pouso Alegre</option>
+              <option value="MOTOCHEFE BH">MC BH</option>
               <option value="ECOMOV LAV">EC Lavras</option>
               <option value="ECOMOV Pouso Alegre">EC Pouso Alegre</option>
               <option value="__cesar__">👔 César</option>
@@ -676,6 +695,8 @@ const LOJAS_CONFIG = {
   'MOTOCHEFE Itajubá':        { senha:'ITJ@2k26#mc',    adm:'Carlos',                             sigla:'IT', gestor:false },
   'MOTOCHEFE Poços de Caldas':{ senha:'POC@2k26#js',  adm:'Julia Sampaio',                       sigla:'PC', gestor:false },
   'MOTOCHEFE Varginha':       { senha:'VRG@2k26#pa',   adm:'Pablo Albinati',                      sigla:'VG', gestor:false },
+  'MOTOCHEFE Pouso Alegre':   { senha:'MPA@2k26#mc',   adm:'Gestor',                              sigla:'MP', gestor:false },
+  'MOTOCHEFE BH':             { senha:'MBH@2k26#mc',   adm:'Gestor',                              sigla:'BH', gestor:false },
   'ECOMOV Pouso Alegre':      { senha:'PSA@2k26#ph',  adm:'Pedro Henrique de Carvalho Porto',    sigla:'PA', gestor:false },
   '__cesar__':                { senha:'CR$Mg26!gest', adm:'César Rodrigues',                     sigla:'CR', gestor:true },
   '__luiz__':                 { senha:'LP$Mg26!gest', adm:'Luiz Paulo Arouca',                   sigla:'LP', gestor:true },
@@ -751,6 +772,8 @@ const LOJAS_FISICAS = [
   { key: 'MOTOCHEFE Varginha',        label: 'MC Varginha' },
   { key: 'MOTOCHEFE Poços de Caldas', label: 'MC Poços de Caldas' },
   { key: 'MOTOCHEFE Itajubá',         label: 'MC Itajubá' },
+  { key: 'MOTOCHEFE Pouso Alegre',    label: 'MC Pouso Alegre' },
+  { key: 'MOTOCHEFE BH',              label: 'MC BH' },
   { key: 'ECOMOV LAV',                label: 'EC Lavras' },
   { key: 'ECOMOV Pouso Alegre',       label: 'EC Pouso Alegre' },
 ];
@@ -826,8 +849,9 @@ async function carregarBird() {
           <div class="ph"><div class="pt">Movimentações — ${fmtData(new Date(birdDataAtual+'T12:00:00'))}</div></div>
           <div class="pb">
             <div class="twrap"><table>
-              <thead><tr><th>HORA</th><th>DESCRIÇÃO</th><th>VENDEDOR</th><th>PAGAMENTO</th><th>TIPO</th><th style="text-align:right">VALOR</th><th></th></tr></thead>
+              <thead><tr><th style="width:32px"><input type="checkbox" id="checkAll" onchange="toggleTodos(this)" title="Selecionar todos"></th><th>HORA</th><th>DESCRIÇÃO</th><th>VENDEDOR</th><th>PAGAMENTO</th><th>TIPO</th><th style="text-align:right">VALOR</th><th></th></tr></thead>
               <tbody>${[...movs].reverse().map(m=>`<tr>
+                <td style="width:32px;text-align:center"><input type="checkbox" class="chk-mov" data-id="${m.id}" data-loja="${m.loja||lojaParam||''}" onchange="atualizarContSel()"></td>
                 <td style="color:var(--text3);white-space:nowrap">${m.hora||'—'}</td>
                 <td><div style="font-weight:600">${m.desc||'—'}</div>${m.numPedido?`<div style="font-size:10px;color:var(--text3)">#${m.numPedido}</div>`:''}</td>
                 <td style="font-size:12px">${m.vendedor?`<div>${shortName(m.vendedor)}</div>`:''}${m.cliente?`<div style="color:var(--text3);font-size:11px">👤 ${shortName(m.cliente)}</div>`:''}</td>
@@ -1042,9 +1066,15 @@ function initApp(){
   document.getElementById('filtroDataExt').value = hoje();
 
   if(isGestor){
-    // Mostra select de loja no extrato
+    // Mostra select de loja no extrato — padrão: Todas as lojas
     const sel = document.getElementById('filtroLojaExt');
-    if(sel) { sel.style.display = 'block'; sel.value = currentLoja; }
+    if(sel) { sel.style.display = 'block'; sel.value = '__todas__'; }
+    // Padrão: modo Mês
+    const periodoSel = document.getElementById('filtroPeriodoExt');
+    if(periodoSel) { periodoSel.value = 'mes'; togglePeriodoExt(); }
+    // Mostra campo loja de destino nas saídas
+    const saidaLojaField = document.getElementById('saidaLojaField');
+    if(saidaLojaField) saidaLojaField.style.display = 'block';
     // Vai para Bird's Eye
     loadData().then(() => renderBird());
     document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
@@ -1550,35 +1580,64 @@ function mostrarErroModal(msg){
 // ══════════════════════════════════════════════
 function registrarSaida(){
   if(!caixaAberto){ alert('Abra o caixa primeiro!'); return; }
-  const cat = document.getElementById('sCategoria').value;
-  const desc = document.getElementById('sDescricao').value.trim();
+  const cat   = document.getElementById('sCategoria').value;
+  const desc  = document.getElementById('sDescricao').value.trim();
   const valor = parseFloat(document.getElementById('sValor').value)||0;
-  const pgto = document.getElementById('sPagamento').value;
-  const obs = document.getElementById('sObs').value;
-  const msg = document.getElementById('saidaMsg');
+  const pgto  = document.getElementById('sPagamento').value;
+  const obs   = document.getElementById('sObs').value;
+  const msg   = document.getElementById('saidaMsg');
+
+  // Gestor pode direcionar para outra loja
+  const lojaDestino = isGestor ? (document.getElementById('saidaLoja')?.value || '') : currentLoja;
+  if(isGestor && !lojaDestino){ msg.innerHTML='<span style="color:var(--red)">Selecione a loja de destino.</span>'; return; }
+
   if(!cat||!desc||!valor){ msg.innerHTML='<span style="color:var(--red)">Preencha categoria, descrição e valor.</span>'; return; }
   if(!comprovantes.saida){ msg.innerHTML='<span style="color:var(--red)">Anexe o comprovante ou nota da despesa.</span>'; return; }
-  movimentacoes.push({
+
+  const lojaFinal = isGestor ? lojaDestino : currentLoja;
+  const mov = {
     id:Date.now()+'_'+Math.random().toString(36).slice(2,7), tipo:'saida', categoria:cat,
     desc:desc, valor, pgto, obs,
     vendedor: currentUser || '',
+    loja: lojaFinal,
     hora:fmtHora(new Date()), data:hoje(),
     comprovante: comprovantes.saida ? { nome: comprovantes.saida.nome, base64: comprovantes.saida.base64 } : null
-  });
+  };
+
+  if(isGestor && lojaDestino !== currentLoja) {
+    // Salva direto no Sheets para a loja de destino — sem passar pelo caixa local
+    msg.innerHTML='<span style="color:var(--text3)">⏳ Registrando...</span>';
+    const payload = { loja: lojaFinal, data: hoje(), movimentacoes: [mov] };
+    fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({action:'caixa_save_all', ...payload})
+    }).then(r=>r.json()).then(j=>{
+      msg.innerHTML = j.success
+        ? '<span style="color:var(--green)">✓ Saída registrada em '+lojaFinal+'!</span>'
+        : '<span style="color:var(--red)">⚠ Erro: '+(j.error||'falha')+'</span>';
+      setTimeout(()=>msg.innerHTML='', 3000);
+    }).catch(()=>{ msg.innerHTML='<span style="color:var(--red)">⚠ Erro de conexão</span>'; });
+  } else {
+    movimentacoes.push(mov);
+    saveData();
+    renderCaixa();
+  }
+
   limparComprovante('saida');
-  saveData();
-  renderCaixa();
-  // Limpa
   document.getElementById('sCategoria').value='';
   document.getElementById('sDescricao').value='';
   document.getElementById('sValor').value='';
   document.getElementById('sPagamento').value='';
   document.getElementById('sObs').value='';
-  msg.innerHTML='<span style="color:var(--green)">✓ Saída registrada com sucesso!</span>';
-  setTimeout(()=>msg.innerHTML='', 3000);
-  showToast(`↓ Saída de ${fmtCurrency(valor)} registrada`);
+  if(isGestor) document.getElementById('saidaLoja').value='';
+  if(!isGestor || lojaDestino === currentLoja) {
+    msg.innerHTML='<span style="color:var(--green)">✓ Saída registrada com sucesso!</span>';
+    setTimeout(()=>msg.innerHTML='', 3000);
+  }
+  showToast('↓ Saída de '+fmtCurrency(valor)+' → '+lojaFinal);
   const movSaida = movimentacoes[movimentacoes.length-1];
-  setTimeout(()=>abrirRecibo(movSaida), 400);
+  if(movSaida) setTimeout(()=>abrirRecibo(movSaida), 400);
 }
 
 // ══════════════════════════════════════════════
@@ -1613,7 +1672,7 @@ async function renderExtrato(){
   renderExtratoHTML(movs, filtData, filtTipo, currentLoja);
 }
 
-function renderExtratoHTML(movs, filtData, filtTipo, loja){
+function renderExtratoHTML(movs, filtData, filtTipo, lojaParam){
   const totEnt = movs.filter(m=>m.tipo==='entrada').reduce((s,m)=>s+m.valor,0);
   const totSai = movs.filter(m=>m.tipo==='saida').reduce((s,m)=>s+m.valor,0);
   const el = document.getElementById('listaExtrato');
@@ -1647,7 +1706,7 @@ function renderExtratoHTML(movs, filtData, filtTipo, loja){
         <td style="white-space:nowrap">
           <button class="btn btn-sm btn-s" onclick='abrirRecibo(${JSON.stringify(m).replace(/'/g,"\'")})'  style="font-size:10px;padding:3px 8px">🖨</button>
           ${m.comprovante?`<button class="btn btn-sm btn-s" onclick='verComprovante(${JSON.stringify(m).replace(/'/g,"\'")})'  style="font-size:10px;padding:3px 8px;margin-left:4px">📎</button>`:''}
-          <button class="btn btn-sm" onclick="excluirMov('${m.id}','${m.loja||loja||''}')" style="font-size:10px;padding:3px 8px;margin-left:4px;background:rgba(220,38,38,.1);color:var(--red);border:1px solid rgba(220,38,38,.2)">✕</button>
+          <button class="btn btn-sm" onclick="excluirMov('${m.id}','${m.lojaParam||lojaParam||''}')" style="font-size:10px;padding:3px 8px;margin-left:4px;background:rgba(220,38,38,.1);color:var(--red);border:1px solid rgba(220,38,38,.2)">✕</button>
         </td>
       </tr>`).join('')}
       </tbody>
@@ -2248,6 +2307,119 @@ carregarBird = async function() {
   if (isGestor) return carregarTodasLojas();
   return _carregarBirdOrig();
 };
+
+// ════════════════════════════════════════════════════════
+// SELEÇÃO MÚLTIPLA E LIMPEZA DE DUPLICATAS
+// ════════════════════════════════════════════════════════
+
+function toggleTodos(chkAll) {
+  document.querySelectorAll('.chk-mov').forEach(c => { c.checked = chkAll.checked; });
+  atualizarContSel();
+}
+
+function atualizarContSel() {
+  const selecionados = document.querySelectorAll('.chk-mov:checked').length;
+  const total = document.querySelectorAll('.chk-mov').length;
+  const btnExc = document.getElementById('btnExcluirSel');
+  const btnLimp = document.getElementById('btnLimparDupl');
+  const contEl = document.getElementById('countSel');
+  if(contEl) contEl.textContent = selecionados;
+  if(btnExc) btnExc.style.display = selecionados > 0 ? 'inline-flex' : 'none';
+  if(btnLimp) btnLimp.style.display = isGestor && total > 0 ? 'inline-flex' : 'none';
+  // Atualiza estado do "marcar todos"
+  const chkAll = document.getElementById('checkAll');
+  if(chkAll) chkAll.indeterminate = selecionados > 0 && selecionados < total;
+}
+
+async function excluirSelecionados() {
+  const checks = [...document.querySelectorAll('.chk-mov:checked')];
+  if(checks.length === 0) return;
+  if(!confirm('Excluir ' + checks.length + ' lançamento(s) selecionado(s)?')) return;
+
+  let excluidos = 0;
+  for(const chk of checks) {
+    const id   = chk.dataset.id;
+    const loja = chk.dataset.loja;
+    try {
+      const r = await fetch(`${APPS_SCRIPT_URL}?action=caixa_excluir_mov&id=${encodeURIComponent(id)}&loja=${encodeURIComponent(loja)}`);
+      const j = await r.json();
+      if(j.success) {
+        movimentacoes = movimentacoes.filter(m => String(m.id) !== String(id));
+        excluidos++;
+      }
+    } catch(e) {
+      movimentacoes = movimentacoes.filter(m => String(m.id) !== String(id));
+      excluidos++;
+    }
+  }
+  saveData();
+  renderExtrato();
+  renderCaixa();
+  showToast('✓ ' + excluidos + ' lançamento(s) excluído(s)');
+}
+
+async function limparDuplicatas() {
+  if(!isGestor) return;
+  const el = document.getElementById('listaExtrato');
+  el.innerHTML = '<div class="loading"><span class="spin"></span>Verificando duplicatas...</div>';
+
+  // Busca todos os lançamentos visíveis na tabela
+  const checks = [...document.querySelectorAll('.chk-mov')];
+  if(checks.length === 0) { showToast('Nenhum dado carregado'); return; }
+
+  // Coleta ids e lojas de todos
+  const todos = checks.map(c => ({ id: c.dataset.id, loja: c.dataset.loja }));
+
+  // Identifica duplicatas: mesma hora+desc+valor — mantém o primeiro, marca os demais
+  const vistos = {};
+  const parasExcluir = [];
+
+  // Precisamos dos dados da tabela — buscar do DOM
+  const linhas = document.querySelectorAll('tbody tr');
+  linhas.forEach(tr => {
+    const chk = tr.querySelector('.chk-mov');
+    if(!chk) return;
+    const hora  = tr.cells[1]?.textContent?.trim() || '';
+    const desc  = tr.cells[2]?.textContent?.trim() || '';
+    const valor = tr.cells[6]?.textContent?.trim() || '';
+    const key   = hora + '|' + desc.substring(0,30) + '|' + valor;
+    if(vistos[key]) {
+      parasExcluir.push({ id: chk.dataset.id, loja: chk.dataset.loja });
+    } else {
+      vistos[key] = true;
+    }
+  });
+
+  if(parasExcluir.length === 0) {
+    renderExtrato();
+    showToast('✓ Nenhuma duplicata encontrada!');
+    return;
+  }
+
+  if(!confirm('Encontradas ' + parasExcluir.length + ' duplicata(s). Excluir?')) {
+    renderExtrato();
+    return;
+  }
+
+  let excluidos = 0;
+  for(const item of parasExcluir) {
+    try {
+      const r = await fetch(`${APPS_SCRIPT_URL}?action=caixa_excluir_mov&id=${encodeURIComponent(item.id)}&loja=${encodeURIComponent(item.loja)}`);
+      const j = await r.json();
+      if(j.success) {
+        movimentacoes = movimentacoes.filter(m => String(m.id) !== String(item.id));
+        excluidos++;
+      }
+    } catch(e) {
+      movimentacoes = movimentacoes.filter(m => String(m.id) !== String(item.id));
+      excluidos++;
+    }
+  }
+
+  saveData();
+  renderExtrato();
+  showToast('✓ ' + excluidos + ' duplicata(s) removida(s)!');
+}
 
 </script>
 
