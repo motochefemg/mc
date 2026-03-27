@@ -1828,13 +1828,23 @@ async function emitirNFModal() {
   }
 }
 
-function excluirMov(id){
+async function excluirMov(id){
   if(!confirm('Excluir este lançamento?')) return;
+  // Remove localmente imediato
   movimentacoes = movimentacoes.filter(m=>m.id!==id);
   saveData();
   renderExtrato();
   renderCaixa();
-  showToast('Lançamento excluído');
+  showToast('Excluindo...');
+  // Remove no Sheets
+  try {
+    const loja = typeof currentLoja !== 'undefined' ? currentLoja : '';
+    const r = await fetch(`${APPS_SCRIPT_URL}?action=caixa_excluir_mov&id=${encodeURIComponent(id)}&loja=${encodeURIComponent(loja)}`);
+    const j = await r.json();
+    showToast(j.success ? '✓ Lançamento excluído' : '⚠ Excluído local, erro no servidor: '+(j.error||''));
+  } catch(e) {
+    showToast('⚠ Excluído local, sem conexão com servidor');
+  }
 }
 
 // ══════════════════════════════════════════════
