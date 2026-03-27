@@ -633,7 +633,7 @@ function calcular(vendas){
 
 // ── ATUALIZAR TELA ─────────────────────────────────────────
 function atualizar(vendas){
-  const v = Math.max(MIN,Math.min(MAX,vendas));
+  const v = Math.max(MIN, vendas); // sem limite MAX — vendas podem superar 260k
   const {comissao,acum,total,pct,idx} = calcular(v);
 
   const cor = pctToCor(pct);

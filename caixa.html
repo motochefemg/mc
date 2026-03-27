@@ -1181,7 +1181,7 @@ function confirmarFechamento(){
   const dif = contagem - saldoEsp;
   // Registra fechamento
   movimentacoes.push({
-    id: Date.now(), tipo:'sistema', desc:'FECHAMENTO DE CAIXA',
+    id: Date.now()+'_'+Math.random().toString(36).slice(2,7), tipo:'sistema', desc:'FECHAMENTO DE CAIXA',
     valor:0, pgto:'—', hora:fmtHora(new Date()), data:hoje(),
     obs:`Contagem: ${fmtCurrency(contagem)} | Esperado: ${fmtCurrency(saldoEsp)} | Diferença: ${fmtCurrency(dif)} | ${obs}`
   });
@@ -1500,7 +1500,7 @@ function confirmarVenda(){
   pgtoSelecionado = pgtosFilled[0].tipo;
   const parcelas = pgtosFilled[0].parcelas||'1';
   movimentacoes.push({
-    id:Date.now(), tipo:'entrada', categoria:p.tipo,
+    id:Date.now()+'_'+Math.random().toString(36).slice(2,7), tipo:'entrada', categoria:p.tipo,
     desc:p.desc||'—', numPedido:p.num,
     valor:p.valor||p.valorTotal||0, pgto:pgtoLabel,
     vendedor:p.vendedor, cliente:p.cliente||'',
@@ -1559,7 +1559,7 @@ function registrarSaida(){
   if(!cat||!desc||!valor){ msg.innerHTML='<span style="color:var(--red)">Preencha categoria, descrição e valor.</span>'; return; }
   if(!comprovantes.saida){ msg.innerHTML='<span style="color:var(--red)">Anexe o comprovante ou nota da despesa.</span>'; return; }
   movimentacoes.push({
-    id:Date.now(), tipo:'saida', categoria:cat,
+    id:Date.now()+'_'+Math.random().toString(36).slice(2,7), tipo:'saida', categoria:cat,
     desc:desc, valor, pgto, obs,
     vendedor: currentUser || '',
     hora:fmtHora(new Date()), data:hoje(),
