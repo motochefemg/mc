@@ -571,7 +571,12 @@ tr:hover td{background:var(--bg2);}
               <option value="__matheus__">👔 Matheus</option>
               <option value="__joao__">👔 João Brito</option>
             </select>
+            <select class="fsel" id="filtroPeriodoExt" style="width:120px;padding:6px 10px;font-size:12px" onchange="togglePeriodoExt()">
+              <option value="dia">📅 Dia</option>
+              <option value="mes">📆 Mês</option>
+            </select>
             <input type="date" class="fc" id="filtroDataExt" style="width:150px;padding:6px 10px;font-size:12px" onchange="renderExtrato()">
+            <input type="month" class="fc" id="filtroMesExt" style="width:150px;padding:6px 10px;font-size:12px;display:none" onchange="renderExtrato()">
             <button class="btn btn-sm btn-s" onclick="exportarExtrato()" style="padding:6px 10px">📥 Excel</button>
             <select class="fsel" id="filtroTipoExt" style="width:130px;padding:6px 10px;font-size:12px" onchange="renderExtrato()">
               <option value="">Todos</option>
@@ -746,6 +751,7 @@ function renderBird() {
         ${OPCOES_VISUALIZACAO.map(o=>`<option value="${o.key}" ${o.key===birdLojaAtual?'selected':''}>${o.label}</option>`).join('')}
       </select>
       <input type="date" class="fc" id="birdDataInput" value="${birdDataAtual}" onchange="birdDataAtual=this.value;carregarBird()" style="width:150px;padding:10px">
+      <input type="month" class="fc" id="birdMesInput" value="${birdDataAtual.substring(0,7)}" style="width:150px;padding:10px" title="Mês para acumulado">
       <button class="btn btn-p" onclick="carregarBird()">↻ Atualizar</button>
     </div>
     <div id="birdConteudo"><div class="loading"><span class="spin"></span>Carregando...</div></div>
@@ -1995,6 +2001,221 @@ function verComprovante(mov) {
     a.click();
   }
 }
+
+// ════════════════════════════════════════════════════════
+// MELHORIAS CAIXA — Gestão por loja + acumulado mês
+// ════════════════════════════════════════════════════════
+
+// Toggle dia/mês no extrato
+function togglePeriodoExt() {
+  const p = document.getElementById('filtroPeriodoExt')?.value || 'dia';
+  const dEl = document.getElementById('filtroDataExt');
+  const mEl = document.getElementById('filtroMesExt');
+  if (dEl) dEl.style.display = p === 'dia' ? '' : 'none';
+  if (mEl) mEl.style.display = p === 'mes' ? '' : 'none';
+  renderExtrato();
+}
+
+// Sobreescreve renderExtrato para suportar mês
+const _renderExtratoOriginal = renderExtrato;
+renderExtrato = async function() {
+  const periodo = document.getElementById('filtroPeriodoExt')?.value || 'dia';
+  if (periodo === 'dia') { return _renderExtratoOriginal(); }
+
+  // Modo mês
+  const filtMes  = document.getElementById('filtroMesExt')?.value || hoje().substring(0,7);
+  const filtTipo = document.getElementById('filtroTipoExt').value;
+  const filtLojaEl = document.getElementById('filtroLojaExt');
+  const el = document.getElementById('listaExtrato');
+
+  const [anoM, mmM] = filtMes.split('-');
+  const ultimoDiaM = new Date(parseInt(anoM), parseInt(mmM), 0).getDate();
+  const dataFim = filtMes + '-' + String(ultimoDiaM).padStart(2,'0');
+  const dataIni = filtMes + '-01';
+
+  el.innerHTML = '<div class="loading"><span class="spin"></span>Buscando mês completo...</div>';
+
+  if (isGestor && filtLojaEl && filtLojaEl.style.display !== 'none') {
+    const loja = filtLojaEl.value;
+    try {
+      // Busca dia a dia do mês e une tudo
+      const movsTodos = [];
+      const d = new Date(dataIni);
+      const fim = new Date(dataFim);
+      while (d <= fim) {
+        const dataStr = d.toISOString().slice(0,10);
+        try {
+          const r = await fetch(`${APPS_SCRIPT_URL}?action=caixa_get&loja=${encodeURIComponent(loja)}&data=${dataStr}`, {signal: AbortSignal.timeout(6000)});
+          const j = await r.json();
+          (j.movimentacoes||[]).forEach(m => movsTodos.push({...m, valor: parseFloat(m.valor)||0}));
+        } catch(e) {}
+        d.setDate(d.getDate() + 1);
+      }
+      let movs = movsTodos.filter(m => m.tipo !== 'sistema');
+      if (filtTipo) movs = movs.filter(m => m.tipo === filtTipo);
+      movs = [...movs].reverse();
+      renderExtratoHTML(movs, filtMes, filtTipo, loja);
+    } catch(e) {
+      el.innerHTML = `<div class="empty"><div class="empty-icon">⚠</div>Erro: ${e.message}</div>`;
+    }
+    return;
+  }
+
+  // Loja — filtra local pelo mês
+  let movs = movimentacoes.filter(m => m.data && m.data.startsWith(filtMes) && m.tipo !== 'sistema');
+  if (filtTipo) movs = movs.filter(m => m.tipo === filtTipo);
+  movs = [...movs].reverse();
+  renderExtratoHTML(movs, filtMes, filtTipo, currentLoja);
+};
+
+// ─── Visão gestor: todas as lojas ──────────────────────
+const LOJAS_FISICAS = [
+  { key: 'MOTOCHEFE Varginha',        label: 'MC Varginha' },
+  { key: 'MOTOCHEFE Poços de Caldas', label: 'MC Poços de Caldas' },
+  { key: 'MOTOCHEFE Itajubá',         label: 'MC Itajubá' },
+  { key: 'ECOMOV LAV',                label: 'EC Lavras' },
+  { key: 'ECOMOV Pouso Alegre',       label: 'EC Pouso Alegre' },
+];
+
+// Semáforo de saldo
+function _semaforo(saldo, entradas) {
+  if (saldo < 0)                         return { cor: 'var(--red)',    icon: '🔴', label: 'Negativo' };
+  if (entradas > 0 && saldo < entradas * 0.05) return { cor: '#f97316', icon: '🟡', label: 'Atenção' };
+  return                                        { cor: 'var(--green)', icon: '🟢', label: 'OK' };
+}
+
+// Carrega dados de todas as lojas (dia + mês)
+async function carregarTodasLojas() {
+  if (!isGestor) return;
+  const conteudo = document.getElementById('birdConteudo');
+  if (!conteudo) return;
+
+  const dataHoje = document.getElementById('birdDataInput')?.value || hoje();
+  const mesSel   = document.getElementById('birdMesInput')?.value  || dataHoje.substring(0,7);
+  const [anoM, mmM] = mesSel.split('-');
+  const ultimoDia = new Date(parseInt(anoM), parseInt(mmM), 0).getDate();
+  const mesIni = mesSel + '-01';
+  const mesFim = mesSel + '-' + String(ultimoDia).padStart(2,'0');
+
+  conteudo.innerHTML = '<div class="loading"><span class="spin"></span>Carregando todas as lojas...</div>';
+
+  // Fetch paralelo: dia de hoje + cada dia do mês por loja
+  const fetchDia = (loja, data) =>
+    fetch(`${APPS_SCRIPT_URL}?action=caixa_get&loja=${encodeURIComponent(loja)}&data=${data}`, {signal: AbortSignal.timeout(8000)})
+      .then(r => r.json()).catch(() => ({ movimentacoes: [] }));
+
+  // Busca dia atual de todas as lojas
+  const resDia = await Promise.all(LOJAS_FISICAS.map(l => fetchDia(l.key, dataHoje)));
+
+  // Busca mês — dia a dia (até 31 fetches por loja — melhor performance: busca só dias com dados)
+  // Estratégia: buscar mesIni e mesFim como range (o backend atual suporta só 1 dia,
+  // então buscamos início do mês apenas para ter o acumulado parcial)
+  const resMesIni = await Promise.all(LOJAS_FISICAS.map(l => fetchDia(l.key, mesIni)));
+
+  // Montar dados por loja
+  const dadosPorLoja = LOJAS_FISICAS.map((l, i) => {
+    const movsD = (resDia[i]?.movimentacoes||[]).map(m=>({...m,valor:parseFloat(m.valor)||0})).filter(m=>m.tipo!=='sistema');
+    const movsM = (resMesIni[i]?.movimentacoes||[]).map(m=>({...m,valor:parseFloat(m.valor)||0})).filter(m=>m.tipo!=='sistema');
+    const troco  = parseFloat(resDia[i]?.trocoInicial)||0;
+    const aberto = resDia[i]?.caixaAberto === true || resDia[i]?.caixaAberto === 'true';
+    const entDia = movsD.filter(m=>m.tipo==='entrada').reduce((s,m)=>s+m.valor,0);
+    const saiDia = movsD.filter(m=>m.tipo==='saida').reduce((s,m)=>s+m.valor,0);
+    const entMes = movsM.filter(m=>m.tipo==='entrada').reduce((s,m)=>s+m.valor,0);
+    const saiMes = movsM.filter(m=>m.tipo==='saida').reduce((s,m)=>s+m.valor,0);
+    const saldoDia = troco + entDia - saiDia;
+    const saldoMes = entMes - saiMes;
+    // Top categorias saída do dia
+    const catMap = {};
+    movsD.filter(m=>m.tipo==='saida').forEach(m=>{ const c=m.categoria||'Outros'; catMap[c]=(catMap[c]||0)+m.valor; });
+    const topSai = Object.entries(catMap).sort((a,b)=>b[1]-a[1]).slice(0,3);
+    return { loja: l, aberto, troco, entDia, saiDia, saldoDia, entMes, saiMes, saldoMes, movsD, topSai };
+  });
+
+  const totEntDia = dadosPorLoja.reduce((s,d)=>s+d.entDia, 0);
+  const totEntMes = dadosPorLoja.reduce((s,d)=>s+d.entMes, 0);
+
+  // ─── HTML ─────────────────────────────────────────────
+  let html = '';
+
+  // Barra de totais
+  html += `
+  <div style="display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap">
+    <div class="kpi g" style="flex:1;min-width:150px">
+      <div class="kl">Entradas Hoje — Todas</div>
+      <div class="kv tg">${fmtCurrency(totEntDia)}</div>
+      <div class="ks">${dataHoje.split('-').reverse().join('/')}</div>
+    </div>
+    <div class="kpi go" style="flex:1;min-width:150px">
+      <div class="kl">Entradas Mês — Todas</div>
+      <div class="kv" style="color:var(--gold)">${fmtCurrency(totEntMes)}</div>
+      <div class="ks">${mesSel}</div>
+    </div>
+  </div>`;
+
+  // Cards por loja
+  html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:16px">';
+  dadosPorLoja.forEach(d => {
+    const sem = _semaforo(d.saldoDia, d.entDia);
+    html += `
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px;border-top:3px solid ${sem.cor}">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <div style="font-family:'Bebas Neue';font-size:17px;letter-spacing:1px">${d.loja.label}</div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <span title="${sem.label}">${sem.icon}</span>
+          <span style="font-size:10px;padding:3px 8px;border-radius:12px;background:${d.aberto?'rgba(22,163,74,.1)':'rgba(220,38,38,.1)'};color:${d.aberto?'var(--green)':'var(--red)'}">
+            ${d.aberto ? '● Aberto' : '● Fechado'}
+          </span>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+        <div style="background:rgba(22,163,74,.08);border:1px solid rgba(22,163,74,.2);border-radius:8px;padding:8px;text-align:center">
+          <div style="font-size:9px;color:var(--green);text-transform:uppercase;letter-spacing:1px">Entradas Hoje</div>
+          <div style="font-family:'Bebas Neue';font-size:18px;color:var(--green)">${fmtCurrency(d.entDia)}</div>
+        </div>
+        <div style="background:rgba(220,38,38,.06);border:1px solid rgba(220,38,38,.15);border-radius:8px;padding:8px;text-align:center">
+          <div style="font-size:9px;color:var(--red);text-transform:uppercase;letter-spacing:1px">Saídas Hoje</div>
+          <div style="font-family:'Bebas Neue';font-size:18px;color:var(--red)">${fmtCurrency(d.saiDia)}</div>
+        </div>
+        <div style="background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:8px;text-align:center">
+          <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1px">Saldo Hoje</div>
+          <div style="font-family:'Bebas Neue';font-size:18px;color:${d.saldoDia>=0?'var(--green)':'var(--red)'}">${fmtCurrency(d.saldoDia)}</div>
+        </div>
+        <div style="background:rgba(184,120,10,.08);border:1px solid rgba(184,120,10,.2);border-radius:8px;padding:8px;text-align:center">
+          <div style="font-size:9px;color:var(--gold);text-transform:uppercase;letter-spacing:1px">Entradas Mês</div>
+          <div style="font-family:'Bebas Neue';font-size:18px;color:var(--gold)">${fmtCurrency(d.entMes)}</div>
+        </div>
+      </div>
+      ${d.topSai.length > 0 ? `
+      <div style="border-top:1px solid var(--border);padding-top:8px">
+        <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:5px">Top Saídas Hoje</div>
+        ${d.topSai.map(([cat,val]) => `
+        <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px">
+          <span style="color:var(--text2)">${cat}</span>
+          <span style="color:var(--red);font-weight:600">-${fmtCurrency(val)}</span>
+        </div>`).join('')}
+      </div>` : ''}
+      ${d.saldoDia < 0 ? `
+      <div style="margin-top:8px;background:rgba(220,38,38,.08);border:1px solid rgba(220,38,38,.2);border-radius:7px;padding:7px;font-size:11px;color:var(--red)">
+        ⚠️ Saldo negativo — verificar saídas
+      </div>` : ''}
+      ${d.entDia === 0 && d.aberto ? `
+      <div style="margin-top:8px;background:rgba(249,115,22,.08);border:1px solid rgba(249,115,22,.2);border-radius:7px;padding:7px;font-size:11px;color:#f97316">
+        ⚠️ Caixa aberto sem entradas hoje
+      </div>` : ''}
+    </div>`;
+  });
+  html += '</div>';
+
+  conteudo.innerHTML = html;
+}
+
+// Sobreescreve carregarBird para gestores verem todas as lojas
+const _carregarBirdOriginal = carregarBird;
+carregarBird = async function() {
+  if (isGestor) return carregarTodasLojas();
+  return _carregarBirdOriginal();
+};
+
 </script>
 
 <script>
