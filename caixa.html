@@ -742,14 +742,18 @@ let birdDataAtual = null;
 function renderBird() {
   const el = document.getElementById('viewBird');
   if(!el) return;
-  if(!birdLojaAtual) birdLojaAtual = OPCOES_VISUALIZACAO[0].key;
   if(!birdDataAtual) birdDataAtual = hoje();
+  if(!birdLojaAtual) birdLojaAtual = OPCOES_VISUALIZACAO[0].key;
+
+  // Gestores veem todas as lojas — sem select de loja
+  const selectLojaHtml = isGestor ? '' : `
+    <select class="fsel" id="birdLojaSelect" onchange="birdLojaAtual=this.value;carregarBird()" style="max-width:220px">
+      ${OPCOES_VISUALIZACAO.map(o=>`<option value="${o.key}" ${o.key===birdLojaAtual?'selected':''}>${o.label}</option>`).join('')}
+    </select>`;
 
   el.innerHTML = `
     <div style="margin-bottom:16px;display:flex;gap:10px;flex-wrap:wrap;align-items:center">
-      <select class="fsel" id="birdLojaSelect" onchange="birdLojaAtual=this.value;carregarBird()" style="max-width:220px">
-        ${OPCOES_VISUALIZACAO.map(o=>`<option value="${o.key}" ${o.key===birdLojaAtual?'selected':''}>${o.label}</option>`).join('')}
-      </select>
+      ${selectLojaHtml}
       <input type="date" class="fc" id="birdDataInput" value="${birdDataAtual}" onchange="birdDataAtual=this.value;carregarBird()" style="width:150px;padding:10px">
       <input type="month" class="fc" id="birdMesInput" value="${birdDataAtual.substring(0,7)}" style="width:150px;padding:10px" title="Mês para acumulado">
       <button class="btn btn-p" onclick="carregarBird()">↻ Atualizar</button>
@@ -760,6 +764,9 @@ function renderBird() {
 }
 
 async function carregarBird() {
+  // Gestores veem todas as lojas
+  if (isGestor) return carregarTodasLojas();
+
   const conteudo = document.getElementById('birdConteudo');
   if(!conteudo) return;
   conteudo.innerHTML = '<div class="loading"><span class="spin"></span>Buscando dados...</div>';
@@ -2017,10 +2024,9 @@ function togglePeriodoExt() {
 }
 
 // Sobreescreve renderExtrato para suportar mês
-const _renderExtratoOriginal = renderExtrato;
-renderExtrato = async function() {
+async function renderExtratoMes() {
   const periodo = document.getElementById('filtroPeriodoExt')?.value || 'dia';
-  if (periodo === 'dia') { return _renderExtratoOriginal(); }
+  if (periodo === 'dia') { return renderExtrato(); }
 
   // Modo mês
   const filtMes  = document.getElementById('filtroMesExt')?.value || hoje().substring(0,7);
@@ -2066,7 +2072,7 @@ renderExtrato = async function() {
   if (filtTipo) movs = movs.filter(m => m.tipo === filtTipo);
   movs = [...movs].reverse();
   renderExtratoHTML(movs, filtMes, filtTipo, currentLoja);
-};
+}
 
 // ─── Visão gestor: todas as lojas ──────────────────────
 const LOJAS_FISICAS = [
@@ -2107,10 +2113,12 @@ async function carregarTodasLojas() {
   // Busca dia atual de todas as lojas
   const resDia = await Promise.all(LOJAS_FISICAS.map(l => fetchDia(l.key, dataHoje)));
 
-  // Busca mês — dia a dia (até 31 fetches por loja — melhor performance: busca só dias com dados)
-  // Estratégia: buscar mesIni e mesFim como range (o backend atual suporta só 1 dia,
-  // então buscamos início do mês apenas para ter o acumulado parcial)
-  const resMesIni = await Promise.all(LOJAS_FISICAS.map(l => fetchDia(l.key, mesIni)));
+  // Busca mês inteiro com range dataFim (backend atualizado suporta range)
+  const fetchMes = (loja) =>
+    fetch(`${APPS_SCRIPT_URL}?action=caixa_get&loja=${encodeURIComponent(loja)}&data=${mesIni}&dataFim=${mesFim}`, {signal: AbortSignal.timeout(12000)})
+      .then(r => r.json()).catch(() => ({ movimentacoes: [] }));
+
+  const resMesIni = await Promise.all(LOJAS_FISICAS.map(l => fetchMes(l.key)));
 
   // Montar dados por loja
   const dadosPorLoja = LOJAS_FISICAS.map((l, i) => {
@@ -2209,12 +2217,7 @@ async function carregarTodasLojas() {
   conteudo.innerHTML = html;
 }
 
-// Sobreescreve carregarBird para gestores verem todas as lojas
-const _carregarBirdOriginal = carregarBird;
-carregarBird = async function() {
-  if (isGestor) return carregarTodasLojas();
-  return _carregarBirdOriginal();
-};
+// carregarBird já trata gestores internamente
 
 </script>
 
