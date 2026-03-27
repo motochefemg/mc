@@ -1647,7 +1647,7 @@ function renderExtratoHTML(movs, filtData, filtTipo, loja){
         <td style="white-space:nowrap">
           <button class="btn btn-sm btn-s" onclick='abrirRecibo(${JSON.stringify(m).replace(/'/g,"\'")})'  style="font-size:10px;padding:3px 8px">🖨</button>
           ${m.comprovante?`<button class="btn btn-sm btn-s" onclick='verComprovante(${JSON.stringify(m).replace(/'/g,"\'")})'  style="font-size:10px;padding:3px 8px;margin-left:4px">📎</button>`:''}
-          <button class="btn btn-sm" onclick="excluirMov(${m.id})" style="font-size:10px;padding:3px 8px;margin-left:4px;background:rgba(220,38,38,.1);color:var(--red);border:1px solid rgba(220,38,38,.2)">✕</button>
+          <button class="btn btn-sm" onclick="excluirMov('${m.id}','${m.loja||loja||''}')" style="font-size:10px;padding:3px 8px;margin-left:4px;background:rgba(220,38,38,.1);color:var(--red);border:1px solid rgba(220,38,38,.2)">✕</button>
         </td>
       </tr>`).join('')}
       </tbody>
@@ -1828,21 +1828,31 @@ async function emitirNFModal() {
   }
 }
 
-async function excluirMov(id){
+async function excluirMov(id, lojaParam){
   if(!confirm('Excluir este lançamento?')) return;
-  // Remove localmente imediato
-  movimentacoes = movimentacoes.filter(m=>m.id!==id);
-  saveData();
-  renderExtrato();
-  renderCaixa();
+  // A loja pode vir como parâmetro (gestor vendo outra loja) ou usar a atual
+  const lojaAlvo = lojaParam || (typeof currentLoja !== 'undefined' ? currentLoja : '');
+  // Remove no Sheets primeiro (gestor pode não ter o mov local)
   showToast('Excluindo...');
-  // Remove no Sheets
   try {
-    const loja = typeof currentLoja !== 'undefined' ? currentLoja : '';
-    const r = await fetch(`${APPS_SCRIPT_URL}?action=caixa_excluir_mov&id=${encodeURIComponent(id)}&loja=${encodeURIComponent(loja)}`);
+    const r = await fetch(`${APPS_SCRIPT_URL}?action=caixa_excluir_mov&id=${encodeURIComponent(id)}&loja=${encodeURIComponent(lojaAlvo)}`);
     const j = await r.json();
-    showToast(j.success ? '✓ Lançamento excluído' : '⚠ Excluído local, erro no servidor: '+(j.error||''));
+    if(j.success) {
+      // Remove localmente se existir
+      movimentacoes = movimentacoes.filter(m=>m.id!==id);
+      saveData();
+      renderExtrato();
+      renderCaixa();
+      showToast('✓ Lançamento excluído');
+    } else {
+      showToast('⚠ Erro: '+(j.error||'falha ao excluir'));
+    }
   } catch(e) {
+    // Sem conexão — remove só local
+    movimentacoes = movimentacoes.filter(m=>m.id!==id);
+    saveData();
+    renderExtrato();
+    renderCaixa();
     showToast('⚠ Excluído local, sem conexão com servidor');
   }
 }

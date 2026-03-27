@@ -587,8 +587,7 @@ async function buscarFaturamento(){
     document.getElementById('vFat').textContent=fmtR(fatReal);
     document.getElementById('vQtd').textContent=qtdVend+' moto(s) no Bling';
     const val=Math.max(0,Math.min(MAX,fatReal||0));
-    document.getElementById('slider').value=val;
-    atualizar(val);
+    atualizar(fatReal||0);
 
   }catch(e){
     const msg=e.name==='AbortError'?'Timeout — tente novamente':e.message;
@@ -640,15 +639,9 @@ function atualizar(vendas){
   const cor = pctToCor(pct);
   const fxId = pct<70?'fx1':pct<100?'fx2':pct<110?'fx3':pct<120?'fx4':pct<140?'fx5':'fx6';
 
-  // Slider
-  document.getElementById('sliderVal').textContent='R$ '+Math.round(v).toLocaleString('pt-BR');
-  const fillPct=(v-MIN)/(MAX-MIN)*100;
-  document.getElementById('rangeFill').style.width=fillPct+'%';
-
-  // Badge
+  // Badge (oculto — elemento removido, mas mantém compatibilidade)
   const badge=document.getElementById('pctBadge');
-  badge.textContent=pct.toFixed(1).replace('.',',')+'% da meta';
-  badge.style.background=cor+'18';badge.style.color=cor;badge.style.border='1px solid '+cor+'40';
+  if(badge){ badge.textContent=pct.toFixed(1).replace('.',',')+'% da meta'; badge.style.background=cor+'18';badge.style.color=cor;badge.style.border='1px solid '+cor+'40'; }
 
   // Faixas
   // Cores por faixa baseadas no % central de cada faixa
