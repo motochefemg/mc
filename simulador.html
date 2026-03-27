@@ -715,7 +715,7 @@ function atualizar(vendas){
   }
 
   // Tabela — marcador no valor REAL (fatReal), simulado em destaque diferente
-  const {idx: idxReal} = calcular(Math.max(MIN, Math.min(MAX, fatReal||0)));
+  const {idx: idxReal} = calcular(fatReal||0); // sem limite MAX — fatReal pode superar 260k
   document.getElementById('tabBody').innerHTML=TABELA.map((l,i)=>{
     const com=l.v*0.005,tot=com+l.a,pv=tot/l.v*100,pm=l.v/META*100;
     const isReal = i === idxReal;           // faixa do faturamento REAL
