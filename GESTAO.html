@@ -695,6 +695,9 @@ tbody tr:last-child td{border-bottom:none}
       <button class="btn-sync" onclick="syncData()">
         <span>↻</span> Sincronizar
       </button>
+      <button class="btn-sync" onclick="deduplicarMotos()" title="Remove NFs duplicadas da planilha" style="background:rgba(220,38,38,.15);border-color:rgba(220,38,38,.4);color:var(--red)">
+        <span>🧹</span> Limpar duplicatas
+      </button>
       <button class="btn-config" onclick="toggleConfig()" title="Configurar URL">⚙</button>
     </div>
   </div>
@@ -2704,6 +2707,34 @@ async function excluirNF(numNF, btn) {
     btn.disabled = false;
     btn.textContent = '✕';
     showToast('Erro de conexão');
+  }
+}
+
+// ════════════════════════════════════════
+// DEDUPLICAR — remove NFs duplicadas
+// ════════════════════════════════════════
+async function deduplicarMotos() {
+  const statusEl = document.getElementById('syncStatus');
+  const btn = document.querySelector('[onclick="deduplicarMotos()"]');
+  if(btn) { btn.disabled = true; btn.innerHTML = '<span>⏳</span> Limpando...'; }
+  statusEl.textContent = '⟳ Removendo duplicatas...';
+  statusEl.style.color = 'var(--gold)';
+  try {
+    const r = await fetch(APPS_SCRIPT_URL + '?action=deduplicar');
+    const j = await r.json();
+    if(j.success) {
+      statusEl.textContent = '✓ ' + (j.removidas||0) + ' duplicata(s) removida(s) · ' + (j.unicas||0) + ' NFs únicas';
+      statusEl.style.color = 'var(--green)';
+      if((j.removidas||0) > 0) syncData(); // recarrega os dados
+    } else {
+      statusEl.textContent = '⚠ Erro: ' + (j.error||'falha');
+      statusEl.style.color = 'var(--red)';
+    }
+  } catch(e) {
+    statusEl.textContent = '✗ Erro de conexão';
+    statusEl.style.color = 'var(--red)';
+  } finally {
+    if(btn) { btn.disabled = false; btn.innerHTML = '<span>🧹</span> Limpar duplicatas'; }
   }
 }
 
