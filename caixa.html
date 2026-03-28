@@ -1692,6 +1692,12 @@ function renderExtratoHTML(movs, filtData, filtTipo, lojaParam){
       <div class="kpi r" style="padding:12px;min-width:160px"><div class="kl">Saídas</div><div class="kv tr2" style="font-size:18px">${fmtCurrency(totSai)}</div></div>
       <div class="kpi go" style="padding:12px;min-width:160px"><div class="kl">Saldo</div><div class="kv" style="font-size:18px;color:${totEnt-totSai>=0?'var(--green)':'var(--red)'}">${fmtCurrency(totEnt-totSai)}</div></div>
     </div>
+    <div id="barraAcoes" style="display:flex;gap:8px;margin-bottom:12px;align-items:center;flex-wrap:wrap">
+      <span style="font-size:12px;color:var(--text3)" id="infoSel">Selecione linhas para ações em massa</span>
+      <button onclick="selecionarTodosLista()" style="background:var(--card2);border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer;font-family:'Barlow'">☑ Selecionar todos</button>
+      <button id="btnExcluirSelInline" onclick="excluirSelecionados()" style="display:none;background:rgba(220,38,38,.1);color:var(--red);border:1px solid rgba(220,38,38,.3);border-radius:6px;padding:4px 12px;font-size:11px;cursor:pointer;font-family:'Barlow';font-weight:700">✕ Excluir selecionados (<span id="countSelInline">0</span>)</button>
+      <button onclick="limparDuplicatas()" style="background:rgba(220,38,38,.08);color:var(--red);border:1px solid rgba(220,38,38,.2);border-radius:6px;padding:4px 12px;font-size:11px;cursor:pointer;font-family:'Barlow'">🧹 Limpar duplicatas por ID</button>
+    </div>
     <div class="twrap"><table>
       <thead><tr>
         <th style="width:36px;text-align:center"><input type="checkbox" id="checkAll" onchange="toggleTodos(this)" title="Selecionar todos"></th>
@@ -2090,20 +2096,39 @@ function imprimirRecibo() {
 
 function verComprovante(mov) {
   if (!mov.comprovante) return;
-  const c = mov.comprovante;
-  if (c.base64.startsWith('data:image')) {
-    const w = window.open('', '_blank', 'width=600,height=700');
-    w.document.write(`<html><body style="margin:10px;background:#111;text-align:center">
-      <p style="color:#aaa;font-size:12px;margin-bottom:10px">${c.nome}</p>
-      <img src="${c.base64}" style="max-width:100%;border-radius:8px">
-    </body></html>`);
-    w.document.close();
-  } else {
-    const a = document.createElement('a');
-    a.href = c.base64;
-    a.download = c.nome;
-    a.click();
+  let c = mov.comprovante;
+  // Se vier como string JSON (do Sheets), parsear
+  if (typeof c === 'string') {
+    try { c = JSON.parse(c); } catch(e) { return; }
   }
+
+  // Tem link do Drive — abre direto
+  if (c.url) {
+    window.open(c.url, '_blank');
+    return;
+  }
+  // Tem base64 — abre em nova janela
+  if (c.base64) {
+    if (c.base64.startsWith('data:image') || c.base64.startsWith('data:application/pdf')) {
+      const w = window.open('', '_blank', 'width=700,height=800');
+      if (c.base64.startsWith('data:application/pdf')) {
+        w.document.write(`<html><body style="margin:0"><embed src="${c.base64}" width="100%" height="100%" type="application/pdf"></body></html>`);
+      } else {
+        w.document.write(`<html><body style="margin:10px;background:#111;text-align:center">
+          <p style="color:#aaa;font-size:12px;margin-bottom:10px">${c.nome||'Comprovante'}</p>
+          <img src="${c.base64}" style="max-width:100%;border-radius:8px">
+        </body></html>`);
+      }
+      w.document.close();
+    } else {
+      const a = document.createElement('a');
+      a.href = c.base64;
+      a.download = c.nome || 'comprovante';
+      a.click();
+    }
+    return;
+  }
+  showToast('Comprovante sem imagem disponível');
 }
 // ════════════════════════════════════════════════════════
 // LOJAS FÍSICAS
@@ -2215,14 +2240,34 @@ function toggleTodos(chkAll) {
 function atualizarContSel() {
   const selecionados = document.querySelectorAll('.chk-mov:checked').length;
   const total = document.querySelectorAll('.chk-mov').length;
+
+  // Botões no header (podem não existir se extrato não foi carregado ainda)
   const btnExc  = document.getElementById('btnExcluirSel');
   const btnLimp = document.getElementById('btnLimparDupl');
   const contEl  = document.getElementById('countSel');
   if(contEl) contEl.textContent = selecionados;
   if(btnExc)  btnExc.style.display  = selecionados > 0 ? 'inline-flex' : 'none';
   if(btnLimp) btnLimp.style.display = isGestor && total > 0 ? 'inline-flex' : 'none';
+
+  // Botões inline (dentro do extrato — sempre visíveis)
+  const btnExcInline = document.getElementById('btnExcluirSelInline');
+  const contInline   = document.getElementById('countSelInline');
+  const infoSel      = document.getElementById('infoSel');
+  if(contInline) contInline.textContent = selecionados;
+  if(btnExcInline) btnExcInline.style.display = selecionados > 0 ? 'inline-block' : 'none';
+  if(infoSel) infoSel.textContent = selecionados > 0
+    ? selecionados + ' selecionado(s)'
+    : 'Selecione linhas para ações em massa';
+
   const chkAll = document.getElementById('checkAll');
   if(chkAll) chkAll.indeterminate = selecionados > 0 && selecionados < total;
+}
+
+function selecionarTodosLista() {
+  const todos = document.querySelectorAll('.chk-mov');
+  const algumDesmarcado = [...todos].some(c => !c.checked);
+  todos.forEach(c => { c.checked = algumDesmarcado; });
+  atualizarContSel();
 }
 
 async function excluirSelecionados() {
