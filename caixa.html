@@ -852,7 +852,7 @@ async function carregarBird() {
               <thead><tr><th style="width:32px"><input type="checkbox" id="checkAll" onchange="toggleTodos(this)" title="Selecionar todos"></th><th>HORA</th><th>DESCRIÇÃO</th><th>VENDEDOR</th><th>PAGAMENTO</th><th>TIPO</th><th style="text-align:right">VALOR</th><th></th></tr></thead>
               <tbody>${[...movs].reverse().map(m=>`<tr>
                 <td style="width:32px;text-align:center"><input type="checkbox" class="chk-mov" data-id="${m.id}" data-loja="${m.loja||lojaParam||''}" onchange="atualizarContSel()"></td>
-                <td style="color:var(--text3);white-space:nowrap">${m.hora||'—'}</td>
+                <td style="color:var(--text3);white-space:nowrap;font-size:11px">${m.data ? '<div style=\"font-weight:600;color:var(--text2)\">' + (m.data.split('-').reverse().join('/')) + '</div>' : ''}${m.hora||'—'}</td>
                 <td><div style="font-weight:600">${m.desc||'—'}</div>${m.numPedido?`<div style="font-size:10px;color:var(--text3)">#${m.numPedido}</div>`:''}</td>
                 <td style="font-size:12px">${m.vendedor?`<div>${shortName(m.vendedor)}</div>`:''}${m.cliente?`<div style="color:var(--text3);font-size:11px">👤 ${shortName(m.cliente)}</div>`:''}</td>
                 <td><span class="badge bgr">${m.pgto||'—'}</span></td>
@@ -1711,6 +1711,8 @@ function renderExtratoHTML(movs, filtData, filtTipo, lojaParam){
       </tr>`).join('')}
       </tbody>
     </table></div>`;
+  // Mostra botão Limpar duplicatas para gestores após renderizar tabela
+  setTimeout(() => atualizarContSel(), 100);
 }
 
 // ══════════════════════════════════════════════
