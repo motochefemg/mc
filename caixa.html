@@ -577,7 +577,7 @@ tr:hover td{background:var(--bg2);}
             <button id="btnExcluirSel" onclick="excluirSelecionados()" class="btn btn-sm" style="background:rgba(220,38,38,.1);color:var(--red);border:1px solid rgba(220,38,38,.25);font-size:11px;padding:5px 12px;display:none">✕ Excluir selecionados (<span id="countSel">0</span>)</button>
           </div>
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-            <select class="fsel" id="filtroLojaExt" style="width:200px;padding:6px 10px;font-size:12px;display:none" onchange="renderExtrato()">
+            <select class="fsel" id="filtroLojaExt" style="width:190px;padding:6px 10px;font-size:12px;display:none" onchange="renderExtrato()">
               <option value="__todas__">🏪 Todas as lojas</option>
               <option value="MOTOCHEFE Varginha">MC Varginha</option>
               <option value="MOTOCHEFE Poços de Caldas">MC Poços de Caldas</option>
@@ -591,17 +591,17 @@ tr:hover td{background:var(--bg2);}
               <option value="__matheus__">👔 Matheus</option>
               <option value="__joao__">👔 João Brito</option>
             </select>
-            <select class="fsel" id="filtroPeriodoExt" style="width:110px;padding:6px 10px;font-size:12px" onchange="togglePeriodoExt()">
+            <select class="fsel" id="filtroPeriodoExt" style="width:100px;padding:6px 10px;font-size:12px" onchange="togglePeriodoExt()">
               <option value="dia">📅 Dia</option>
               <option value="mes">📆 Mês</option>
               <option value="range">📆 Período</option>
             </select>
-            <input type="date" class="fc" id="filtroDataExt" style="width:150px;padding:6px 10px;font-size:12px" onchange="renderExtrato()">
-            <input type="month" class="fc" id="filtroMesExt" style="width:150px;padding:6px 10px;font-size:12px;display:none" onchange="renderExtrato()">
-            <span id="filtroRangeExt" style="display:none;align-items:center;gap:6px">
-              <input type="date" class="fc" id="filtroRangeIni" style="width:145px;padding:6px 10px;font-size:12px" onchange="renderExtrato()">
-              <span style="font-size:12px;color:var(--text3)">até</span>
-              <input type="date" class="fc" id="filtroRangeFim" style="width:145px;padding:6px 10px;font-size:12px" onchange="renderExtrato()">
+            <input type="date" class="fc" id="filtroDataExt" style="width:145px;padding:6px 10px;font-size:12px" onchange="renderExtrato()">
+            <input type="month" class="fc" id="filtroMesExt" style="width:145px;padding:6px 10px;font-size:12px;display:none" onchange="renderExtrato()">
+            <span id="filtroRangeExt" style="display:none;align-items:center;gap:4px">
+              <input type="date" class="fc" id="filtroRangeIni" style="width:140px;padding:6px 8px;font-size:12px" onchange="renderExtrato()">
+              <span style="color:var(--text3);font-size:11px">até</span>
+              <input type="date" class="fc" id="filtroRangeFim" style="width:140px;padding:6px 8px;font-size:12px" onchange="renderExtrato()">
             </span>
             <button class="btn btn-sm btn-s" onclick="exportarExtrato()" style="padding:6px 10px">📥 Excel</button>
             <select class="fsel" id="filtroTipoExt" style="width:130px;padding:6px 10px;font-size:12px" onchange="renderExtrato()">
@@ -693,10 +693,10 @@ const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzAYDr_pArf5uSP
 const LOJAS_CONFIG = {
   'ECOMOV LAV':               { senha:'LAV@2k26#tz',    adm:'Tiago Souza Gomes',                  sigla:'EL', gestor:false },
   'MOTOCHEFE Itajubá':        { senha:'ITJ@2k26#mc',    adm:'Carlos',                             sigla:'IT', gestor:false },
-  'MOTOCHEFE Poços de Caldas':{ senha:'POC@2k26#js',  adm:'Julia Sampaio',                       sigla:'PC', gestor:false },
-  'MOTOCHEFE Varginha':       { senha:'VRG@2k26#pa',   adm:'Pablo Albinati',                      sigla:'VG', gestor:false },
   'MOTOCHEFE Pouso Alegre':   { senha:'MPA@2k26#mc',   adm:'Gestor',                              sigla:'MP', gestor:false },
   'MOTOCHEFE BH':             { senha:'MBH@2k26#mc',   adm:'Gestor',                              sigla:'BH', gestor:false },
+  'MOTOCHEFE Poços de Caldas':{ senha:'POC@2k26#js',  adm:'Julia Sampaio',                       sigla:'PC', gestor:false },
+  'MOTOCHEFE Varginha':       { senha:'VRG@2k26#pa',   adm:'Pablo Albinati',                      sigla:'VG', gestor:false },
   'ECOMOV Pouso Alegre':      { senha:'PSA@2k26#ph',  adm:'Pedro Henrique de Carvalho Porto',    sigla:'PA', gestor:false },
   '__cesar__':                { senha:'CR$Mg26!gest', adm:'César Rodrigues',                     sigla:'CR', gestor:true },
   '__luiz__':                 { senha:'LP$Mg26!gest', adm:'Luiz Paulo Arouca',                   sigla:'LP', gestor:true },
@@ -764,19 +764,6 @@ const OPCOES_VISUALIZACAO = [
   { key: '__joao__',                  label: '👔 João Brito' },
 ];
 
-
-// ════════════════════════════════════════════════════════
-// LOJAS FÍSICAS (definido antes das funções que dependem)
-// ════════════════════════════════════════════════════════
-const LOJAS_FISICAS = [
-  { key: 'MOTOCHEFE Varginha',        label: 'MC Varginha' },
-  { key: 'MOTOCHEFE Poços de Caldas', label: 'MC Poços de Caldas' },
-  { key: 'MOTOCHEFE Itajubá',         label: 'MC Itajubá' },
-  { key: 'MOTOCHEFE Pouso Alegre',    label: 'MC Pouso Alegre' },
-  { key: 'MOTOCHEFE BH',              label: 'MC BH' },
-  { key: 'ECOMOV LAV',                label: 'EC Lavras' },
-  { key: 'ECOMOV Pouso Alegre',       label: 'EC Pouso Alegre' },
-];
 let birdLojaAtual = null;
 let birdDataAtual = null;
 
@@ -789,7 +776,7 @@ function renderBird() {
   el.innerHTML = `
     <div style="margin-bottom:16px;display:flex;gap:10px;flex-wrap:wrap;align-items:center">
       ${isGestor ? '' : `<select class="fsel" id="birdLojaSelect" onchange="birdLojaAtual=this.value;carregarBird()" style="max-width:220px">
-        ${OPCOES_VISUALIZACAO.map(o=>'<option value="'+o.key+'" '+(o.key===birdLojaAtual?'selected':'')+'>'+ o.label+'</option>').join('')}
+        ${OPCOES_VISUALIZACAO.map(o=>'<option value="'+o.key+'" '+(o.key===birdLojaAtual?'selected':'')+'>'+o.label+'</option>').join('')}
       </select>`}
       <input type="date" class="fc" id="birdDataInput" value="${birdDataAtual}" onchange="birdDataAtual=this.value;carregarBird()" style="width:150px;padding:10px">
       <input type="month" class="fc" id="birdMesInput" value="${birdDataAtual.substring(0,7)}" style="width:150px;padding:10px" title="Mês para acumulado">
@@ -801,6 +788,7 @@ function renderBird() {
 }
 
 async function carregarBird() {
+  if(isGestor) return carregarTodasLojas();
   const conteudo = document.getElementById('birdConteudo');
   if(!conteudo) return;
   conteudo.innerHTML = '<div class="loading"><span class="spin"></span>Buscando dados...</div>';
@@ -849,10 +837,9 @@ async function carregarBird() {
           <div class="ph"><div class="pt">Movimentações — ${fmtData(new Date(birdDataAtual+'T12:00:00'))}</div></div>
           <div class="pb">
             <div class="twrap"><table>
-              <thead><tr><th style="width:32px"><input type="checkbox" id="checkAll" onchange="toggleTodos(this)" title="Selecionar todos"></th><th>HORA</th><th>DESCRIÇÃO</th><th>VENDEDOR</th><th>PAGAMENTO</th><th>TIPO</th><th style="text-align:right">VALOR</th><th></th></tr></thead>
+              <thead><tr><th style="width:36px;text-align:center"><input type="checkbox" id="checkAll" onchange="toggleTodos(this)" title="Selecionar todos"></th><th>DATA/HORA</th><th>DESCRIÇÃO</th><th>VENDEDOR</th><th>PAGAMENTO</th><th>TIPO</th><th style="text-align:right">VALOR</th><th></th></tr></thead>
               <tbody>${[...movs].reverse().map(m=>`<tr>
-                <td style="width:32px;text-align:center"><input type="checkbox" class="chk-mov" data-id="${m.id}" data-loja="${m.loja||lojaParam||''}" onchange="atualizarContSel()"></td>
-                <td style="color:var(--text3);white-space:nowrap;font-size:11px">${m.data ? '<div style=\"font-weight:600;color:var(--text2)\">' + (m.data.split('-').reverse().join('/')) + '</div>' : ''}${m.hora||'—'}</td>
+                <td style="color:var(--text3);white-space:nowrap">${m.hora||'—'}</td>
                 <td><div style="font-weight:600">${m.desc||'—'}</div>${m.numPedido?`<div style="font-size:10px;color:var(--text3)">#${m.numPedido}</div>`:''}</td>
                 <td style="font-size:12px">${m.vendedor?`<div>${shortName(m.vendedor)}</div>`:''}${m.cliente?`<div style="color:var(--text3);font-size:11px">👤 ${shortName(m.cliente)}</div>`:''}</td>
                 <td><span class="badge bgr">${m.pgto||'—'}</span></td>
@@ -1066,13 +1053,12 @@ function initApp(){
   document.getElementById('filtroDataExt').value = hoje();
 
   if(isGestor){
-    // Mostra select de loja no extrato — padrão: Todas as lojas
+    // Extrato — mostra select, padrão Todas as lojas + Mês
     const sel = document.getElementById('filtroLojaExt');
     if(sel) { sel.style.display = 'block'; sel.value = '__todas__'; }
-    // Padrão: modo Mês
     const periodoSel = document.getElementById('filtroPeriodoExt');
     if(periodoSel) { periodoSel.value = 'mes'; togglePeriodoExt(); }
-    // Mostra campo loja de destino nas saídas
+    // Campo loja de destino nas saídas
     const saidaLojaField = document.getElementById('saidaLojaField');
     if(saidaLojaField) saidaLojaField.style.display = 'block';
     // Vai para Bird's Eye
@@ -1580,96 +1566,115 @@ function mostrarErroModal(msg){
 // ══════════════════════════════════════════════
 function registrarSaida(){
   if(!caixaAberto){ alert('Abra o caixa primeiro!'); return; }
-  const cat   = document.getElementById('sCategoria').value;
-  const desc  = document.getElementById('sDescricao').value.trim();
+  const cat = document.getElementById('sCategoria').value;
+  const desc = document.getElementById('sDescricao').value.trim();
   const valor = parseFloat(document.getElementById('sValor').value)||0;
-  const pgto  = document.getElementById('sPagamento').value;
-  const obs   = document.getElementById('sObs').value;
-  const msg   = document.getElementById('saidaMsg');
-
-  // Gestor pode direcionar para outra loja
-  const lojaDestino = isGestor ? (document.getElementById('saidaLoja')?.value || '') : currentLoja;
-  if(isGestor && !lojaDestino){ msg.innerHTML='<span style="color:var(--red)">Selecione a loja de destino.</span>'; return; }
-
+  const pgto = document.getElementById('sPagamento').value;
+  const obs = document.getElementById('sObs').value;
+  const msg = document.getElementById('saidaMsg');
   if(!cat||!desc||!valor){ msg.innerHTML='<span style="color:var(--red)">Preencha categoria, descrição e valor.</span>'; return; }
   if(!comprovantes.saida){ msg.innerHTML='<span style="color:var(--red)">Anexe o comprovante ou nota da despesa.</span>'; return; }
-
-  const lojaFinal = isGestor ? lojaDestino : currentLoja;
-  const mov = {
+  movimentacoes.push({
     id:Date.now()+'_'+Math.random().toString(36).slice(2,7), tipo:'saida', categoria:cat,
     desc:desc, valor, pgto, obs,
     vendedor: currentUser || '',
-    loja: lojaFinal,
     hora:fmtHora(new Date()), data:hoje(),
     comprovante: comprovantes.saida ? { nome: comprovantes.saida.nome, base64: comprovantes.saida.base64 } : null
-  };
-
-  if(isGestor && lojaDestino !== currentLoja) {
-    // Salva direto no Sheets para a loja de destino — sem passar pelo caixa local
-    msg.innerHTML='<span style="color:var(--text3)">⏳ Registrando...</span>';
-    const payload = { loja: lojaFinal, data: hoje(), movimentacoes: [mov] };
-    fetch(APPS_SCRIPT_URL, {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({action:'caixa_save_all', ...payload})
-    }).then(r=>r.json()).then(j=>{
-      msg.innerHTML = j.success
-        ? '<span style="color:var(--green)">✓ Saída registrada em '+lojaFinal+'!</span>'
-        : '<span style="color:var(--red)">⚠ Erro: '+(j.error||'falha')+'</span>';
-      setTimeout(()=>msg.innerHTML='', 3000);
-    }).catch(()=>{ msg.innerHTML='<span style="color:var(--red)">⚠ Erro de conexão</span>'; });
-  } else {
-    movimentacoes.push(mov);
-    saveData();
-    renderCaixa();
-  }
-
+  });
   limparComprovante('saida');
+  saveData();
+  renderCaixa();
+  // Limpa
   document.getElementById('sCategoria').value='';
   document.getElementById('sDescricao').value='';
   document.getElementById('sValor').value='';
   document.getElementById('sPagamento').value='';
   document.getElementById('sObs').value='';
-  if(isGestor) document.getElementById('saidaLoja').value='';
-  if(!isGestor || lojaDestino === currentLoja) {
-    msg.innerHTML='<span style="color:var(--green)">✓ Saída registrada com sucesso!</span>';
-    setTimeout(()=>msg.innerHTML='', 3000);
-  }
-  showToast('↓ Saída de '+fmtCurrency(valor)+' → '+lojaFinal);
+  msg.innerHTML='<span style="color:var(--green)">✓ Saída registrada com sucesso!</span>';
+  setTimeout(()=>msg.innerHTML='', 3000);
+  showToast(`↓ Saída de ${fmtCurrency(valor)} registrada`);
   const movSaida = movimentacoes[movimentacoes.length-1];
-  if(movSaida) setTimeout(()=>abrirRecibo(movSaida), 400);
+  setTimeout(()=>abrirRecibo(movSaida), 400);
 }
 
 // ══════════════════════════════════════════════
 // EXTRATO
 // ══════════════════════════════════════════════
-async function renderExtrato(){
-  const filtData = document.getElementById('filtroDataExt').value||hoje();
-  const filtTipo = document.getElementById('filtroTipoExt').value;
-  const filtLojaEl = document.getElementById('filtroLojaExt');
-  const el = document.getElementById('listaExtrato');
+// ── Helpers de período ─────────────────────────────────────
+function togglePeriodoExt() {
+  const p = document.getElementById('filtroPeriodoExt')?.value || 'dia';
+  document.getElementById('filtroDataExt').style.display  = p==='dia' ? '' : 'none';
+  document.getElementById('filtroMesExt').style.display   = p==='mes' ? '' : 'none';
+  document.getElementById('filtroRangeExt').style.display = p==='range' ? 'flex' : 'none';
+  renderExtrato();
+}
 
-  // Gestor busca do Sheets pela loja selecionada
-  if(isGestor && filtLojaEl && filtLojaEl.style.display !== 'none') {
-    const lojaFiltro = filtLojaEl.value;
-    el.innerHTML = '<div class="loading"><span class="spin"></span>Buscando...</div>';
-    try {
-      const r = await fetch(`${APPS_SCRIPT_URL}?action=caixa_get&loja=${encodeURIComponent(lojaFiltro)}&data=${filtData}`, {signal: AbortSignal.timeout(8000)});
-      const json = await r.json();
-      let movs = (json.movimentacoes||[]).map(m=>({...m, valor: parseFloat(m.valor)||0})).filter(m=>m.tipo!=='sistema');
-      if(filtTipo) movs = movs.filter(m=>m.tipo===filtTipo);
-      movs = [...movs].reverse();
-      renderExtratoHTML(movs, filtData, filtTipo, lojaFiltro);
-    } catch(e) {
-      el.innerHTML = `<div class="empty"><div class="empty-icon">⚠</div>Erro: ${e.message}</div>`;
-    }
+function getPeriodoExtrato() {
+  const p = document.getElementById('filtroPeriodoExt')?.value || 'dia';
+  if(p === 'dia') {
+    const d = document.getElementById('filtroDataExt')?.value || hoje();
+    return { dataIni: d, dataFim: d };
+  }
+  if(p === 'mes') {
+    const mes = document.getElementById('filtroMesExt')?.value || hoje().substring(0,7);
+    const [y,m] = mes.split('-');
+    const ultimo = new Date(parseInt(y), parseInt(m), 0).getDate();
+    return { dataIni: mes+'-01', dataFim: mes+'-'+String(ultimo).padStart(2,'0') };
+  }
+  const ini = document.getElementById('filtroRangeIni')?.value || hoje();
+  const fim = document.getElementById('filtroRangeFim')?.value || hoje();
+  return { dataIni: ini, dataFim: fim >= ini ? fim : ini };
+}
+
+async function fetchMovsLoja(lojaKey, dataIni, dataFim) {
+  try {
+    const rangeParam = dataFim && dataFim !== dataIni ? '&dataFim='+dataFim : '';
+    const r = await fetch(`${APPS_SCRIPT_URL}?action=caixa_get&loja=${encodeURIComponent(lojaKey)}&data=${dataIni}${rangeParam}`, {signal: AbortSignal.timeout(12000)});
+    const j = await r.json();
+    return (j.movimentacoes||[]).map(m=>({...m, loja:m.loja||lojaKey, valor:parseFloat(m.valor)||0}));
+  } catch(e) { return []; }
+}
+
+async function renderExtrato(){
+  const filtLojaEl = document.getElementById('filtroLojaExt');
+  const filtTipo   = document.getElementById('filtroTipoExt')?.value || '';
+  const el         = document.getElementById('listaExtrato');
+  const { dataIni, dataFim } = getPeriodoExtrato();
+
+  if(!isGestor || !filtLojaEl || filtLojaEl.style.display === 'none') {
+    // Loja — filtro local
+    const p = document.getElementById('filtroPeriodoExt')?.value || 'dia';
+    let movs = p === 'dia'
+      ? movimentacoes.filter(m=>m.data===dataIni && m.tipo!=='sistema')
+      : movimentacoes.filter(m=>m.data>=dataIni && m.data<=dataFim && m.tipo!=='sistema');
+    if(filtTipo) movs = movs.filter(m=>m.tipo===filtTipo);
+    renderExtratoHTML([...movs].reverse(), dataIni, filtTipo, currentLoja);
     return;
   }
 
-  let movs = movimentacoes.filter(m=>m.data===filtData&&m.tipo!=='sistema');
-  if(filtTipo) movs = movs.filter(m=>m.tipo===filtTipo);
-  movs = [...movs].reverse();
-  renderExtratoHTML(movs, filtData, filtTipo, currentLoja);
+  // Gestor
+  const lojaFiltro = filtLojaEl.value;
+  el.innerHTML = '<div class="loading"><span class="spin"></span>Buscando...</div>';
+  try {
+    let movs = [];
+    if(lojaFiltro === '__todas__') {
+      const LOJAS_EXT = [
+        'MOTOCHEFE Varginha','MOTOCHEFE Poços de Caldas','MOTOCHEFE Itajubá',
+        'MOTOCHEFE Pouso Alegre','MOTOCHEFE BH','ECOMOV LAV','ECOMOV Pouso Alegre'
+      ];
+      const res = await Promise.all(LOJAS_EXT.map(l => fetchMovsLoja(l, dataIni, dataFim)));
+      movs = res.flat();
+    } else {
+      movs = await fetchMovsLoja(lojaFiltro, dataIni, dataFim);
+    }
+    movs = movs.filter(m=>m.tipo!=='sistema');
+    if(filtTipo) movs = movs.filter(m=>m.tipo===filtTipo);
+    movs = [...movs].sort((a,b)=>(b.data||'').localeCompare(a.data||'')||(b.hora||'').localeCompare(a.hora||''));
+    const label = lojaFiltro==='__todas__' ? 'Todas as Lojas' : lojaFiltro;
+    renderExtratoHTML(movs, dataIni+(dataFim!==dataIni?' a '+dataFim:''), filtTipo, label);
+  } catch(e) {
+    el.innerHTML = `<div class="empty"><div class="empty-icon">⚠</div>Erro: ${e.message}</div>`;
+  }
 }
 
 function renderExtratoHTML(movs, filtData, filtTipo, lojaParam){
@@ -1678,6 +1683,7 @@ function renderExtratoHTML(movs, filtData, filtTipo, lojaParam){
   const el = document.getElementById('listaExtrato');
   if(movs.length===0){
     el.innerHTML='<div class="empty"><div class="empty-icon">📋</div>Sem movimentações nesta data</div>';
+    setTimeout(()=>atualizarContSel(),100);
     return;
   }
   el.innerHTML=`
@@ -1687,11 +1693,19 @@ function renderExtratoHTML(movs, filtData, filtTipo, lojaParam){
       <div class="kpi go" style="padding:12px;min-width:160px"><div class="kl">Saldo</div><div class="kv" style="font-size:18px;color:${totEnt-totSai>=0?'var(--green)':'var(--red)'}">${fmtCurrency(totEnt-totSai)}</div></div>
     </div>
     <div class="twrap"><table>
-      <thead><tr><th>HORA</th><th>DESCRIÇÃO</th><th>VENDEDOR</th><th>PAGAMENTO</th><th>TIPO</th><th style="text-align:right">VALOR</th><th></th></tr></thead>
+      <thead><tr>
+        <th style="width:36px;text-align:center"><input type="checkbox" id="checkAll" onchange="toggleTodos(this)" title="Selecionar todos"></th>
+        <th>DATA/HORA</th><th>DESCRIÇÃO</th><th>VENDEDOR</th><th>PAGAMENTO</th><th>TIPO</th>
+        <th style="text-align:right">VALOR</th><th></th>
+      </tr></thead>
       <tbody>${movs.map(m=>`<tr>
-        <td style="color:var(--text3);white-space:nowrap">${m.hora}</td>
+        <td style="text-align:center"><input type="checkbox" class="chk-mov" data-id="${m.id}" data-loja="${m.loja||lojaParam||''}" onchange="atualizarContSel()"></td>
+        <td style="color:var(--text3);white-space:nowrap;font-size:11px">
+          ${m.data ? '<div style=\"font-weight:600;color:var(--text2);font-size:11px\">'+(m.data.split('-').reverse().join('/'))+'</div>' : ''}
+          ${m.hora||'—'}
+        </td>
         <td>
-          <div style="font-weight:600">${m.desc}</div>
+          <div style="font-weight:600">${m.desc||'—'}</div>
           ${m.numPedido?`<div style="font-size:10px;color:var(--text3)">#${m.numPedido}</div>`:''}
           ${m.obs?`<div style="font-size:10px;color:var(--text3)">${m.obs}</div>`:''}
         </td>
@@ -1706,13 +1720,12 @@ function renderExtratoHTML(movs, filtData, filtTipo, lojaParam){
         <td style="white-space:nowrap">
           <button class="btn btn-sm btn-s" onclick='abrirRecibo(${JSON.stringify(m).replace(/'/g,"\'")})'  style="font-size:10px;padding:3px 8px">🖨</button>
           ${m.comprovante?`<button class="btn btn-sm btn-s" onclick='verComprovante(${JSON.stringify(m).replace(/'/g,"\'")})'  style="font-size:10px;padding:3px 8px;margin-left:4px">📎</button>`:''}
-          <button class="btn btn-sm" onclick="excluirMov('${m.id}','${m.lojaParam||lojaParam||''}')" style="font-size:10px;padding:3px 8px;margin-left:4px;background:rgba(220,38,38,.1);color:var(--red);border:1px solid rgba(220,38,38,.2)">✕</button>
+          <button class="btn btn-sm" data-movid="${m.id}" data-movloja="${m.loja||lojaParam||''}" onclick="excluirMov(this.dataset.movid,this.dataset.movloja)" style="font-size:10px;padding:3px 8px;margin-left:4px;background:rgba(220,38,38,.1);color:var(--red);border:1px solid rgba(220,38,38,.2)">✕</button>
         </td>
       </tr>`).join('')}
       </tbody>
     </table></div>`;
-  // Mostra botão Limpar duplicatas para gestores após renderizar tabela
-  setTimeout(() => atualizarContSel(), 100);
+  setTimeout(()=>atualizarContSel(),100);
 }
 
 // ══════════════════════════════════════════════
@@ -1891,30 +1904,22 @@ async function emitirNFModal() {
 
 async function excluirMov(id, lojaParam){
   if(!confirm('Excluir este lançamento?')) return;
-  // A loja pode vir como parâmetro (gestor vendo outra loja) ou usar a atual
-  const lojaAlvo = lojaParam || (typeof currentLoja !== 'undefined' ? currentLoja : '');
-  // Remove no Sheets primeiro (gestor pode não ter o mov local)
+  const lojaAlvo = lojaParam || currentLoja || '';
   showToast('Excluindo...');
   try {
     const r = await fetch(`${APPS_SCRIPT_URL}?action=caixa_excluir_mov&id=${encodeURIComponent(id)}&loja=${encodeURIComponent(lojaAlvo)}`);
     const j = await r.json();
     if(j.success) {
-      // Remove localmente se existir
-      movimentacoes = movimentacoes.filter(m=>m.id!==id);
-      saveData();
-      renderExtrato();
-      renderCaixa();
-      showToast('✓ Lançamento excluído');
+      movimentacoes = movimentacoes.filter(m=>String(m.id)!==String(id));
+      saveData(); renderExtrato(); renderCaixa();
+      showToast('✓ Excluído');
     } else {
-      showToast('⚠ Erro: '+(j.error||'falha ao excluir'));
+      showToast('⚠ Erro: '+(j.error||'falha'));
     }
   } catch(e) {
-    // Sem conexão — remove só local
-    movimentacoes = movimentacoes.filter(m=>m.id!==id);
-    saveData();
-    renderExtrato();
-    renderCaixa();
-    showToast('⚠ Excluído local, sem conexão com servidor');
+    movimentacoes = movimentacoes.filter(m=>String(m.id)!==String(id));
+    saveData(); renderExtrato(); renderCaixa();
+    showToast('⚠ Excluído local (sem conexão)');
   }
 }
 
@@ -2101,135 +2106,47 @@ function verComprovante(mov) {
   }
 }
 // ════════════════════════════════════════════════════════
-// EXTRATO — toggle período dia/mês/range
+// LOJAS FÍSICAS
 // ════════════════════════════════════════════════════════
-function togglePeriodoExt() {
-  const p = document.getElementById('filtroPeriodoExt')?.value || 'dia';
-  const dEl = document.getElementById('filtroDataExt');
-  const mEl = document.getElementById('filtroMesExt');
-  const rEl = document.getElementById('filtroRangeExt');
-  if (dEl) dEl.style.display = p === 'dia' ? '' : 'none';
-  if (mEl) mEl.style.display = p === 'mes' ? '' : 'none';
-  if (rEl) rEl.style.display = p === 'range' ? 'flex' : 'none';
-  renderExtrato();
-}
-
-// Busca movimentações de uma loja em um range de datas
-async function fetchMovsLoja(lojaKey, dataIni, dataFim) {
-  try {
-    // Se dataIni === dataFim, não passa dataFim (evita bug no backend com range de 1 dia)
-    const rangeParam = dataFim && dataFim !== dataIni ? '&dataFim=' + dataFim : '';
-    const url = `${APPS_SCRIPT_URL}?action=caixa_get&loja=${encodeURIComponent(lojaKey)}&data=${dataIni}${rangeParam}`;
-    const r = await fetch(url, {signal: AbortSignal.timeout(12000)});
-    const j = await r.json();
-    return (j.movimentacoes||[]).map(m => ({...m, loja: m.loja||lojaKey, valor: parseFloat(m.valor)||0}));
-  } catch(e) { return []; }
-}
-
-// Retorna {dataIni, dataFim} baseado no período selecionado
-function getPeriodoExtrato() {
-  const p = document.getElementById('filtroPeriodoExt')?.value || 'dia';
-  if (p === 'dia') {
-    const d = document.getElementById('filtroDataExt')?.value || hoje();
-    return { dataIni: d, dataFim: d };
-  }
-  if (p === 'mes') {
-    const mes = document.getElementById('filtroMesExt')?.value || hoje().substring(0,7);
-    const [y,m] = mes.split('-');
-    const ultimo = new Date(parseInt(y), parseInt(m), 0).getDate();
-    return { dataIni: mes+'-01', dataFim: mes+'-'+String(ultimo).padStart(2,'0') };
-  }
-  if (p === 'range') {
-    const ini = document.getElementById('filtroRangeIni')?.value || hoje();
-    const fim = document.getElementById('filtroRangeFim')?.value || hoje();
-    return { dataIni: ini, dataFim: fim <= ini ? ini : fim };
-  }
-  return { dataIni: hoje(), dataFim: hoje() };
-}
-
-// Sobreescrita de renderExtrato para suportar todas as lojas + período
-const _renderExtratoBase = renderExtrato;
-window._extratoOverrideReady = true;
-
-async function renderExtrato() {
-  const filtLojaEl = document.getElementById('filtroLojaExt');
-  const filtTipo   = document.getElementById('filtroTipoExt')?.value || '';
-  const el         = document.getElementById('listaExtrato');
-
-  if (!isGestor || !filtLojaEl || filtLojaEl.style.display === 'none') {
-    // Loja normal — usar extrato local
-    const { dataIni } = getPeriodoExtrato();
-    const p = document.getElementById('filtroPeriodoExt')?.value || 'dia';
-    let movs;
-    if (p === 'dia') {
-      movs = movimentacoes.filter(m => m.data === dataIni && m.tipo !== 'sistema');
-    } else {
-      const { dataFim } = getPeriodoExtrato();
-      movs = movimentacoes.filter(m => m.data >= dataIni && m.data <= dataFim && m.tipo !== 'sistema');
-    }
-    if (filtTipo) movs = movs.filter(m => m.tipo === filtTipo);
-    movs = [...movs].reverse();
-    const loja = typeof currentLoja !== 'undefined' ? currentLoja : '';
-    renderExtratoHTML(movs, dataIni, filtTipo, loja);
-    return;
-  }
-
-  // Gestor
-  const lojaFiltro = filtLojaEl.value;
-  const { dataIni, dataFim } = getPeriodoExtrato();
-  const label = dataIni === dataFim ? dataIni.split('-').reverse().join('/') : dataIni.split('-').reverse().join('/') + ' a ' + dataFim.split('-').reverse().join('/');
-
-  el.innerHTML = '<div class="loading"><span class="spin"></span>Buscando...</div>';
-
-  try {
-    let movs = [];
-    if (lojaFiltro === '__todas__') {
-      // Todas as lojas em paralelo
-      const resultados = await Promise.all(LOJAS_FISICAS.map(l => fetchMovsLoja(l.key, dataIni, dataFim)));
-      movs = resultados.flat();
-    } else {
-      movs = await fetchMovsLoja(lojaFiltro, dataIni, dataFim);
-    }
-    movs = movs.filter(m => m.tipo !== 'sistema');
-    if (filtTipo) movs = movs.filter(m => m.tipo === filtTipo);
-    movs = [...movs].sort((a,b) => (b.data||'').localeCompare(a.data||'') || (b.hora||'').localeCompare(a.hora||''));
-    renderExtratoHTML(movs, label, filtTipo, lojaFiltro === '__todas__' ? 'Todas as Lojas' : lojaFiltro);
-  } catch(e) {
-    el.innerHTML = `<div class="empty"><div class="empty-icon">⚠</div>Erro: ${e.message}</div>`;
-  }
-}
+const LOJAS_FISICAS = [
+  { key: 'MOTOCHEFE Varginha',        label: 'MC Varginha' },
+  { key: 'MOTOCHEFE Poços de Caldas', label: 'MC Poços de Caldas' },
+  { key: 'MOTOCHEFE Itajubá',         label: 'MC Itajubá' },
+  { key: 'MOTOCHEFE Pouso Alegre',    label: 'MC Pouso Alegre' },
+  { key: 'MOTOCHEFE BH',              label: 'MC BH' },
+  { key: 'ECOMOV LAV',                label: 'EC Lavras' },
+  { key: 'ECOMOV Pouso Alegre',       label: 'EC Pouso Alegre' },
+];
 
 // ════════════════════════════════════════════════════════
-// BIRD'S EYE — gestores veem todas as lojas
+// BIRD'S EYE — todas as lojas para gestor
 // ════════════════════════════════════════════════════════
 function _semaforo(saldo, entradas) {
-  if (saldo < 0) return { cor: 'var(--red)', icon: '🔴', label: 'Negativo' };
-  if (entradas > 0 && saldo < entradas * 0.05) return { cor: '#f97316', icon: '🟡', label: 'Atenção' };
-  return { cor: 'var(--green)', icon: '🟢', label: 'OK' };
+  if(saldo < 0) return {cor:'var(--red)', icon:'🔴'};
+  if(entradas > 0 && saldo < entradas*0.05) return {cor:'#f97316', icon:'🟡'};
+  return {cor:'var(--green)', icon:'🟢'};
 }
 
 async function carregarTodasLojas() {
   const conteudo = document.getElementById('birdConteudo');
-  if (!conteudo) return;
-
+  if(!conteudo) return;
   const dataHoje = document.getElementById('birdDataInput')?.value || hoje();
   const mesSel   = document.getElementById('birdMesInput')?.value  || dataHoje.substring(0,7);
-  const [anoM, mmM] = mesSel.split('-');
+  const [anoM,mmM] = mesSel.split('-');
   const ultimoDia = new Date(parseInt(anoM), parseInt(mmM), 0).getDate();
-  const mesIni = mesSel + '-01';
-  const mesFim = mesSel + '-' + String(ultimoDia).padStart(2,'0');
+  const mesIni = mesSel+'-01';
+  const mesFim = mesSel+'-'+String(ultimoDia).padStart(2,'0');
 
   conteudo.innerHTML = '<div class="loading"><span class="spin"></span>Carregando todas as lojas...</div>';
 
-  // Busca dia + mês de todas as lojas em paralelo
   const [resDia, resMes] = await Promise.all([
     Promise.all(LOJAS_FISICAS.map(l => fetchMovsLoja(l.key, dataHoje, dataHoje))),
     Promise.all(LOJAS_FISICAS.map(l => fetchMovsLoja(l.key, mesIni, mesFim)))
   ]);
 
-  const dadosPorLoja = LOJAS_FISICAS.map((l, i) => {
-    const movsD = resDia[i].filter(m => m.tipo !== 'sistema');
-    const movsM = resMes[i].filter(m => m.tipo !== 'sistema');
+  const dadosPorLoja = LOJAS_FISICAS.map((l,i) => {
+    const movsD = resDia[i].filter(m=>m.tipo!=='sistema');
+    const movsM = resMes[i].filter(m=>m.tipo!=='sistema');
     const entDia = movsD.filter(m=>m.tipo==='entrada').reduce((s,m)=>s+m.valor,0);
     const saiDia = movsD.filter(m=>m.tipo==='saida').reduce((s,m)=>s+m.valor,0);
     const entMes = movsM.filter(m=>m.tipo==='entrada').reduce((s,m)=>s+m.valor,0);
@@ -2239,25 +2156,16 @@ async function carregarTodasLojas() {
     const catMap = {};
     movsD.filter(m=>m.tipo==='saida').forEach(m=>{ const c=m.categoria||'Outros'; catMap[c]=(catMap[c]||0)+m.valor; });
     const topSai = Object.entries(catMap).sort((a,b)=>b[1]-a[1]).slice(0,3);
-    // caixa aberto — vem dos metadados do fetch original
-    return { loja: l, entDia, saiDia, saldoDia, entMes, saiMes, saldoMes, topSai };
+    return {loja:l, entDia, saiDia, saldoDia, entMes, saiMes, saldoMes, topSai};
   });
 
-  const totEntDia = dadosPorLoja.reduce((s,d)=>s+d.entDia, 0);
-  const totSaldoMes = dadosPorLoja.reduce((s,d)=>s+d.saldoMes, 0);
+  const totEntDia  = dadosPorLoja.reduce((s,d)=>s+d.entDia,0);
+  const totSaldoMes = dadosPorLoja.reduce((s,d)=>s+d.saldoMes,0);
 
   let html = `
   <div style="display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap">
-    <div class="kpi g" style="flex:1;min-width:150px">
-      <div class="kl">Entradas Hoje — Todas</div>
-      <div class="kv tg">${fmtCurrency(totEntDia)}</div>
-      <div class="ks">${dataHoje.split('-').reverse().join('/')}</div>
-    </div>
-    <div class="kpi b" style="flex:1;min-width:150px">
-      <div class="kl">Saldo Mês — Todas</div>
-      <div class="kv" style="color:${totSaldoMes>=0?'var(--blue)':'var(--red)'}">${fmtCurrency(totSaldoMes)}</div>
-      <div class="ks">${mesSel}</div>
-    </div>
+    <div class="kpi g" style="flex:1;min-width:150px"><div class="kl">Entradas Hoje — Todas</div><div class="kv tg">${fmtCurrency(totEntDia)}</div><div class="ks">${dataHoje.split('-').reverse().join('/')}</div></div>
+    <div class="kpi b" style="flex:1;min-width:150px"><div class="kl">Saldo Mês — Todas</div><div class="kv" style="color:${totSaldoMes>=0?'var(--blue)':'var(--red)'}">${fmtCurrency(totSaldoMes)}</div><div class="ks">${mesSel}</div></div>
   </div>
   <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:16px">`;
 
@@ -2267,7 +2175,7 @@ async function carregarTodasLojas() {
     <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px;border-top:3px solid ${sem.cor}">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
         <div style="font-family:'Bebas Neue';font-size:17px;letter-spacing:1px">${d.loja.label}</div>
-        <span title="${sem.label}">${sem.icon}</span>
+        <span title="Saldo">${sem.icon}</span>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
         <div style="background:rgba(22,163,74,.08);border:1px solid rgba(22,163,74,.2);border-radius:8px;padding:8px;text-align:center">
@@ -2287,35 +2195,18 @@ async function carregarTodasLojas() {
           <div style="font-family:'Bebas Neue';font-size:18px;color:${d.saldoMes>=0?'var(--blue)':'var(--red)'}">${fmtCurrency(d.saldoMes)}</div>
         </div>
       </div>
-      ${d.topSai.length > 0 ? `
-      <div style="border-top:1px solid var(--border);padding-top:8px">
-        <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:5px">Top Saídas Hoje</div>
-        ${d.topSai.map(([cat,val]) => `
-        <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px">
-          <span style="color:var(--text2)">${cat}</span>
-          <span style="color:var(--red);font-weight:600">-${fmtCurrency(val)}</span>
-        </div>`).join('')}
-      </div>` : ''}
-      ${d.saldoDia < 0 ? `<div style="margin-top:8px;background:rgba(220,38,38,.08);border:1px solid rgba(220,38,38,.2);border-radius:7px;padding:7px;font-size:11px;color:var(--red)">⚠️ Saldo negativo — verificar saídas</div>` : ''}
-      ${d.entDia === 0 ? `<div style="margin-top:8px;background:rgba(249,115,22,.08);border:1px solid rgba(249,115,22,.2);border-radius:7px;padding:7px;font-size:11px;color:#f97316">⚠️ Sem entradas hoje</div>` : ''}
+      ${d.topSai.length>0?`<div style="border-top:1px solid var(--border);padding-top:8px"><div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:5px">Top Saídas Hoje</div>${d.topSai.map(([cat,val])=>`<div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px"><span>${cat}</span><span style="color:var(--red);font-weight:600">-${fmtCurrency(val)}</span></div>`).join('')}</div>`:''}
+      ${d.saldoDia<0?`<div style="margin-top:8px;background:rgba(220,38,38,.08);border:1px solid rgba(220,38,38,.2);border-radius:7px;padding:7px;font-size:11px;color:var(--red)">⚠️ Saldo negativo</div>`:''}
+      ${d.entDia===0?`<div style="margin-top:8px;background:rgba(249,115,22,.08);border:1px solid rgba(249,115,22,.2);border-radius:7px;padding:7px;font-size:11px;color:#f97316">⚠️ Sem entradas hoje</div>`:''}
     </div>`;
   });
-
   html += '</div>';
   conteudo.innerHTML = html;
 }
 
-// carregarBird — gestores veem todas as lojas
-const _carregarBirdOrig = carregarBird;
-carregarBird = async function() {
-  if (isGestor) return carregarTodasLojas();
-  return _carregarBirdOrig();
-};
-
 // ════════════════════════════════════════════════════════
 // SELEÇÃO MÚLTIPLA E LIMPEZA DE DUPLICATAS
 // ════════════════════════════════════════════════════════
-
 function toggleTodos(chkAll) {
   document.querySelectorAll('.chk-mov').forEach(c => { c.checked = chkAll.checked; });
   atualizarContSel();
@@ -2324,106 +2215,71 @@ function toggleTodos(chkAll) {
 function atualizarContSel() {
   const selecionados = document.querySelectorAll('.chk-mov:checked').length;
   const total = document.querySelectorAll('.chk-mov').length;
-  const btnExc = document.getElementById('btnExcluirSel');
+  const btnExc  = document.getElementById('btnExcluirSel');
   const btnLimp = document.getElementById('btnLimparDupl');
-  const contEl = document.getElementById('countSel');
+  const contEl  = document.getElementById('countSel');
   if(contEl) contEl.textContent = selecionados;
-  if(btnExc) btnExc.style.display = selecionados > 0 ? 'inline-flex' : 'none';
+  if(btnExc)  btnExc.style.display  = selecionados > 0 ? 'inline-flex' : 'none';
   if(btnLimp) btnLimp.style.display = isGestor && total > 0 ? 'inline-flex' : 'none';
-  // Atualiza estado do "marcar todos"
   const chkAll = document.getElementById('checkAll');
   if(chkAll) chkAll.indeterminate = selecionados > 0 && selecionados < total;
 }
 
 async function excluirSelecionados() {
   const checks = [...document.querySelectorAll('.chk-mov:checked')];
-  if(checks.length === 0) return;
-  if(!confirm('Excluir ' + checks.length + ' lançamento(s) selecionado(s)?')) return;
-
+  if(!checks.length) return;
+  if(!confirm('Excluir '+checks.length+' lançamento(s)?')) return;
   let excluidos = 0;
   for(const chk of checks) {
-    const id   = chk.dataset.id;
-    const loja = chk.dataset.loja;
     try {
-      const r = await fetch(`${APPS_SCRIPT_URL}?action=caixa_excluir_mov&id=${encodeURIComponent(id)}&loja=${encodeURIComponent(loja)}`);
+      const r = await fetch(`${APPS_SCRIPT_URL}?action=caixa_excluir_mov&id=${encodeURIComponent(chk.dataset.id)}&loja=${encodeURIComponent(chk.dataset.loja)}`);
       const j = await r.json();
-      if(j.success) {
-        movimentacoes = movimentacoes.filter(m => String(m.id) !== String(id));
-        excluidos++;
-      }
-    } catch(e) {
-      movimentacoes = movimentacoes.filter(m => String(m.id) !== String(id));
-      excluidos++;
-    }
+      if(j.success) { movimentacoes = movimentacoes.filter(m=>String(m.id)!==String(chk.dataset.id)); excluidos++; }
+    } catch(e) { movimentacoes = movimentacoes.filter(m=>String(m.id)!==String(chk.dataset.id)); excluidos++; }
   }
-  saveData();
-  renderExtrato();
-  renderCaixa();
-  showToast('✓ ' + excluidos + ' lançamento(s) excluído(s)');
+  saveData(); renderExtrato(); renderCaixa();
+  showToast('✓ '+excluidos+' excluído(s)');
 }
 
 async function limparDuplicatas() {
   if(!isGestor) return;
-  const el = document.getElementById('listaExtrato');
-  el.innerHTML = '<div class="loading"><span class="spin"></span>Verificando duplicatas...</div>';
+  const linhas = document.querySelectorAll('tbody tr');
+  if(!linhas.length) { showToast('Nenhum dado carregado'); return; }
 
-  // Busca todos os lançamentos visíveis na tabela
-  const checks = [...document.querySelectorAll('.chk-mov')];
-  if(checks.length === 0) { showToast('Nenhum dado carregado'); return; }
-
-  // Coleta ids e lojas de todos
-  const todos = checks.map(c => ({ id: c.dataset.id, loja: c.dataset.loja }));
-
-  // Identifica duplicatas: mesma hora+desc+valor — mantém o primeiro, marca os demais
   const vistos = {};
   const parasExcluir = [];
-
-  // Precisamos dos dados da tabela — buscar do DOM
-  const linhas = document.querySelectorAll('tbody tr');
   linhas.forEach(tr => {
-    const chk = tr.querySelector('.chk-mov');
+    const chk   = tr.querySelector('.chk-mov');
     if(!chk) return;
-    const hora  = tr.cells[1]?.textContent?.trim() || '';
-    const desc  = tr.cells[2]?.textContent?.trim() || '';
+    const data  = tr.cells[1]?.textContent?.trim().replace(/\s+/g,' ') || '';
+    const desc  = tr.cells[2]?.textContent?.trim().substring(0,40) || '';
     const valor = tr.cells[6]?.textContent?.trim() || '';
-    const key   = hora + '|' + desc.substring(0,30) + '|' + valor;
+    const key   = data+'|'+desc+'|'+valor;
     if(vistos[key]) {
-      parasExcluir.push({ id: chk.dataset.id, loja: chk.dataset.loja });
+      parasExcluir.push({id: chk.dataset.id, loja: chk.dataset.loja});
     } else {
       vistos[key] = true;
     }
   });
 
-  if(parasExcluir.length === 0) {
-    renderExtrato();
-    showToast('✓ Nenhuma duplicata encontrada!');
-    return;
-  }
+  if(!parasExcluir.length) { showToast('✓ Nenhuma duplicata!'); return; }
+  if(!confirm('Encontradas '+parasExcluir.length+' duplicata(s). Excluir todas?')) return;
 
-  if(!confirm('Encontradas ' + parasExcluir.length + ' duplicata(s) (inclui triplicatas e mais). Excluir todas?')) {
-    renderExtrato();
-    return;
-  }
-
-  el.innerHTML = '<div class="loading"><span class="spin"></span>Excluindo ' + parasExcluir.length + ' duplicata(s)...</div>';
-
+  document.getElementById('listaExtrato').innerHTML = '<div class="loading"><span class="spin"></span>Removendo '+parasExcluir.length+' duplicata(s)...</div>';
   let excluidos = 0;
   for(const item of parasExcluir) {
     try {
-      // Passa todos=true para excluir TODAS as linhas com esse id (não só 1)
       const r = await fetch(`${APPS_SCRIPT_URL}?action=caixa_excluir_mov&id=${encodeURIComponent(item.id)}&loja=${encodeURIComponent(item.loja)}&todos=true`);
       const j = await r.json();
-      movimentacoes = movimentacoes.filter(m => String(m.id) !== String(item.id));
-      excluidos += j.removidas || 1;
+      movimentacoes = movimentacoes.filter(m=>String(m.id)!==String(item.id));
+      excluidos += j.removidas||1;
     } catch(e) {
-      movimentacoes = movimentacoes.filter(m => String(m.id) !== String(item.id));
+      movimentacoes = movimentacoes.filter(m=>String(m.id)!==String(item.id));
       excluidos++;
     }
   }
-
-  saveData();
-  renderExtrato();
-  showToast('✓ ' + excluidos + ' linha(s) removida(s)!');
+  saveData(); renderExtrato();
+  showToast('✓ '+excluidos+' linha(s) removida(s)!');
 }
 
 </script>
