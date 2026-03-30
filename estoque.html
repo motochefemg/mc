@@ -1088,9 +1088,7 @@ const STATUS_CFG = {
   'MONTADA':        { label:'🔧 Montada',         cls:'s-montada',   dot:'#7c3aed' },
   'GARANTIA':       { label:'🔴 Garantia',        cls:'s-garantia',  dot:'#dc2626' },
   'TRANSFERÊNCIA':  { label:'🚚 Transfer.',       cls:'s-transfer',  dot:'#6b7280' },
-  'RESERVADA':      { label:'🔒 Reservada',       cls:'s-reservada', dot:'#ea580c' },
-  // PEND. RESERVA — mostrado em card separado, não no loop principal
-  'VENDIDA':        { label:'✅ Vendida',          cls:'s-vendida',   dot:'#16a34a' },
+  // RESERVADA e VENDIDA movidas para SITUAÇÃO — não aparecem mais como STATUS
 
   // PEND. TRANSFER — mostrado em card separado, não no loop principal
 };
@@ -1535,10 +1533,12 @@ function renderKPIs(){
   const pendReserva = motos.filter(m=>m.status==='PEND. RESERVA' && (!fLoja||m.localizacao===fLoja)).length;
 
   // Contagem por Situação
-  const disponiveis = filtradas.filter(m=>!m.situacao||m.situacao==='DISPONIVEL').length;
-  const reservadas  = filtradas.filter(m=>m.situacao==='RESERVADA').length;
-  const vendidas    = filtradas.filter(m=>m.situacao==='VENDIDA').length;
-  const fSituacao   = document.getElementById('fSituacao');
+  // Contar por situação — excluir status VENDIDA das disponíveis
+  const disponiveis = motos.filter(m=>(!m.situacao||m.situacao==='DISPONIVEL') && m.status!=='VENDIDA').length;
+  const reservadas  = motos.filter(m=>m.situacao==='RESERVADA').length;
+  const vendidas    = motos.filter(m=>m.situacao==='VENDIDA').length;
+  const fSituacao    = document.getElementById('fSituacao');
+  const fSituacaoVal = fSituacao?.value || '';
 
   el.innerHTML = `
     <div class="kpi ${!fStatus?.value?'sel':''}" onclick="document.getElementById('fStatus').value='';renderEstoque();renderKPIs()">
@@ -1552,20 +1552,20 @@ function renderKPIs(){
         <div class="kv" style="color:${cfg.dot}">${counts[s]}</div>
         <div class="ks">unidades</div>
       </div>`).join('')}
-    <div class="kpi ${fSituacao?.value==='DISPONIVEL'?'sel':''}" onclick="if(document.getElementById('fSituacao'))document.getElementById('fSituacao').value='DISPONIVEL';renderEstoque();renderKPIs()" style="border-color:rgba(22,163,74,.3);cursor:pointer">
+    <div class="kpi ${fSituacaoVal==='DISPONIVEL'?'sel':''}" onclick="document.getElementById('fSituacao').value='DISPONIVEL';document.getElementById('fStatus').value='';renderEstoque();renderKPIs()" style="border-color:rgba(22,163,74,.3);cursor:pointer">
       <div class="kl" style="color:#16a34a">🟢 Disponíveis</div>
       <div class="kv" style="color:#16a34a">${disponiveis}</div>
       <div class="ks">para venda</div>
     </div>
-    <div class="kpi ${fSituacao?.value==='RESERVADA'?'sel':''}" onclick="if(document.getElementById('fSituacao'))document.getElementById('fSituacao').value='RESERVADA';renderEstoque();renderKPIs()" style="border-color:rgba(234,88,12,.3);cursor:pointer">
+    <div class="kpi ${fSituacaoVal==='RESERVADA'?'sel':''}" onclick="document.getElementById('fSituacao').value='RESERVADA';document.getElementById('fStatus').value='';renderEstoque();renderKPIs()" style="border-color:rgba(234,88,12,.3);cursor:pointer">
       <div class="kl" style="color:#ea580c">🔒 Reservadas</div>
       <div class="kv" style="color:#ea580c">${reservadas}</div>
       <div class="ks">com cliente</div>
     </div>
-    <div class="kpi ${fSituacao?.value==='VENDIDA'?'sel':''}" onclick="if(document.getElementById('fSituacao'))document.getElementById('fSituacao').value='VENDIDA';renderEstoque();renderKPIs()" style="border-color:rgba(22,163,74,.2);cursor:pointer">
-      <div class="kl" style="color:#15803d">✅ Vendidas</div>
+    <div class="kpi ${fSituacaoVal==='VENDIDA'?'sel':''}" onclick="document.getElementById('fSituacao').value='VENDIDA';document.getElementById('fStatus').value='';renderEstoque();renderKPIs()" style="border-color:rgba(22,163,74,.2);cursor:pointer">
+      <div class="kl" style="color:#15803d">✅ Vendidas sit.</div>
       <div class="kv" style="color:#15803d">${vendidas}</div>
-      <div class="ks">concluídas</div>
+      <div class="ks">por situação</div>
     </div>
     ${(()=>{
       const LOJAS_DISP = [
