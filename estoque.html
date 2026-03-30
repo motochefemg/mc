@@ -1153,7 +1153,7 @@ async function load() {
     };
     showSyncStatus('⟳ Carregando dados...', false);
     const [r1,r2,r3,r4,r5] = await Promise.all([
-      fetchEstoqueCompleto(),
+      fetchAS(`${AS}?action=estoque_get&tabela=ESTOQUE`),
       fetchAS(`${AS}?action=estoque_get&tabela=DEMANDAS`),
       fetchAS(`${AS}?action=estoque_get&tabela=GARANTIAS`),
       fetchAS(`${AS}?action=estoque_get&tabela=PECAS`),
@@ -3743,32 +3743,4 @@ window.addEventListener('load', () => {
 </script>
 </body>
 </html>
-// Carrega ESTOQUE em múltiplas páginas para superar limite do Apps Script
-async function fetchEstoqueCompleto() {
-  try {
-    // Primeira página — descobre total
-    const r1 = await fetchAS(`${AS}?action=estoque_get&tabela=ESTOQUE&pagina=1&limite=200`);
-    if(!r1 || !r1.success) return { success: false, data: [] };
-    
-    let todos = r1.data || [];
-    const totalPaginas = r1.paginas || 1;
-    
-    // Carregar páginas restantes em paralelo
-    if(totalPaginas > 1) {
-      const promessas = [];
-      for(let p = 2; p <= totalPaginas; p++) {
-        promessas.push(fetchAS(`${AS}?action=estoque_get&tabela=ESTOQUE&pagina=${p}&limite=200`));
-      }
-      const resultados = await Promise.all(promessas);
-      resultados.forEach(r => {
-        if(r && r.success) todos = todos.concat(r.data || []);
-      });
-    }
-    
-    return { success: true, data: todos };
-  } catch(e) {
-    console.error('fetchEstoqueCompleto erro:', e);
-    return { success: false, data: [] };
-  }
-}
 
