@@ -312,19 +312,17 @@ textarea.fc{resize:vertical;min-height:70px;}
       <!-- Filtros -->
       <div class="filtros">
         <input class="f-input" id="fBusca" placeholder="🔍  Buscar chassi, modelo, cor..." oninput="renderEstoque()" style="width:280px">
-        <select class="f-sel" id="fStatus" onchange="renderEstoque()">
+        <select class="f-sel" id="fStatus" onchange="mostraDisp=false;document.getElementById('fSituacao').value='';renderEstoque();renderKPIs()">
           <option value="">Todos os status</option>
           <option value="CAIXA">📦 Caixa</option>
           <option value="MONTADA">🔧 Montada</option>
           <option value="GARANTIA">🔴 Garantia</option>
-          <option value="PEND. TRANSFER">🔄 Pend. Transfer</option>
-          <option value="TRANSFERÊNCIA">🚚 Transferência</option>
-
         </select>
-        <select class="f-sel" id="fSituacao" onchange="mostraDisp=false;document.getElementById('fStatus').value='';document.getElementById('btnVendidas').style.background='rgba(22,163,74,.1)';document.getElementById('btnVendidas').style.color='var(--green)';renderEstoque();renderKPIs()" title="Situação de venda">
+        <select class="f-sel" id="fSituacao" onchange="mostraDisp=false;document.getElementById('fStatus').value='';renderEstoque();renderKPIs()" title="Situação de venda">
           <option value="">Todas as situações</option>
           <option value="DISPONIVEL">🟢 Disponível</option>
           <option value="RESERVADA">🔒 Reservada</option>
+          <option value="VENDIDA">✅ Vendida</option>
         </select>
         <select class="f-sel" id="fLoja" onchange="renderEstoque();renderKPIs()">
           <option value="">Todas as lojas</option>
@@ -1451,6 +1449,7 @@ function toggleVendidas(){
     mostraDisp = true;
     if(sitSel) sitSel.value = '';
     sel.value = '';
+    // renderEstoque vai mostrar situacao=VENDIDA
     btn.style.background = 'var(--green)';
     btn.style.color = '#fff';
     btn.style.border = 'none';
@@ -1539,7 +1538,7 @@ function renderKPIs(){
   base.forEach(m=>{ if(counts[m.status]!==undefined) counts[m.status]++; });
 
   // Contagem por situação (todas as motos, sem filtro de loja para o card por loja)
-  const disponiveis = motos.filter(m=>(!m.situacao||m.situacao==='DISPONIVEL') && m.status!=='VENDIDA').length;
+  const disponiveis = motos.filter(m=>(m.situacao||'DISPONIVEL')==='DISPONIVEL').length;
   const reservadas  = motos.filter(m=>m.situacao==='RESERVADA').length;
   const vendidasSit = motos.filter(m=>m.situacao==='VENDIDA').length;
 
@@ -1569,7 +1568,7 @@ function renderKPIs(){
     {siglas:['PA','POUSO ALEGRE'],           label:'Pouso Alegre'},
   ];
   const rowsDisp = LOJAS_DISP.map(({siglas,label})=>{
-    const n = motos.filter(m=>siglas.includes(m.localizacao) && (!m.situacao||m.situacao==='DISPONIVEL') && m.status!=='VENDIDA').length;
+    const n = motos.filter(m=>siglas.includes(m.localizacao) && (m.situacao||'DISPONIVEL')==='DISPONIVEL').length;
     return n>0 ? `<div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text2)">${label}</span><span style="font-weight:700;color:#16a34a">${n}</span></div>` : '';
   }).join('');
 
@@ -1634,23 +1633,22 @@ function renderEstoque(){
   const mostrarVendidas = fStatus === 'VENDIDA' || fSituacao === 'VENDIDA';
 
   let lista = motos.filter(m=>{
-    // 1. Filtro por situação (Disponível/Reservada/Vendida) — tem prioridade
-    if(fSituacao) {
-      const sit = m.situacao||'DISPONIVEL';
-      if(sit !== fSituacao) return false;
-      if(fSituacao==='DISPONIVEL' && m.status==='VENDIDA') return false; // excluir vendidas das disponíveis
-    } else if(mostraDisp) {
-      // Botão Vendidas ativo
-      if(m.status!=='VENDIDA') return false;
-    } else {
-      // Padrão: esconder vendidas e pend.transfer
-      if(fStatus) { if(m.status!==fStatus) return false; }
-      else {
-        if(m.status==='VENDIDA') return false;
-        if(m.status==='PEND. TRANSFER') return false;
-      }
+    const sit = m.situacao || 'DISPONIVEL';
+    // 1. Botão Vendidas ativo — mostra só situacao=VENDIDA
+    if(mostraDisp) {
+      if(sit !== 'VENDIDA') return false;
     }
-    // 2. Filtros adicionais
+    // 2. Filtro por situação (menu suspenso)
+    else if(fSituacao) {
+      if(sit !== fSituacao) return false;
+    }
+    // 3. Padrão — esconde VENDIDAS (por situacao) e PEND.TRANSFER
+    else {
+      if(sit === 'VENDIDA') return false;
+      if(m.status === 'PEND. TRANSFER') return false;
+      if(fStatus && m.status !== fStatus) return false;
+    }
+    // 4. Filtros adicionais
     if(fLoja && m.localizacao!==fLoja) return false;
     if(fModelo && m.modelo!==fModelo) return false;
     if(busca){
