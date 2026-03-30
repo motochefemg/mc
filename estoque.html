@@ -1183,14 +1183,11 @@ async function load() {
       subirDadosIniciais();
     }
 
-    // Demandas: localStorage É a fonte de verdade
-    try {
-      const loc = JSON.parse(localStorage.getItem('mc_estoque_demandas')||'null');
-      demandas = loc !== null ? loc : (r2.data||[]);
-    } catch(e) { demandas = (r2.data||[]); }
+    // Demandas: Sheets é fonte de verdade
+    try { demandas = r2.data||[]; } catch(e) { demandas = []; }
 
-    // Transferências: localStorage é fonte de verdade
-    try { transferencias = JSON.parse(localStorage.getItem('mc_estoque_transferencias')||'[]'); } catch(e){ transferencias = (r5.data||[]); }
+    // Transferências: Sheets é fonte de verdade
+    try { transferencias = r5.data||[]; } catch(e){ transferencias = []; }
     try { entregas = JSON.parse(localStorage.getItem('mc_estoque_entregas')||'[]'); } catch(e){ entregas=[]; }
 
     garantias = (r3.data||[]);
@@ -1271,10 +1268,11 @@ async function saveItem(tabela, item) {
     else console.warn('Sheets falhou:', res2.error);
   } catch(e) {
     // Último recurso: Image Ping (sem confirmação)
-    console.warn('fetch falhou, usando Image Ping:', e.message);
-    const itemMin = {...itemParaSalvar, historico:'[]'};
-    const urlMin = `${AS}?action=estoque_save&tabela=${tabela}&data=${encodeURIComponent(JSON.stringify(itemMin))}`;
-    if(urlMin.length <= 8000) { const img=new Image(); img.src=urlMin; }
+    console.warn('fetch falhou, tentando POST:', e.message);
+    try {
+      const itemMin = {...itemParaSalvar, historico:'[]'};
+      await fetch(AS, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({action:'estoque_save', tabela, data:JSON.stringify(itemMin)})});
+    } catch(e2) { console.error('Falha total ao salvar:', e2.message); }
   }
 }
 
@@ -1282,12 +1280,12 @@ async function deleteItem(tabela, id) {
   // Salva localmente primeiro
   const dados = tabela==='ESTOQUE'?motos:tabela==='DEMANDAS'?demandas:tabela==='GARANTIAS'?garantias:pecas;
   localStorage.setItem('mc_estoque_'+tabela.toLowerCase(), JSON.stringify(dados));
-  // Envia exclusão ao Sheets via Image ping
+  // Envia exclusão ao Sheets via fetch (confiável)
   try {
-    const url = `${AS}?action=estoque_del&tabela=${tabela}&id=${id}`;
-    const img = new Image();
-    img.src = url;
-  } catch(e) {}
+    const r = await fetch(`${AS}?action=estoque_del&tabela=${tabela}&id=${id}`, {redirect:'follow'});
+    const j = await r.json();
+    if(j.success) console.log('✓ Deletado:', tabela, id);
+  } catch(e) { console.warn('Falha ao deletar:', e.message); }
 }
 
 function parseJSON(str, def) { try { return typeof str==='string'?JSON.parse(str):str||def; } catch(e){ return def; } }
