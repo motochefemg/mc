@@ -321,7 +321,7 @@ textarea.fc{resize:vertical;min-height:70px;}
           <option value="TRANSFERÊNCIA">🚚 Transferência</option>
 
         </select>
-        <select class="f-sel" id="fSituacao" onchange="document.getElementById('fStatus').value='';renderEstoque();renderKPIs()" title="Situação de venda">
+        <select class="f-sel" id="fSituacao" onchange="mostraDisp=false;document.getElementById('fStatus').value='';document.getElementById('btnVendidas').style.background='rgba(22,163,74,.1)';document.getElementById('btnVendidas').style.color='var(--green)';renderEstoque();renderKPIs()" title="Situação de venda">
           <option value="">Todas as situações</option>
           <option value="DISPONIVEL">🟢 Disponível</option>
           <option value="RESERVADA">🔒 Reservada</option>
@@ -356,7 +356,7 @@ textarea.fc{resize:vertical;min-height:70px;}
             <thead>
               <tr id="theadEstoque">
                 <th onclick="sortEstoque('status')" style="cursor:pointer;user-select:none">STATUS <span id="sort-status"></span></th>
-                <th>SITUAÇÃO</th>
+                <th onclick="sortEstoque('situacao')" style="cursor:pointer;user-select:none">SITUAÇÃO <span id="sort-situacao"></span></th>
                 <th onclick="sortEstoque('chassi')" style="cursor:pointer;user-select:none">CHASSI <span id="sort-chassi"></span></th>
                 <th onclick="sortEstoque('modelo')" style="cursor:pointer;user-select:none">MODELO <span id="sort-modelo"></span></th>
                 <th onclick="sortEstoque('cor')" style="cursor:pointer;user-select:none">COR <span id="sort-cor"></span></th>
@@ -1488,6 +1488,11 @@ function aplicarOrdem(lista) {
   return [...lista].sort((a, b) => {
     let va = a[sortField] ?? '';
     let vb = b[sortField] ?? '';
+    // situacao pode ser undefined — tratar como DISPONIVEL
+    if(sortField === 'situacao') {
+      va = a.situacao || 'DISPONIVEL';
+      vb = b.situacao || 'DISPONIVEL';
+    }
 
     if(CAMPOS_NUM.includes(sortField)){
       return ((parseFloat(va)||0) - (parseFloat(vb)||0)) * sortDir;
@@ -1556,15 +1561,15 @@ function renderKPIs(){
 
   // Disponíveis por loja
   const LOJAS_DISP = [
-    {sigla:'GALPÃO', label:'Galpão'},
-    {sigla:'VGA',    label:'Varginha'},
-    {sigla:'POÇOS',  label:'Poços'},
-    {sigla:'LAVRAS', label:'Lavras'},
-    {sigla:'ITAJUBA',label:'Itajubá'},
-    {sigla:'PA',     label:'Pouso Alegre'},
+    {siglas:['GALPÃO'],                      label:'Galpão'},
+    {siglas:['VGA','VARGINHA'],               label:'Varginha'},
+    {siglas:['POÇOS','POCOS'],               label:'Poços'},
+    {siglas:['LAVRAS','LVR'],                label:'Lavras'},
+    {siglas:['ITAJUBA','ITAJUBÁ'],           label:'Itajubá'},
+    {siglas:['PA','POUSO ALEGRE'],           label:'Pouso Alegre'},
   ];
-  const rowsDisp = LOJAS_DISP.map(({sigla,label})=>{
-    const n = motos.filter(m=>m.localizacao===sigla && (!m.situacao||m.situacao==='DISPONIVEL') && m.status!=='VENDIDA').length;
+  const rowsDisp = LOJAS_DISP.map(({siglas,label})=>{
+    const n = motos.filter(m=>siglas.includes(m.localizacao) && (!m.situacao||m.situacao==='DISPONIVEL') && m.status!=='VENDIDA').length;
     return n>0 ? `<div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text2)">${label}</span><span style="font-weight:700;color:#16a34a">${n}</span></div>` : '';
   }).join('');
 
