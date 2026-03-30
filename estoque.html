@@ -320,7 +320,7 @@ textarea.fc{resize:vertical;min-height:70px;}
         </select>
         <select class="f-sel" id="fSituacao" onchange="mostraDisp=false;document.getElementById('fStatus').value='';renderEstoque();renderKPIs()" title="Situação de venda">
           <option value="">Todas as situações</option>
-          <option value="DISPONIVEL">🟢 Disponível</option>
+          <option value="DISPONÍVEL">🟢 Disponível</option>
           <option value="RESERVADA">🔒 Reservada</option>
           <option value="VENDIDA">✅ Vendida</option>
         </select>
@@ -765,7 +765,7 @@ textarea.fc{resize:vertical;min-height:70px;}
       <div class="fg">
         <label class="fl">Situação</label>
         <select class="fsel" id="novaSituacao">
-          <option value="DISPONIVEL">🟢 Disponível</option>
+          <option value="DISPONÍVEL">🟢 Disponível</option>
           <option value="RESERVADA">🔒 Reservada</option>
           <option value="VENDIDA">✅ Vendida</option>
         </select>
@@ -1167,6 +1167,12 @@ async function load() {
       if(typeof hist === 'string'){
         try { hist = JSON.parse(hist); } catch(e){ hist = []; }
       }
+      // Normalizar situacao para maiúsculo sem acento
+      let sitRaw = (m.situacao||'').toString().trim().toUpperCase()
+        .normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+      if(sitRaw==='VENDIDA') m.situacao='VENDIDA';
+      else if(sitRaw==='RESERVADA') m.situacao='RESERVADA';
+      else m.situacao='DISPONÍVEL';
       return {...m, historico: Array.isArray(hist) ? hist : []};
     });
     if(sheetsMotos.length > 0){
@@ -1489,8 +1495,8 @@ function aplicarOrdem(lista) {
     let vb = b[sortField] ?? '';
     // situacao pode ser undefined — tratar como DISPONIVEL
     if(sortField === 'situacao') {
-      va = a.situacao || 'DISPONIVEL';
-      vb = b.situacao || 'DISPONIVEL';
+      va = a.situacao || 'DISPONÍVEL';
+      vb = b.situacao || 'DISPONÍVEL';
     }
 
     if(CAMPOS_NUM.includes(sortField)){
@@ -1538,7 +1544,7 @@ function renderKPIs(){
   base.forEach(m=>{ if(counts[m.status]!==undefined) counts[m.status]++; });
 
   // Contagem por situação (todas as motos, sem filtro de loja para o card por loja)
-  const disponiveis = motos.filter(m=>(m.situacao||'DISPONIVEL')==='DISPONIVEL').length;
+  const disponiveis = motos.filter(m=>(m.situacao||'DISPONÍVEL')==='DISPONÍVEL').length;
   const reservadas  = motos.filter(m=>m.situacao==='RESERVADA').length;
   const vendidasSit = motos.filter(m=>m.situacao==='VENDIDA').length;
 
@@ -1568,7 +1574,7 @@ function renderKPIs(){
     {siglas:['PA','POUSO ALEGRE'],           label:'Pouso Alegre'},
   ];
   const rowsDisp = LOJAS_DISP.map(({siglas,label})=>{
-    const n = motos.filter(m=>siglas.includes(m.localizacao) && (m.situacao||'DISPONIVEL')==='DISPONIVEL').length;
+    const n = motos.filter(m=>siglas.includes(m.localizacao) && (m.situacao||'DISPONÍVEL')==='DISPONÍVEL').length;
     return n>0 ? `<div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text2)">${label}</span><span style="font-weight:700;color:#16a34a">${n}</span></div>` : '';
   }).join('');
 
@@ -1579,17 +1585,17 @@ function renderKPIs(){
       <div class="ks">motos no sistema</div>
     </div>
     ${Object.entries(STATUS_CFG).map(([s,cfg])=>kpiStatus(s,cfg)).join('')}
-    <div class="kpi ${fSituacao==='DISPONIVEL'?'sel':''}" style="border-color:rgba(22,163,74,.3);cursor:pointer" onclick="document.getElementById('fSituacao').value='DISPONIVEL';document.getElementById('fStatus').value='';renderEstoque();renderKPIs()">
+    <div class="kpi ${fSituacao==='DISPONÍVEL'?'sel':''}" style="border-color:rgba(22,163,74,.3);cursor:pointer" onclick="mostraDisp=false;document.getElementById('btnVendidas').style.background='rgba(22,163,74,.1)';document.getElementById('btnVendidas').style.color='var(--green)';document.getElementById('fSituacao').value='DISPONÍVEL';document.getElementById('fStatus').value='';renderEstoque();renderKPIs()">
       <div class="kl" style="color:#16a34a">🟢 Disponíveis</div>
       <div class="kv" style="color:#16a34a">${disponiveis}</div>
       <div class="ks">para venda</div>
     </div>
-    <div class="kpi ${fSituacao==='RESERVADA'?'sel':''}" style="border-color:rgba(234,88,12,.3);cursor:pointer" onclick="document.getElementById('fSituacao').value='RESERVADA';document.getElementById('fStatus').value='';renderEstoque();renderKPIs()">
+    <div class="kpi ${fSituacao==='RESERVADA'?'sel':''}" style="border-color:rgba(234,88,12,.3);cursor:pointer" onclick="mostraDisp=false;document.getElementById('btnVendidas').style.background='rgba(22,163,74,.1)';document.getElementById('btnVendidas').style.color='var(--green)';document.getElementById('fSituacao').value='RESERVADA';document.getElementById('fStatus').value='';renderEstoque();renderKPIs()">
       <div class="kl" style="color:#ea580c">🔒 Reservadas</div>
       <div class="kv" style="color:#ea580c">${reservadas}</div>
       <div class="ks">com cliente</div>
     </div>
-    <div class="kpi ${fSituacao==='VENDIDA'?'sel':''}" style="border-color:rgba(22,163,74,.2);cursor:pointer" onclick="document.getElementById('fSituacao').value='VENDIDA';document.getElementById('fStatus').value='';renderEstoque();renderKPIs()">
+    <div class="kpi ${fSituacao==='VENDIDA'?'sel':''}" style="border-color:rgba(22,163,74,.2);cursor:pointer" onclick="mostraDisp=false;document.getElementById('btnVendidas').style.background='rgba(22,163,74,.1)';document.getElementById('btnVendidas').style.color='var(--green)';document.getElementById('fSituacao').value='VENDIDA';document.getElementById('fStatus').value='';renderEstoque();renderKPIs()">
       <div class="kl" style="color:#15803d">✅ Vendidas</div>
       <div class="kv" style="color:#15803d">${vendidasSit}</div>
       <div class="ks">por situação</div>
@@ -1633,7 +1639,7 @@ function renderEstoque(){
   const mostrarVendidas = fStatus === 'VENDIDA' || fSituacao === 'VENDIDA';
 
   let lista = motos.filter(m=>{
-    const sit = m.situacao || 'DISPONIVEL';
+    const sit = m.situacao || 'DISPONÍVEL';
     // 1. Botão Vendidas ativo — mostra só situacao=VENDIDA
     if(mostraDisp) {
       if(sit !== 'VENDIDA') return false;
@@ -1679,7 +1685,7 @@ function renderEstoque(){
         <span class="cell-edit-date">${m.dataStatus?fmtData(m.dataStatus):''}</span>
       </td>
       <td onclick="event.stopPropagation();${isAdmU()||isGestorU()?`editarSituacao('${m.id}')`:''}" title="${isAdmU()||isGestorU()?'Clique para alterar disponibilidade':''}" style="cursor:${isAdmU()||isGestorU()?'pointer':'default'}">
-        ${situacaoBadge(m.situacao||'DISPONIVEL')}
+        ${situacaoBadge(m.situacao||'DISPONÍVEL')}
       </td>
       <td><span class="chassi-link" onclick="abrirHistorico('${m.id}')" title="Ver histórico completo">${m.chassi||'—'}</span></td>
       <td style="font-weight:600">${m.modelo||'—'}</td>
@@ -2116,12 +2122,12 @@ function abrirAlterarStatus(id){
         <div style="font-family:'Bebas Neue';font-size:18px">${m.modelo} ${m.cor}</div>
         <div style="font-size:11px;color:var(--text3)">${m.chassi} · ${m.localizacao}</div>
       </div>
-      <div style="margin-left:auto;display:flex;gap:6px;align-items:center">${statusBadge(m.status)} ${situacaoBadge(m.situacao||'DISPONIVEL')}</div>
+      <div style="margin-left:auto;display:flex;gap:6px;align-items:center">${statusBadge(m.status)} ${situacaoBadge(m.situacao||'DISPONÍVEL')}</div>
     </div>`;
   document.getElementById('novoStatus').value = m.status;
   // Pré-preencher situação
   const sitEl = document.getElementById('novaSituacao');
-  if(sitEl) sitEl.value = m.situacao || 'DISPONIVEL';
+  if(sitEl) sitEl.value = m.situacao || 'DISPONÍVEL';
   document.getElementById('obsStatus').value = '';
   document.getElementById('dataMontagem').value = hoje();
   document.getElementById('dataReserva').value = hoje();
@@ -2162,7 +2168,7 @@ function confirmarStatus(){
   const m = motoEditando;
   if(!m) return;
   const novo = document.getElementById('novoStatus').value;
-  const novaSituacao = document.getElementById('novaSituacao')?.value || 'DISPONIVEL';
+  const novaSituacao = document.getElementById('novaSituacao')?.value || 'DISPONÍVEL';
   const obs  = document.getElementById('obsStatus').value;
   const statusAnt = m.status;
 
@@ -3669,7 +3675,7 @@ function editarSituacao(id) {
   const m = motos.find(x => x.id == id);
   if(!m) return;
 
-  const atual = m.situacao || 'DISPONIVEL';
+  const atual = m.situacao || 'DISPONÍVEL';
   const opcoes = [
     { val: 'DISPONIVEL', label: '🟢 Disponível' },
     { val: 'RESERVADA',  label: '🔒 Reservada' },
