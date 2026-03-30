@@ -396,12 +396,11 @@ textarea.fc{resize:vertical;min-height:70px;}
       <h2 style="font-family:'Bebas Neue';font-size:22px;letter-spacing:1px">TRANSFERÊNCIAS</h2>
       <div style="display:flex;gap:8px;align-items:center">
         <select id="fTrfStatus" class="f-sel" onchange="renderTransferencias()">
-          <option value="">Todos</option>
+          <option value="">🔄 Ativas (todas exceto concluídas)</option>
           <option value="PENDENTE">⏳ Pendentes</option>
-          <option value="APROVADA">✅ Aprovadas</option>
-          <option value="CONCLUÍDA">📦 Concluídas</option>
-          <option value="APROVADA">🚛 Em trânsito</option>
+          <option value="APROVADA">✅ Aprovadas / Em trânsito</option>
           <option value="REPROVADA">✗ Reprovadas</option>
+          <option value="CONCLUÍDA">📦 Concluídas</option>
         </select>
         <select id="fTrfTipo" class="f-sel" onchange="renderTransferencias()">
           <option value="">Todos os tipos</option>
@@ -3138,8 +3137,13 @@ function renderTransferencias(){
   });
 
   let lista = [...transferencias].sort((a,b)=>(b.data||'').localeCompare(a.data||''));
-  if(fStatus) lista = lista.filter(t=>t.status===fStatus);
-  if(fTipo)   lista = lista.filter(t=>t.tipo===fTipo);
+  // Oculta CONCLUÍDAS por padrão — só aparece quando filtro selecionado
+  if(fStatus) {
+    lista = lista.filter(t=>t.status===fStatus);
+  } else {
+    lista = lista.filter(t=>t.status!=='CONCLUÍDA');
+  }
+  if(fTipo) lista = lista.filter(t=>t.tipo===fTipo);
 
   if(lista.length===0){
     el.innerHTML='<div class="empty"><div class="empty-icon">🚚</div>Nenhuma transferência registrada</div>';
