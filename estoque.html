@@ -356,6 +356,7 @@ textarea.fc{resize:vertical;min-height:70px;}
             <thead>
               <tr id="theadEstoque">
                 <th onclick="sortEstoque('status')" style="cursor:pointer;user-select:none">STATUS <span id="sort-status"></span></th>
+                <th>SITUAÇÃO</th>
                 <th onclick="sortEstoque('chassi')" style="cursor:pointer;user-select:none">CHASSI <span id="sort-chassi"></span></th>
                 <th onclick="sortEstoque('modelo')" style="cursor:pointer;user-select:none">MODELO <span id="sort-modelo"></span></th>
                 <th onclick="sortEstoque('cor')" style="cursor:pointer;user-select:none">COR <span id="sort-cor"></span></th>
@@ -1609,11 +1610,14 @@ function renderEstoque(){
 
   tbody.innerHTML = listaFinal.map(m=>`
     <tr>
-      <td onclick="event.stopPropagation();editarCampoStatus('${m.id}')" title="${isVendedor()?'Solicitar reserva':'Clique para alterar status'}" style="cursor:pointer">
-        ${statusBadge(m.status)} ${situacaoBadge(m.situacao||'DISPONIVEL')}
+      <td onclick="event.stopPropagation();editarCampoStatus('${m.id}')" title="${isVendedor()?'Solicitar reserva':'Clique para alterar status'}" style="cursor:pointer;white-space:nowrap">
+        ${statusBadge(m.status)}
         ${m.status==='PEND. RESERVA'&&isAdmU()?`<span style="font-size:9px;background:#f59e0b;color:#fff;border-radius:4px;padding:1px 5px;margin-left:4px;cursor:pointer" onclick="event.stopPropagation();aprovarPendencia('${m.id}')">APROVAR</span>`:''}
         ${m.status==='PEND. TRANSFER'&&isGestorU()?`<span style="font-size:9px;background:#f59e0b;color:#fff;border-radius:4px;padding:1px 5px;margin-left:4px;cursor:pointer" onclick="event.stopPropagation();aprovarTransfer('${m.id}')">APROVAR</span>`:''}
         <span class="cell-edit-date">${m.dataStatus?fmtData(m.dataStatus):''}</span>
+      </td>
+      <td onclick="event.stopPropagation();${isAdmU()||isGestorU()?`editarSituacao('${m.id}')`:''}" title="${isAdmU()||isGestorU()?'Clique para alterar disponibilidade':''}" style="cursor:${isAdmU()||isGestorU()?'pointer':'default'}">
+        ${situacaoBadge(m.situacao||'DISPONIVEL')}
       </td>
       <td><span class="chassi-link" onclick="abrirHistorico('${m.id}')" title="Ver histórico completo">${m.chassi||'—'}</span></td>
       <td style="font-weight:600">${m.modelo||'—'}</td>
@@ -3588,6 +3592,55 @@ async function editarMotor(chassi) {
   await saveItem('ESTOQUE', moto);
   renderAll();
   showToast('✓ Motor ' + (moto.motor ? 'atualizado: ' + moto.motor : 'removido'));
+}
+
+// ════════════════════════════════════════
+// EDITAR SITUAÇÃO INLINE (ADM/Gestor)
+// ════════════════════════════════════════
+function editarSituacao(id) {
+  if(!isAdmU() && !isGestorU()) return;
+  const m = motos.find(x => x.id == id);
+  if(!m) return;
+
+  const atual = m.situacao || 'DISPONIVEL';
+  const opcoes = [
+    { val: 'DISPONIVEL', label: '🟢 Disponível' },
+    { val: 'RESERVADA',  label: '🔒 Reservada' },
+    { val: 'VENDIDA',    label: '✅ Vendida' },
+  ];
+
+  // Criar mini-modal inline
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:9999;display:flex;align-items:center;justify-content:center';
+
+  const box = document.createElement('div');
+  box.style.cssText = 'background:var(--card);border:1px solid var(--border2);border-radius:14px;padding:20px;min-width:220px;box-shadow:0 20px 60px rgba(0,0,0,.4)';
+  box.innerHTML = `
+    <div style="font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--text3);margin-bottom:12px">Situação — ${m.modelo} ${m.cor}</div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      ${opcoes.map(o => `
+        <button onclick="setSituacao('${id}','${o.val}',this.closest('.sit-overlay'))"
+          style="background:${o.val===atual?'var(--accent)':'var(--card2)'};color:${o.val===atual?'#fff':'var(--text)'};border:1px solid ${o.val===atual?'var(--accent)':'var(--border)'};border-radius:8px;padding:10px 14px;cursor:pointer;font-family:'Barlow';font-size:13px;font-weight:600;text-align:left">
+          ${o.label}${o.val===atual?' ✓':''}
+        </button>`).join('')}
+    </div>
+    <button onclick="this.closest('.sit-overlay').remove()" style="margin-top:14px;width:100%;background:none;border:1px solid var(--border);border-radius:8px;padding:8px;cursor:pointer;color:var(--text3);font-family:'Barlow'">Cancelar</button>
+  `;
+
+  overlay.className = 'sit-overlay';
+  overlay.appendChild(box);
+  overlay.addEventListener('click', e => { if(e.target === overlay) overlay.remove(); });
+  document.body.appendChild(overlay);
+}
+
+async function setSituacao(id, novaSit, overlay) {
+  const m = motos.find(x => x.id == id);
+  if(!m) return;
+  m.situacao = novaSit;
+  if(overlay) overlay.remove();
+  await saveItem('ESTOQUE', m);
+  renderEstoque();
+  showToast('✓ Situação: ' + novaSit);
 }
 
 </script>
