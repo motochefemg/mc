@@ -316,12 +316,16 @@ textarea.fc{resize:vertical;min-height:70px;}
           <option value="">Todos os status</option>
           <option value="CAIXA">📦 Caixa</option>
           <option value="MONTADA">🔧 Montada</option>
-          <option value="RESERVADA">🔒 Reservada</option>
-          <option value="VENDIDA">✅ Vendida</option>
-          <option value="PEND. TRANSFER">🔄 Pend. Transfer</option>
           <option value="GARANTIA">🔴 Garantia</option>
+          <option value="PEND. TRANSFER">🔄 Pend. Transfer</option>
           <option value="TRANSFERÊNCIA">🚚 Transferência</option>
 
+        </select>
+        <select class="f-sel" id="fSituacao" onchange="renderEstoque()" title="Situação de venda">
+          <option value="">Todas as situações</option>
+          <option value="DISPONIVEL">🟢 Disponível</option>
+          <option value="RESERVADA">🔒 Reservada</option>
+          <option value="VENDIDA">✅ Vendida</option>
         </select>
         <select class="f-sel" id="fLoja" onchange="renderEstoque();renderKPIs()">
           <option value="">Todas as lojas</option>
@@ -359,7 +363,7 @@ textarea.fc{resize:vertical;min-height:70px;}
                 <th onclick="sortEstoque('destino')" style="cursor:pointer;user-select:none">DESTINO ✏️ <span id="sort-destino"></span></th>
                 <th onclick="sortEstoque('vendedor')" style="cursor:pointer;user-select:none">VENDEDOR ✏️ <span id="sort-vendedor"></span></th>
                 <th onclick="sortEstoque('numPedidoReserva')" style="cursor:pointer;user-select:none">PEDIDO ✏️ <span id="sort-numPedidoReserva"></span></th>
-                <th onclick="sortEstoque('nfEntrada')" style="cursor:pointer;user-select:none">NF ENTRADA <span id="sort-nfEntrada"></span></th>
+
                 <th onclick="sortEstoque('nfeSaida')" style="cursor:pointer;user-select:none">NF SAÍDA ✏️ <span id="sort-nfeSaida"></span></th>
                 <th onclick="sortEstoque('pVenda')" style="cursor:pointer;user-select:none">P. VENDA <span id="sort-pVenda"></span></th>
                 <th onclick="sortEstoque('dataStatus')" style="cursor:pointer;user-select:none">ÚLT. MOVIMENTAÇÃO <span id="sort-dataStatus"></span></th>
@@ -756,10 +760,16 @@ textarea.fc{resize:vertical;min-height:70px;}
         <select class="fsel" id="novoStatus" onchange="onNovoStatus()">
           <option value="CAIXA">📦 Caixa</option>
           <option value="MONTADA">🔧 Montada</option>
-          <option value="RESERVADA">🔒 Reservada</option>
-          <option value="VENDIDA">✅ Vendida</option>
           <option value="GARANTIA">🔴 Garantia</option>
           <option value="TRANSFERÊNCIA">🚚 Transferência</option>
+        </select>
+      </div>
+      <div class="fg">
+        <label class="fl">Situação</label>
+        <select class="fsel" id="novaSituacao">
+          <option value="DISPONIVEL">🟢 Disponível</option>
+          <option value="RESERVADA">🔒 Reservada</option>
+          <option value="VENDIDA">✅ Vendida</option>
         </select>
       </div>
       <!-- Campos condicionais -->
@@ -1076,11 +1086,11 @@ function isVendedor(){ return getPerfil()==='vendedor'; }
 const STATUS_CFG = {
   'CAIXA':          { label:'📦 Caixa',          cls:'s-caixa',     dot:'#2563eb' },
   'MONTADA':        { label:'🔧 Montada',         cls:'s-montada',   dot:'#7c3aed' },
+  'GARANTIA':       { label:'🔴 Garantia',        cls:'s-garantia',  dot:'#dc2626' },
+  'TRANSFERÊNCIA':  { label:'🚚 Transfer.',       cls:'s-transfer',  dot:'#6b7280' },
   'RESERVADA':      { label:'🔒 Reservada',       cls:'s-reservada', dot:'#ea580c' },
   // PEND. RESERVA — mostrado em card separado, não no loop principal
   'VENDIDA':        { label:'✅ Vendida',          cls:'s-vendida',   dot:'#16a34a' },
-  'GARANTIA':       { label:'🔴 Garantia',        cls:'s-garantia',  dot:'#dc2626' },
-  'TRANSFERÊNCIA':  { label:'🚚 Transfer.',       cls:'s-transfer',  dot:'#6b7280' },
 
   // PEND. TRANSFER — mostrado em card separado, não no loop principal
 };
@@ -1325,6 +1335,16 @@ function fmtData(d){
   return `${dia}/${m}/${y}`;
 }
 function hoje(){ return new Date().toISOString().slice(0,10); }
+function situacaoBadge(sit) {
+  const mapa = {
+    'DISPONIVEL': { label:'🟢 Disponível', bg:'rgba(22,163,74,.12)', color:'#16a34a', border:'rgba(22,163,74,.3)' },
+    'RESERVADA':  { label:'🔒 Reservada',  bg:'rgba(234,88,12,.1)',  color:'#ea580c', border:'rgba(234,88,12,.3)' },
+    'VENDIDA':    { label:'✅ Vendida',     bg:'rgba(22,163,74,.1)',  color:'#15803d', border:'rgba(22,163,74,.3)' },
+  };
+  const s = mapa[sit] || mapa['DISPONIVEL'];
+  return `<span style="background:${s.bg};color:${s.color};border:1px solid ${s.border};border-radius:5px;padding:2px 7px;font-size:10px;font-weight:700;letter-spacing:.5px">${s.label}</span>`;
+}
+
 function statusBadge(s){
   const cfg=STATUS_CFG[s]||{label:s,cls:'s-caixa',dot:'#999'};
   return `<span class="status-badge ${cfg.cls}">${cfg.label}</span>`;
@@ -1557,10 +1577,12 @@ function renderEstoque(){
   const fLoja = document.getElementById('fLoja')?.value||'';
   const fModelo = document.getElementById('fModelo')?.value||'';
   // Oculta VENDIDAS por padrão — só mostra quando selecionado explicitamente
-  const mostrarVendidas = fStatus === 'VENDIDA';
+  const fSituacao = document.getElementById('fSituacao')?.value || '';
+  const mostrarVendidas = fStatus === 'VENDIDA' || fSituacao === 'VENDIDA';
 
   let lista = motos.filter(m=>{
     if(mostraDisp && m.status!=='CAIXA' && m.status!=='MONTADA') return false;
+    if(fSituacao && (m.situacao||'DISPONIVEL') !== fSituacao) return false;
     if(!mostraDisp && fStatus && m.status!==fStatus) return false;
     if(!mostraDisp && !fStatus && m.status==='VENDIDA') return false; // vendidas ocultas por padrão
     if(!mostraDisp && !fStatus && m.status==='PEND. TRANSFER') return false; // pend. transfer só na aba Transferências
@@ -1588,7 +1610,7 @@ function renderEstoque(){
   tbody.innerHTML = listaFinal.map(m=>`
     <tr>
       <td onclick="event.stopPropagation();editarCampoStatus('${m.id}')" title="${isVendedor()?'Solicitar reserva':'Clique para alterar status'}" style="cursor:pointer">
-        ${statusBadge(m.status)}
+        ${statusBadge(m.status)} ${situacaoBadge(m.situacao||'DISPONIVEL')}
         ${m.status==='PEND. RESERVA'&&isAdmU()?`<span style="font-size:9px;background:#f59e0b;color:#fff;border-radius:4px;padding:1px 5px;margin-left:4px;cursor:pointer" onclick="event.stopPropagation();aprovarPendencia('${m.id}')">APROVAR</span>`:''}
         ${m.status==='PEND. TRANSFER'&&isGestorU()?`<span style="font-size:9px;background:#f59e0b;color:#fff;border-radius:4px;padding:1px 5px;margin-left:4px;cursor:pointer" onclick="event.stopPropagation();aprovarTransfer('${m.id}')">APROVAR</span>`:''}
         <span class="cell-edit-date">${m.dataStatus?fmtData(m.dataStatus):''}</span>
@@ -1610,9 +1632,7 @@ function renderEstoque(){
         <span class="${isAdmU()?'cell-edit':''}" style="font-size:11px">${m.numPedidoReserva?'#'+m.numPedidoReserva:'—'}</span>
         <span class="cell-edit-date">${m.dataReserva?fmtData(m.dataReserva):''}</span>
       </td>
-      <td style="font-size:11px;color:var(--text3)">
-        ${isAdmU() ? `<span class="cell-edit" onclick="event.stopPropagation();editarCampo(event,'nfEntrada','${m.id}')" title="Editar NF de entrada">${m.nfEntrada||'—'} <span style="font-size:10px;opacity:.5">✏️</span></span>` : (m.nfEntrada||'—')}
-      </td>
+
       <td onclick="event.stopPropagation();editarCampo(event,'nfeSaida','${m.id}')" title="Clique para lançar NF de saída + recibo">
         <span class="cell-edit" style="font-size:11px;color:${m.nfeSaida?'var(--green)':'var(--text3)'}">${m.nfeSaida||'+ NF Saída'}</span>
         <span class="cell-edit-date">${m.dataNF?fmtData(m.dataNF):''}</span>
@@ -2030,9 +2050,12 @@ function abrirAlterarStatus(id){
         <div style="font-family:'Bebas Neue';font-size:18px">${m.modelo} ${m.cor}</div>
         <div style="font-size:11px;color:var(--text3)">${m.chassi} · ${m.localizacao}</div>
       </div>
-      <div style="margin-left:auto">${statusBadge(m.status)}</div>
+      <div style="margin-left:auto;display:flex;gap:6px;align-items:center">${statusBadge(m.status)} ${situacaoBadge(m.situacao||'DISPONIVEL')}</div>
     </div>`;
   document.getElementById('novoStatus').value = m.status;
+  // Pré-preencher situação
+  const sitEl = document.getElementById('novaSituacao');
+  if(sitEl) sitEl.value = m.situacao || 'DISPONIVEL';
   document.getElementById('obsStatus').value = '';
   document.getElementById('dataMontagem').value = hoje();
   document.getElementById('dataReserva').value = hoje();
@@ -2073,6 +2096,7 @@ function confirmarStatus(){
   const m = motoEditando;
   if(!m) return;
   const novo = document.getElementById('novoStatus').value;
+  const novaSituacao = document.getElementById('novaSituacao')?.value || 'DISPONIVEL';
   const obs  = document.getElementById('obsStatus').value;
   const statusAnt = m.status;
 
@@ -2183,6 +2207,7 @@ function confirmarStatus(){
 
   // Se já foi setado como PEND.TRANSFER pelo bloco TRANSFERÊNCIA, não sobrescreve
   if(novo !== 'TRANSFERÊNCIA') m.status = novo;
+  m.situacao = novaSituacao; // salvar situação de venda
 
   save(); fecharModal('modalStatus'); renderAll();
   // Salva sem comprovante na URL (base64 muito grande)
