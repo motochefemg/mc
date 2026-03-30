@@ -1642,13 +1642,25 @@ async function renderExtrato(){
   const { dataIni, dataFim } = getPeriodoExtrato();
 
   if(!isGestor || !filtLojaEl || filtLojaEl.style.display === 'none') {
-    // Loja — filtro local
     const p = document.getElementById('filtroPeriodoExt')?.value || 'dia';
-    let movs = p === 'dia'
-      ? movimentacoes.filter(m=>m.data===dataIni && m.tipo!=='sistema')
-      : movimentacoes.filter(m=>m.data>=dataIni && m.data<=dataFim && m.tipo!=='sistema');
-    if(filtTipo) movs = movs.filter(m=>m.tipo===filtTipo);
-    renderExtratoHTML([...movs].reverse(), dataIni, filtTipo, currentLoja);
+    if(p === 'dia') {
+      // Dia — usa dados locais
+      let movs = movimentacoes.filter(m=>m.data===dataIni && m.tipo!=='sistema');
+      if(filtTipo) movs = movs.filter(m=>m.tipo===filtTipo);
+      renderExtratoHTML([...movs].reverse(), dataIni, filtTipo, currentLoja);
+    } else {
+      // Mês ou período — busca do Sheets
+      el.innerHTML = '<div class="loading"><span class="spin"></span>Buscando...</div>';
+      try {
+        const movs = await fetchMovsLoja(currentLoja, dataIni, dataFim);
+        let filtrados = movs.filter(m=>m.tipo!=='sistema');
+        if(filtTipo) filtrados = filtrados.filter(m=>m.tipo===filtTipo);
+        filtrados.sort((a,b)=>(b.data||'').localeCompare(a.data||'')||(b.hora||'').localeCompare(a.hora||''));
+        renderExtratoHTML(filtrados, dataIni+(dataFim!==dataIni?' a '+dataFim:''), filtTipo, currentLoja);
+      } catch(e) {
+        el.innerHTML = `<div class="empty"><div class="empty-icon">⚠</div>Erro: ${e.message}</div>`;
+      }
+    }
     return;
   }
 
