@@ -731,6 +731,12 @@ textarea.fc{resize:vertical;min-height:70px;}
           <input type="number" class="fc" id="mPVenda" placeholder="0,00">
         </div>
       </div>
+      <div class="frow">
+        <div class="fg">
+          <label class="fl">Motor</label>
+          <input class="fc" id="mMotor" placeholder="Número do motor" style="text-transform:uppercase">
+        </div>
+      </div>
     </div>
     <div class="mf">
       <button class="btn btn-s" onclick="fecharModal('modalMoto')">Cancelar</button>
@@ -1970,7 +1976,7 @@ function confirmarEntradaNF(){
 function abrirNovaMoto(){
   motoEditando = null;
   document.getElementById('modalMotoTitulo').textContent = 'Nova Moto';
-  ['mChassi','mModelo','mCor','mNF','mPVenda'].forEach(id=>document.getElementById(id).value='');
+  ['mChassi','mModelo','mCor','mNF','mPVenda','mMotor'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
   document.getElementById('mLoc').value='GALPÃO';
   document.getElementById('modalMoto').style.display='flex';
 }
@@ -1981,12 +1987,13 @@ function salvarMoto(){
   const cor    = document.getElementById('mCor').value.trim().toUpperCase();
   const loc    = document.getElementById('mLoc').value;
   const nf     = document.getElementById('mNF').value.trim();
+  const motor  = document.getElementById('mMotor')?.value.trim().toUpperCase() || '';
   const pv     = parseFloat(document.getElementById('mPVenda').value)||0;
   if(!chassi||!modelo||!cor){ showToast('Preencha chassi, modelo e cor!','err'); return; }
   if(motos.find(m=>m.chassi===chassi)){ showToast('Chassi já cadastrado!','err'); return; }
   const nova = {
     id: nextId(motos), chassi, modelo, cor, status:'CAIXA',
-    localizacao:loc, nfEntrada:nf, pVenda:pv, dataEntrada:hoje(),
+    localizacao:loc, nfEntrada:nf, pVenda:pv, motor:motor, dataEntrada:hoje(),
     historico:[{data:new Date().toISOString(),usuario:NOMES[currentUser],acao:'ENTRADA',detalhes:`Cadastro manual — ${modelo} ${cor} — ${loc}`}]
   };
   motos.push(nova);
@@ -2207,7 +2214,7 @@ function abrirHistorico(id){
   const hist = [...(m.historico||[])].reverse();
   const cores = {ENTRADA:'#2563eb',MONTADA:'#7c3aed',RESERVADA:'#ea580c',VENDIDA:'#16a34a',GARANTIA:'#dc2626',TRANSFERÊNCIA:'#6b7280'};
   document.getElementById('histConteudo').innerHTML = `
-    <div style="background:var(--bg3);border-radius:8px;padding:12px;margin-bottom:16px;display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px">
+      ${m.motor?`<div><span style="color:var(--text3)">Motor:</span> <b style="font-family:monospace;font-size:11px">${m.motor}</b> <button onclick="editarMotor('${m.chassi}')" style="background:none;border:none;cursor:pointer;font-size:10px;color:var(--text3)" title="Editar">✏️</button></div>`:`<div><span style="color:var(--text3)">Motor:</span> <span style="color:var(--text3);font-style:italic;font-size:11px">não cadastrado</span> <button onclick="editarMotor('${m.chassi}')" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--accent)">+ Adicionar</button></div>`}
       ${m.motor?`<div><span style="color:var(--text3)">Motor:</span> <b style="font-family:monospace;font-size:11px">${m.motor}</b></div>`:''}
       ${m.montador?`<div><span style="color:var(--text3)">Montador:</span> <b>${m.montador}</b></div>`:''}
       ${m.dataMontagem?`<div><span style="color:var(--text3)">Montado em:</span> <b>${fmtData(m.dataMontagem)}</b></div>`:''}
@@ -3544,6 +3551,20 @@ function fecharModal(id){ document.getElementById(id).style.display='none'; }
 document.querySelectorAll('.mov').forEach(m=>{
   m.addEventListener('click', e=>{ if(e.target===m) m.style.display='none'; });
 });
+// ════════════════════════════════════════
+// EDITAR MOTOR DE MOTO EXISTENTE
+// ════════════════════════════════════════
+async function editarMotor(chassi) {
+  const moto = motos.find(m => m.chassi === chassi);
+  if (!moto) return;
+  const novoMotor = prompt('Motor para ' + moto.modelo + ' ' + moto.cor + ' (' + chassi + '):\n(deixe vazio para remover)', moto.motor || '');
+  if (novoMotor === null) return; // cancelou
+  moto.motor = novoMotor.trim().toUpperCase();
+  await saveItem('ESTOQUE', moto);
+  renderAll();
+  showToast('✓ Motor ' + (moto.motor ? 'atualizado: ' + moto.motor : 'removido'));
+}
+
 </script>
 
 
