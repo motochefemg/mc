@@ -1153,7 +1153,7 @@ async function load() {
     };
     showSyncStatus('⟳ Carregando dados...', false);
     const [r1,r2,r3,r4,r5] = await Promise.all([
-      fetchAS(`${AS}?action=estoque_get&tabela=ESTOQUE`),
+      fetchEstoqueCompleto(),
       fetchAS(`${AS}?action=estoque_get&tabela=DEMANDAS`),
       fetchAS(`${AS}?action=estoque_get&tabela=GARANTIAS`),
       fetchAS(`${AS}?action=estoque_get&tabela=PECAS`),
@@ -1167,12 +1167,15 @@ async function load() {
       if(typeof hist === 'string'){
         try { hist = JSON.parse(hist); } catch(e){ hist = []; }
       }
-      // Normalizar situacao para maiúsculo sem acento
+      // Normalizar situacao
       let sitRaw = (m.situacao||'').toString().trim().toUpperCase()
         .normalize('NFD').replace(/[\u0300-\u036f]/g,'');
       if(sitRaw==='VENDIDA') m.situacao='VENDIDA';
       else if(sitRaw==='RESERVADA') m.situacao='RESERVADA';
       else m.situacao='DISPONÍVEL';
+      // Normalizar status — VENDIDA e RESERVADA não existem mais como status
+      const statusValidos = ['CAIXA','MONTADA','GARANTIA','TRANSFERÊNCIA','PEND. TRANSFER','PEND. RESERVA'];
+      if(!statusValidos.includes(m.status)) m.status = 'MONTADA';
       return {...m, historico: Array.isArray(hist) ? hist : []};
     });
     if(sheetsMotos.length > 0){
@@ -3746,3 +3749,32 @@ window.addEventListener('load', () => {
 </script>
 </body>
 </html>
+// Carrega ESTOQUE em múltiplas páginas para superar limite do Apps Script
+async function fetchEstoqueCompleto() {
+  try {
+    // Primeira página — descobre total
+    const r1 = await fetchAS(`${AS}?action=estoque_get&tabela=ESTOQUE&pagina=1&limite=200`);
+    if(!r1 || !r1.success) return { success: false, data: [] };
+    
+    let todos = r1.data || [];
+    const totalPaginas = r1.paginas || 1;
+    
+    // Carregar páginas restantes em paralelo
+    if(totalPaginas > 1) {
+      const promessas = [];
+      for(let p = 2; p <= totalPaginas; p++) {
+        promessas.push(fetchAS(`${AS}?action=estoque_get&tabela=ESTOQUE&pagina=${p}&limite=200`));
+      }
+      const resultados = await Promise.all(promessas);
+      resultados.forEach(r => {
+        if(r && r.success) todos = todos.concat(r.data || []);
+      });
+    }
+    
+    return { success: true, data: todos };
+  } catch(e) {
+    console.error('fetchEstoqueCompleto erro:', e);
+    return { success: false, data: [] };
+  }
+}
+
