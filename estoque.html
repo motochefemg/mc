@@ -325,16 +325,16 @@ textarea.fc{resize:vertical;min-height:70px;}
           <option value="">Todas as situações</option>
           <option value="DISPONIVEL">🟢 Disponível</option>
           <option value="RESERVADA">🔒 Reservada</option>
-          <option value="VENDIDA">✅ Vendida</option>
         </select>
         <select class="f-sel" id="fLoja" onchange="renderEstoque();renderKPIs()">
           <option value="">Todas as lojas</option>
-          <option>GALPÃO</option>
-          <option>VARGINHA</option>
-          <option>POÇOS</option>
-          <option>LAVRAS</option>
-          <option>ITAJUBÁ</option>
-          <option>POUSO ALEGRE</option>
+          <option value="GALPÃO">GALPÃO</option>
+          <option value="VGA">VARGINHA</option>
+          <option value="POÇOS">POÇOS DE CALDAS</option>
+          <option value="LAVRAS">LAVRAS</option>
+          <option value="ITAJUBA">ITAJUBÁ</option>
+          <option value="PA">POUSO ALEGRE</option>
+          <option value="LVR">LAVRAS (LVR)</option>
         </select>
         <select class="f-sel" id="fModelo" onchange="renderEstoque()">
           <option value="">Todos os modelos</option>
@@ -1534,6 +1534,12 @@ function renderKPIs(){
   const pendTransfer = motos.filter(m=>m.status==='PEND. TRANSFER' && (!fLoja||m.localizacao===fLoja)).length;
   const pendReserva = motos.filter(m=>m.status==='PEND. RESERVA' && (!fLoja||m.localizacao===fLoja)).length;
 
+  // Contagem por Situação
+  const disponiveis = filtradas.filter(m=>!m.situacao||m.situacao==='DISPONIVEL').length;
+  const reservadas  = filtradas.filter(m=>m.situacao==='RESERVADA').length;
+  const vendidas    = filtradas.filter(m=>m.situacao==='VENDIDA').length;
+  const fSituacao   = document.getElementById('fSituacao');
+
   el.innerHTML = `
     <div class="kpi ${!fStatus?.value?'sel':''}" onclick="document.getElementById('fStatus').value='';renderEstoque();renderKPIs()">
       <div class="kl">Total${fLoja?' — '+fLoja:''}</div>
@@ -1546,6 +1552,21 @@ function renderKPIs(){
         <div class="kv" style="color:${cfg.dot}">${counts[s]}</div>
         <div class="ks">unidades</div>
       </div>`).join('')}
+    <div class="kpi ${fSituacao?.value==='DISPONIVEL'?'sel':''}" onclick="if(document.getElementById('fSituacao'))document.getElementById('fSituacao').value='DISPONIVEL';renderEstoque();renderKPIs()" style="border-color:rgba(22,163,74,.3);cursor:pointer">
+      <div class="kl" style="color:#16a34a">🟢 Disponíveis</div>
+      <div class="kv" style="color:#16a34a">${disponiveis}</div>
+      <div class="ks">para venda</div>
+    </div>
+    <div class="kpi ${fSituacao?.value==='RESERVADA'?'sel':''}" onclick="if(document.getElementById('fSituacao'))document.getElementById('fSituacao').value='RESERVADA';renderEstoque();renderKPIs()" style="border-color:rgba(234,88,12,.3);cursor:pointer">
+      <div class="kl" style="color:#ea580c">🔒 Reservadas</div>
+      <div class="kv" style="color:#ea580c">${reservadas}</div>
+      <div class="ks">com cliente</div>
+    </div>
+    <div class="kpi ${fSituacao?.value==='VENDIDA'?'sel':''}" onclick="if(document.getElementById('fSituacao'))document.getElementById('fSituacao').value='VENDIDA';renderEstoque();renderKPIs()" style="border-color:rgba(22,163,74,.2);cursor:pointer">
+      <div class="kl" style="color:#15803d">✅ Vendidas</div>
+      <div class="kv" style="color:#15803d">${vendidas}</div>
+      <div class="ks">concluídas</div>
+    </div>
     ${(isAdmU()||isGestorU()) && (pendTransfer>0||pendReserva>0) ? `
       ${pendTransfer>0?`<div class="kpi" style="border:2px solid #f59e0b;cursor:pointer" onclick="goTab('transferencias',document.getElementById('tabTransferencias'));document.getElementById('fTrfStatus').value='PENDENTE';renderTransferencias()">
         <div class="kl" style="color:#b45309">🔄 Pend. Transfer</div>
@@ -1582,10 +1603,14 @@ function renderEstoque(){
 
   let lista = motos.filter(m=>{
     if(mostraDisp && m.status!=='CAIXA' && m.status!=='MONTADA') return false;
-    if(fSituacao && (m.situacao||'DISPONIVEL') !== fSituacao) return false;
-    if(!mostraDisp && fStatus && m.status!==fStatus) return false;
-    if(!mostraDisp && !fStatus && m.status==='VENDIDA') return false; // vendidas ocultas por padrão
-    if(!mostraDisp && !fStatus && m.status==='PEND. TRANSFER') return false; // pend. transfer só na aba Transferências
+    // Filtro por Situação — quando ativo, ignora regra de ocultar vendidas
+    if(fSituacao) {
+      if((m.situacao||'DISPONIVEL') !== fSituacao) return false;
+    } else {
+      if(!mostraDisp && fStatus && m.status!==fStatus) return false;
+      if(!mostraDisp && !fStatus && m.status==='VENDIDA') return false; // vendidas ocultas por padrão
+      if(!mostraDisp && !fStatus && m.status==='PEND. TRANSFER') return false; // pend. transfer só na aba Transferências
+    }
     if(fLoja && m.localizacao!==fLoja) return false;
     if(fModelo && m.modelo!==fModelo) return false;
     if(busca){
