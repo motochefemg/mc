@@ -1234,7 +1234,17 @@ async function load() {
     try {
       const loc = JSON.parse(localStorage.getItem('mc_estoque_motos')||'[]');
       if(loc.length > 0){
-        motos = loc.map(m=>({...m, historico: typeof m.historico==='string' ? JSON.parse(m.historico||'[]') : (m.historico||[])}));
+        const statusValidos = ['CAIXA','MONTADA','GARANTIA','TRANSFERÊNCIA','PEND. TRANSFER','PEND. RESERVA'];
+        motos = loc.map(m=>{
+          // Normalizar status antigos inválidos
+          if(!statusValidos.includes(m.status)) m.status = 'MONTADA';
+          // Normalizar situacao
+          const sitRaw = (m.situacao||'').toString().trim().toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+          if(sitRaw==='VENDIDA') m.situacao='VENDIDA';
+          else if(sitRaw==='RESERVADA') m.situacao='RESERVADA';
+          else m.situacao='DISPONÍVEL';
+          return {...m, historico: typeof m.historico==='string' ? JSON.parse(m.historico||'[]') : (m.historico||[])};
+        });
         try { demandas=JSON.parse(localStorage.getItem('mc_estoque_demandas')||'[]'); } catch(ex){ demandas=[];}
         try { garantias=JSON.parse(localStorage.getItem('mc_estoque_garantias')||'[]'); } catch(ex){ garantias=[];}
         try { pecas=JSON.parse(localStorage.getItem('mc_estoque_pecas')||'[]'); } catch(ex){ pecas=[];}
@@ -1672,6 +1682,11 @@ function renderEstoque(){
     return true;
   });
 
+  console.log('renderEstoque: total motos='+motos.length+' fSituacao='+fSituacao+' fStatus='+fStatus+' mostraDisp='+mostraDisp+' lista='+lista.length);
+  if(fSituacao) {
+    const porSit = motos.reduce((acc,m)=>{ const s=m.situacao||'DISPONÍVEL'; acc[s]=(acc[s]||0)+1; return acc; },{});
+    console.log('distribuição situacao:', JSON.stringify(porSit));
+  }
   const listaFinal = aplicarOrdem(lista);
   const tbody = document.getElementById('tbodyEstoque');
   if(listaFinal.length===0){
