@@ -1179,29 +1179,10 @@ async function load() {
       return {...m, historico: Array.isArray(hist) ? hist : []};
     });
     if(sheetsMotos.length > 0){
-      // Mescla histórico do localStorage (completo) com dados do Sheets
-      let localMotos = [];
-      try { localMotos = JSON.parse(localStorage.getItem('mc_estoque_motos')||'[]'); } catch(e){}
-      const localMap = {};
-      localMotos.forEach(m=>{ localMap[m.id] = m; });
-      motos = sheetsMotos.map(m=>{
-        const local = localMap[m.id];
-        // Usa histórico local se for mais completo
-        if(local && (local.historico||[]).length > (m.historico||[]).length){
-          m.historico = local.historico;
-        }
-        // Preserva comprovantes do localStorage
-        if(local && local.comprovantePedido && !m.comprovantePedido) m.comprovantePedido = local.comprovantePedido;
-        if(local && local.comprovantePagamento && !m.comprovantePagamento) m.comprovantePagamento = local.comprovantePagamento;
-        return m;
-      });
-      localStorage.setItem('mc_estoque_motos', JSON.stringify(motos));
+      // Sheets é a única fonte de verdade — sem localStorage
+      motos = sheetsMotos;
     } else {
-      // Primeira vez: carrega dados iniciais e sobe pro Sheets
-      motos = typeof DADOS_INICIAIS!=='undefined' ? DADOS_INICIAIS.map(m=>({...m,historico:m.historico||[]})) : [];
-      try { const loc=JSON.parse(localStorage.getItem('mc_estoque_motos')||'[]'); if(loc.length>motos.length) motos=loc; } catch(e){}
-      // Sobe dados iniciais pro Sheets em background
-      subirDadosIniciais();
+      motos = [];
     }
 
     // Demandas: Sheets é fonte de verdade
@@ -1222,7 +1203,6 @@ async function load() {
     }
 
     // Cache local para uso offline
-    localStorage.setItem('mc_estoque_motos', JSON.stringify(motos));
     localStorage.setItem('mc_estoque_garantias', JSON.stringify(garantias));
     localStorage.setItem('mc_estoque_pecas', JSON.stringify(pecas));
     showSyncStatus('✓ '+motos.length+' motos · '+demandas.length+' demandas · '+garantias.length+' garantias · '+pecas.length+' peças · '+transferencias.length+' transf.', true);
@@ -1232,7 +1212,7 @@ async function load() {
     showSyncStatus('❌ Erro de conexão com servidor. Recarregue a página.', false);
     // Tenta localStorage como último recurso (dados da última sessão online)
     try {
-      const loc = JSON.parse(localStorage.getItem('mc_estoque_motos')||'[]');
+      const loc = [];
       if(loc.length > 0){
         const statusValidos = ['CAIXA','MONTADA','GARANTIA','TRANSFERÊNCIA','PEND. TRANSFER','PEND. RESERVA'];
         motos = loc.map(m=>{
@@ -1270,7 +1250,7 @@ async function subirDadosIniciais(){
 async function saveItem(tabela, item) {
   // 1. Salva localmente sempre
   const dados = tabela==='ESTOQUE'?motos:tabela==='DEMANDAS'?demandas:tabela==='GARANTIAS'?garantias:tabela==='PECAS'?pecas:[];
-  localStorage.setItem('mc_estoque_'+tabela.toLowerCase(), JSON.stringify(dados));
+  // localStorage removido — Sheets é fonte de verdade
 
   // 2. Monta payload — histórico como string resumida para caber na URL
   const itemParaSalvar = tabela === 'ESTOQUE'
@@ -1310,7 +1290,7 @@ async function saveItem(tabela, item) {
 async function deleteItem(tabela, id) {
   // Salva localmente primeiro
   const dados = tabela==='ESTOQUE'?motos:tabela==='DEMANDAS'?demandas:tabela==='GARANTIAS'?garantias:pecas;
-  localStorage.setItem('mc_estoque_'+tabela.toLowerCase(), JSON.stringify(dados));
+  // localStorage removido — Sheets é fonte de verdade
   // Envia exclusão ao Sheets via fetch (confiável)
   try {
     const r = await fetch(`${AS}?action=estoque_del&tabela=${tabela}&id=${id}`, {redirect:'follow'});
@@ -1332,7 +1312,6 @@ function showSyncStatus(msg, ok) {
 
 // Compatibilidade com save() síncrono antigo
 function save() {
-  localStorage.setItem('mc_estoque_motos', JSON.stringify(motos));
   localStorage.setItem('mc_estoque_demandas', JSON.stringify(demandas));
   localStorage.setItem('mc_estoque_garantias', JSON.stringify(garantias));
 }
