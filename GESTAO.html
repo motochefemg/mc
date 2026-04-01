@@ -762,6 +762,7 @@ tbody tr:last-child td{border-bottom:none}
       <button class="btn-filter active" data-view="geral" onclick="setView('geral',this)">Geral</button>
       <button class="btn-filter" data-view="vendedores" onclick="setView('vendedores',this)">Vendedores</button>
       <button class="btn-filter" data-view="lojas" onclick="setView('lojas',this)">Lojas</button>
+      <button class="btn-filter" data-view="pagamentos" onclick="setView('pagamentos',this)">💳 Pagamentos</button>
       <button class="btn-filter" data-view="produtos" onclick="setView('produtos',this)">Produtos</button>
       <button class="btn-filter" data-view="comparativo" onclick="setView('comparativo',this)">📊 Comparativo</button>
       <button class="btn-filter" data-view="fechamento" onclick="setView('fechamento',this)">📅 Fechamento</button>
@@ -863,6 +864,11 @@ tbody tr:last-child td{border-bottom:none}
       <div class="panel-header"><div class="panel-title" style="--panel-dot:var(--blue)"><div class="dot"></div>Capacetes — Detalhes e Descontos</div></div>
       <div class="panel-body" id="capDetalhes"></div>
     </div>
+  </div>
+
+  <!-- VIEW: PAGAMENTOS -->
+  <div class="view fade-in" id="view-pagamentos">
+    <div id="pagamentosConteudo"></div>
   </div>
 
   <!-- VIEW: COMPARATIVO -->
@@ -1193,6 +1199,7 @@ function renderAll(){
   if(currentView==='geral') renderGeral(motos,caps,all);
   else if(currentView==='vendedores') renderVendedores(motos,caps);
   else if(currentView==='lojas') renderLojas(motos,caps);
+  else if(currentView==='pagamentos') renderPagamentos(motos,caps);
   else if(currentView==='produtos') renderProdutos(motos,caps);
   else if(currentView==='comparativo') renderComparativo();
   else if(currentView==='fechamento') renderFechamento();
@@ -1704,10 +1711,185 @@ function renderVendedorDetail(nome,motos,caps){
     </table></div>`:''}
 
     ${mV.length===0&&cV.length===0?'<div style="text-align:center;padding:40px;color:var(--text3)">Sem vendas no período selecionado</div>':''}
+
+    <!-- Pagamentos do vendedor -->
+    ${(()=>{
+      if(!mV.length) return '';
+      const porFormaV = {};
+      mV.forEach(r => {
+        const f = r.formaPgto || 'Não informado';
+        if(!porFormaV[f]) porFormaV[f] = {count:0, descTotal:0};
+        porFormaV[f].count++;
+        porFormaV[f].descTotal += parseDesc(r.desconto);
+      });
+      const formasV = Object.entries(porFormaV).sort((a,b)=>b[1].count-a[1].count);
+      const porParcV = {};
+      mV.forEach(r => {
+        const p = extrairParcelas(r.obsPgto);
+        porParcV[p] = (porParcV[p]||0)+1;
+      });
+      const parcsV = Object.entries(porParcV).sort((a,b)=>b[1]-a[1]);
+      return \`<div style="margin-top:20px">
+        <div style="font-size:10px;color:var(--text3);letter-spacing:2px;text-transform:uppercase;margin-bottom:12px">💳 Pagamentos</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+          <div style="background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:14px">
+            <div style="font-size:10px;color:var(--text3);margin-bottom:8px;text-transform:uppercase">Formas usadas</div>
+            \${formasV.map(([f,d])=>\`<div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--border);font-size:12px"><span style="color:var(--text)">\${f}</span><span style="color:var(--gold);font-weight:700">\${d.count}x · desc \${d.count>0?(d.descTotal/d.count).toFixed(1):0}%</span></div>\`).join('')}
+          </div>
+          <div style="background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:14px">
+            <div style="font-size:10px;color:var(--text3);margin-bottom:8px;text-transform:uppercase">Parcelamento</div>
+            \${parcsV.map(([p,c])=>\`<div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--border);font-size:12px"><span style="color:var(--text)">\${p}</span><span style="color:var(--accent);font-weight:700">\${c}x</span></div>\`).join('')}
+          </div>
+        </div>
+      </div>\`;
+    })()}
   `;
 }
 
 // ── LOJAS ──────────────────────────────────────────────────
+
+// ══════════════════════════════════════════════════════════
+// PAGAMENTOS
+// ══════════════════════════════════════════════════════════
+function extrairParcelas(obs) {
+  if(!obs) return 'À vista';
+  const m = obs.match(/(\d+)\s*[Xx]/);
+  if(m) {
+    const n = parseInt(m[1]);
+    return n <= 1 ? 'À vista' : n + 'x';
+  }
+  if(/À VISTA|A VISTA|AVISTA/i.test(obs)) return 'À vista';
+  return obs.substring(0,20)||'Não inf.';
+}
+
+function renderPagamentos(motos, caps) {
+  const el = document.getElementById('pagamentosConteudo');
+  if(!el) return;
+  const dados = motos; // foca em motos
+
+  if(!dados.length) {
+    el.innerHTML = '<div class="empty-state">Sem dados de pagamento para o período</div>';
+    return;
+  }
+
+  // Agrupar por forma de pagamento
+  const porForma = {};
+  dados.forEach(r => {
+    const forma = r.formaPgto || 'Não informado';
+    if(!porForma[forma]) porForma[forma] = { total: 0, count: 0, descTotal: 0, parcelas: {} };
+    porForma[forma].total += r.valor;
+    porForma[forma].count++;
+    porForma[forma].descTotal += parseDesc(r.desconto);
+    const parc = extrairParcelas(r.obsPgto);
+    porForma[forma].parcelas[parc] = (porForma[forma].parcelas[parc]||0) + 1;
+  });
+
+  const formas = Object.entries(porForma).sort((a,b) => b[1].count - a[1].count);
+  const totalGeral = dados.length;
+
+  // Agrupar parcelas geral
+  const porParcela = {};
+  dados.forEach(r => {
+    const parc = extrairParcelas(r.obsPgto);
+    if(!porParcela[parc]) porParcela[parc] = { count: 0, total: 0 };
+    porParcela[parc].count++;
+    porParcela[parc].total += r.valor;
+  });
+  const parcelasOrdenadas = Object.entries(porParcela).sort((a,b) => b[1].count - a[1].count);
+
+  // Bandeiras
+  const porBandeira = {};
+  dados.forEach(r => {
+    const band = r.bandeira || '—';
+    if(!porBandeira[band]) porBandeira[band] = 0;
+    porBandeira[band]++;
+  });
+  const bandeiras = Object.entries(porBandeira).sort((a,b) => b[1] - a[1]).filter(([k]) => k !== '—');
+
+  const cores = ['#ff4b00','#f59e0b','#2563eb','#16a34a','#7c3aed','#dc2626','#0891b2'];
+
+  el.innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:24px">
+
+      <!-- Ranking formas -->
+      <div class="panel">
+        <div class="panel-title">💳 Formas de Pagamento</div>
+        <div class="panel-body">
+          ${formas.map(([forma, d], i) => {
+            const pct = (d.count/totalGeral*100).toFixed(1);
+            const descMedio = d.count > 0 ? (d.descTotal/d.count).toFixed(1) : '0';
+            const ticketMed = d.count > 0 ? fmtCurrency(d.total/d.count) : '—';
+            const cor = cores[i % cores.length];
+            return `<div style="margin-bottom:14px">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+                <span style="font-weight:700;color:var(--text)">${forma}</span>
+                <span style="font-size:12px;color:var(--text3)">${d.count} vendas · ${pct}%</span>
+              </div>
+              <div style="background:var(--bg3);border-radius:4px;height:8px;overflow:hidden;margin-bottom:4px">
+                <div style="background:${cor};height:100%;width:${pct}%;border-radius:4px;transition:.3s"></div>
+              </div>
+              <div style="display:flex;gap:16px;font-size:11px;color:var(--text3)">
+                <span>Ticket médio: <b style="color:var(--gold)">${ticketMed}</b></span>
+                <span>Desc. médio: <b style="color:${parseFloat(descMedio)>10?'var(--red)':parseFloat(descMedio)>5?'var(--gold)':'var(--green)'}">${descMedio}%</b></span>
+              </div>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>
+
+      <!-- Parcelamento -->
+      <div class="panel">
+        <div class="panel-title">📊 Parcelamento mais usado</div>
+        <div class="panel-body">
+          ${parcelasOrdenadas.slice(0,8).map(([parc, d], i) => {
+            const pct = (d.count/totalGeral*100).toFixed(1);
+            const cor = cores[i % cores.length];
+            return `<div style="margin-bottom:12px">
+              <div style="display:flex;justify-content:space-between;margin-bottom:3px">
+                <span style="font-weight:700;color:var(--text)">${parc}</span>
+                <span style="font-size:12px;color:var(--text3)">${d.count} · ${pct}%</span>
+              </div>
+              <div style="background:var(--bg3);border-radius:4px;height:7px;overflow:hidden">
+                <div style="background:${cor};height:100%;width:${pct}%;border-radius:4px;transition:.3s"></div>
+              </div>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Desconto por forma -->
+    <div class="panel" style="margin-bottom:24px">
+      <div class="panel-title">🏷️ Desconto médio por forma de pagamento</div>
+      <div class="panel-body" style="display:flex;flex-wrap:wrap;gap:16px">
+        ${formas.map(([forma, d], i) => {
+          const descMedio = d.count > 0 ? (d.descTotal/d.count).toFixed(2) : '0';
+          const cor = parseFloat(descMedio)>10?'var(--red)':parseFloat(descMedio)>5?'var(--gold)':'var(--green)';
+          return `<div style="background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:14px 20px;min-width:160px;text-align:center">
+            <div style="font-size:11px;color:var(--text3);margin-bottom:6px;text-transform:uppercase">${forma}</div>
+            <div style="font-family:'Bebas Neue';font-size:32px;color:${cor}">${descMedio}%</div>
+            <div style="font-size:11px;color:var(--text3)">${d.count} vendas</div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>
+
+    ${bandeiras.length > 0 ? `
+    <!-- Bandeiras -->
+    <div class="panel">
+      <div class="panel-title">💎 Bandeiras</div>
+      <div class="panel-body" style="display:flex;flex-wrap:wrap;gap:12px">
+        ${bandeiras.map(([band, count], i) => `
+          <div style="background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:10px 16px;text-align:center">
+            <div style="font-weight:700;color:var(--text)">${band}</div>
+            <div style="font-size:12px;color:var(--text3)">${count} vendas</div>
+          </div>`).join('')}
+      </div>
+    </div>` : ''}
+  `;
+}
+
 function renderLojas(motos,caps){
   const map={};
   motos.forEach(r=>{
@@ -2003,8 +2185,11 @@ function parseMotosRow(row){
     desc:     (findCol(row, 'Descrição', 'Descricao', 'Produto') || 'Produto').trim(),
     valor,
     desconto: String(descontoStr).trim(),
-    vendedor: (findCol(row, 'Nome', 'Vendedor')||'').trim(),
-    loja:     (findCol(row, 'Nome da Loja', 'Nome da loja', 'Loja')||'').trim()
+    vendedor:      (findCol(row, 'Nome', 'Vendedor')||'').trim(),
+    loja:          (findCol(row, 'Nome da Loja', 'Nome da loja', 'Loja')||'').trim(),
+    formaPgto:     (findCol(row, 'Forma Pagamento', 'Forma de Pagamento', 'Forma')||'').trim(),
+    obsPgto:       (findCol(row, 'Obs Pagamento', 'Observacao Pagamento', 'Obs')||'').trim(),
+    bandeira:      (findCol(row, 'Bandeira')||'').trim()
   };
 }
 
