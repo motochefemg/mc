@@ -1814,6 +1814,11 @@ function extrairParcelas(obs, formaPgto) {
   return n + 'x ' + (semJuros ? 's/juros' : 'c/juros');
 }
 
+function togglePgForma(id) {
+  var t = document.getElementById(id);
+  if(t) t.style.display = t.style.display === 'none' ? 'block' : 'none';
+}
+
 function renderPagamentos(motos, caps) {
   const el = document.getElementById('pagamentosConteudo');
   if(!el) return;
@@ -1950,15 +1955,48 @@ function renderPagamentos(motos, caps) {
       const pct = (d.count/totalGeral*100).toFixed(1);
       const cor = cores[i%cores.length];
       const desc = d.count>0?(d.descTotal/d.count).toFixed(1):'0';
-      return '<div style="margin-bottom:14px">' +
-        '<div style="display:flex;justify-content:space-between;margin-bottom:2px">' +
-        '<span style="font-weight:700;color:var(--text)">'+forma+'</span>' +
-        '<span style="font-size:12px;color:var(--text3)">'+d.count+' · '+pct+'%</span></div>' +
-        barra(pct, cor) +
-        '<div style="display:flex;gap:12px;font-size:11px;color:var(--text3);margin-top:2px">' +
-        '<span>Ticket: <b style="color:var(--gold)">'+fmtCurrency(d.total/d.count)+'</b></span>' +
-        '<span>Desc: <b style="color:'+(parseFloat(desc)>10?'var(--red)':parseFloat(desc)>5?'var(--gold)':'var(--green)')+'">'+desc+'%</b></span>' +
-        '</div></div>';
+      const descCor = parseFloat(desc)>10?'var(--red)':parseFloat(desc)>5?'var(--gold)':'var(--green)';
+      const idF = 'pgf_'+i;
+
+      const nfsForma = dados.filter(function(r){ return (r.formaPgto||'Nao informado')===forma; });
+      function pd2(v){if(!v)return 0;var s=String(v).replace('%','').replace(',','.').trim();var n=parseFloat(s)||0;return n<1&&n>0?n*100:n;}
+      const nfsRows = nfsForma.map(function(r) {
+        var dp=pd2(r.desconto);
+        var dc=dp>15?'var(--red)':dp>10?'#e07800':dp>5?'var(--gold)':'var(--text3)';
+        var perd=dp>0?r.valor*(dp/(100-dp)):0;
+        var parc=extrairParcelas(r.obsPgto,r.formaPgto);
+        var pl=parc==='A vista'?'✅':parc==='Nao informado'?'—':parc&&parc.includes('s/juros')?'🟢 '+parc:parc&&parc.includes('c/juros')?'🔴 '+parc:parc||'—';
+        return '<tr style="font-size:11px;border-bottom:1px solid var(--border)">'+
+          '<td style="padding:4px 6px;color:var(--text3)">'+fmtData(r.data)+'</td>'+
+          '<td style="padding:4px 6px;color:var(--text3)">'+r.num+'</td>'+
+          '<td style="padding:4px 6px;color:var(--text)">'+r.desc.substring(0,28)+'</td>'+
+          '<td style="padding:4px 6px;color:var(--text3)">'+r.vendedor.split(' ')[0]+'</td>'+
+          '<td style="padding:4px 6px;color:var(--text3)">'+r.loja.replace('MOTOCHEFE ','')+'</td>'+
+          '<td style="padding:4px 6px;text-align:right;color:var(--gold);font-weight:700">'+fmtCurrency(r.valor)+'</td>'+
+          '<td style="padding:4px 6px;text-align:right;color:'+dc+'">'+(dp>0?dp.toFixed(1)+'%':'—')+'</td>'+
+          '<td style="padding:4px 6px;text-align:right;color:'+dc+'">'+(perd>0?'-'+fmtCurrency(perd):'—')+'</td>'+
+          '<td style="padding:4px 6px;font-size:10px">'+pl+'</td></tr>';
+      }).join('');
+
+      return '<div style="margin-bottom:6px;border:1px solid var(--border);border-radius:10px;overflow:hidden">'+
+        '<div onclick="togglePgForma(\'' +idF+ '\')" style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;cursor:pointer;background:var(--card2)">'+
+        '<div style="display:flex;align-items:center;gap:10px">'+
+        '<div style="width:10px;height:10px;border-radius:50%;background:'+cor+'"></div>'+
+        '<span style="font-weight:700;color:var(--text)">'+forma+'</span></div>'+
+        '<div style="display:flex;gap:16px;align-items:center">'+
+        '<span style="font-size:11px;color:var(--text3)">'+d.count+' motos · '+pct+'% · '+fmtCurrency(d.total)+'</span>'+
+        '<span style="font-size:11px;color:'+descCor+';font-weight:700">desc '+desc+'%</span>'+
+        '<span style="color:var(--text3)">▼</span></div></div>'+
+        '<div style="height:4px;background:var(--bg3)"><div style="height:100%;width:'+pct+'%;background:'+cor+'"></div></div>'+
+        '<div id="'+idF+'" style="display:none;overflow-x:auto">'+
+        '<table style="width:100%;border-collapse:collapse"><thead>'+
+        '<tr style="font-size:10px;color:var(--text3);text-transform:uppercase;background:var(--bg3)">'+
+        '<th style="padding:4px 6px;text-align:left">Data</th><th style="padding:4px 6px;text-align:left">NF</th>'+
+        '<th style="padding:4px 6px;text-align:left">Produto</th><th style="padding:4px 6px;text-align:left">Vendedor</th>'+
+        '<th style="padding:4px 6px;text-align:left">Loja</th><th style="padding:4px 6px;text-align:right">Valor</th>'+
+        '<th style="padding:4px 6px;text-align:right">Desc%</th><th style="padding:4px 6px;text-align:right">Perdido</th>'+
+        '<th style="padding:4px 6px">Parcelas</th></tr></thead>'+
+        '<tbody>'+nfsRows+'</tbody></table></div></div>';
     }).join('') + '</div></div>' +
 
     // Parcelamento
