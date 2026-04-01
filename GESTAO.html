@@ -1290,7 +1290,7 @@ function renderGeral(motos,caps,all){
 
   // TIMELINE
   const mesData = {};
-  for(let m=1;m<=3;m++){
+  for(let m=1;m<=12;m++){
     mesData[m] = {
       motos: rawMotos.filter(r=>r.mes===m),
       caps: rawCapacetes.filter(r=>r.mes===m)
@@ -1761,7 +1761,7 @@ function buildPagamentosVendedor(mV) {
   const formasV = Object.entries(porFormaV).sort((a,b)=>b[1].count-a[1].count);
   const porParcV = {};
   mV.forEach(r => {
-    const p = extrairParcelas(r.obsPgto);
+    const p = extrairParcelas(r.obsPgto, r.formaPgto); if(p===null) return;
     porParcV[p] = (porParcV[p]||0)+1;
   });
   const parcsV = Object.entries(porParcV).sort((a,b)=>b[1]-a[1]);
@@ -1789,17 +1789,26 @@ function buildPagamentosVendedor(mV) {
     rowsParc + '</div></div></div>';
 }
 
-function extrairParcelas(obs) {
-  if(!obs) return 'À vista';
-  const semJuros = /sem\s*juros|s\/\s*j\b|s\.j\./i.test(obs);
-  const m = obs.match(/(\d+)\s*[Xx]/);
+function extrairParcelas(obs, formaPgto) {
+  // Forma de pagamento que implica à vista
+  const formaAVista = /pix|débit|debit|ted|depósit|deposit|dinheiro/i.test(formaPgto||'');
+  if(formaAVista) return 'À vista';
+
+  // Financiamento e consórcio
+  if(/financiamento|financ\.?/i.test(formaPgto||'')) return 'Financiamento';
+  if(/consórcio|consorcio/i.test(formaPgto||'')) return 'Consórcio';
+
+  // Verificar obs para parcelamento (deve ter número+X)
+  const semJuros = /sem\s*juros|s\/\s*j\b|s\.j\./i.test(obs||'');
+  const m = (obs||'').match(/(\d+)\s*[Xx]/);
   if(m) {
     const n = parseInt(m[1]);
     if(n <= 1) return 'À vista';
     return n + 'x' + (semJuros ? ' s/juros' : ' c/juros');
   }
-  if(/À VISTA|A VISTA|AVISTA/i.test(obs)) return 'À vista';
-  return obs.substring(0,20)||'Não inf.';
+
+  // Sem número+X e não é à vista pela forma → não classificar
+  return null;
 }
 
 function renderPagamentos(motos, caps) {
@@ -1810,12 +1819,13 @@ function renderPagamentos(motos, caps) {
   if(!window._pgMes) window._pgMes = 'all';
   if(!window._pgLoja) window._pgLoja = 'all';
 
-  // Lojas disponíveis
-  const lojas = [...new Set(motos.map(r=>r.loja).filter(Boolean))].sort();
-  const mesesDisp = [...new Set(motos.map(r=>r.mes).filter(Boolean))].sort((a,b)=>a-b);
+  // Usar rawMotos para listar todas as lojas e meses disponíveis no ano
+  const baseAnual = rawMotos.filter(r=>r.data&&r.data.startsWith(String(currentYear)));
+  const lojas = [...new Set(baseAnual.map(r=>r.loja).filter(Boolean))].sort();
+  const mesesDisp = [...new Set(baseAnual.map(r=>r.mes).filter(Boolean))].sort((a,b)=>a-b);
 
-  // Aplicar filtros
-  let dados = motos;
+  // Aplicar filtros sobre base anual (não sobre motos já filtradas)
+  let dados = baseAnual;
   if(window._pgMes !== 'all') dados = dados.filter(r=>r.mes===parseInt(window._pgMes));
   if(window._pgLoja !== 'all') dados = dados.filter(r=>r.loja===window._pgLoja);
 
@@ -1854,18 +1864,21 @@ function renderPagamentos(motos, caps) {
   });
   const formas = Object.entries(porForma).sort((a,b)=>b[1].count-a[1].count);
 
-  // Agrupar por parcelamento (com/sem juros separado)
+  // Agrupar por parcelamento (com/sem juros separado) — ignora null
   const porParc = {};
   dados.forEach(r => {
-    const p = extrairParcelas(r.obsPgto);
+    const p = extrairParcelas(r.obsPgto, r.formaPgto);
+    if(p === null) return; // obs sem número+X e não é à vista pela forma
     if(!porParc[p]) porParc[p] = {count:0, total:0};
     porParc[p].count++;
     porParc[p].total += r.valor;
   });
-  // Separar sem juros vs com juros
-  const parcSemJuros = Object.entries(porParc).filter(([k])=>k.includes('s/juros')).sort((a,b)=>b[1].count-a[1].count);
-  const parcComJuros = Object.entries(porParc).filter(([k])=>!k.includes('s/juros')&&k!=='À vista').sort((a,b)=>b[1].count-a[1].count);
-  const aVista = Object.entries(porParc).filter(([k])=>k==='À vista');
+  // Separar categorias
+  const parcSemJuros  = Object.entries(porParc).filter(([k])=>k.includes('s/juros')).sort((a,b)=>b[1].count-a[1].count);
+  const parcComJuros  = Object.entries(porParc).filter(([k])=>k.includes('c/juros')).sort((a,b)=>b[1].count-a[1].count);
+  const aVista        = Object.entries(porParc).filter(([k])=>k==='À vista');
+  const financiamento = Object.entries(porParc).filter(([k])=>k==='Financiamento');
+  const consorcio     = Object.entries(porParc).filter(([k])=>k==='Consórcio');
 
   // Agrupar por loja (só se todas as lojas selecionadas)
   let porLojaHtml = '';
@@ -1945,6 +1958,8 @@ function renderPagamentos(motos, caps) {
     parcelasSection('✅ À vista', aVista, '#16a34a') +
     parcelasSection('🟢 Sem juros', parcSemJuros, '#2563eb') +
     parcelasSection('🔴 Com juros', parcComJuros, '#dc2626') +
+    parcelasSection('🏦 Financiamento', financiamento, '#7c3aed') +
+    parcelasSection('🤝 Consórcio', consorcio, '#0891b2') +
     '</div></div></div>' +
 
     // Desconto por forma
