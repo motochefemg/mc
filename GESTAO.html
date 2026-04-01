@@ -2930,6 +2930,11 @@ async function carregarDados() {
   }
 }
 
+function showLoading(v){
+  const el = document.getElementById('loadingOverlay');
+  if(el) el.style.display = v ? 'flex' : 'none';
+}
+
 document.addEventListener('DOMContentLoaded',()=>{
   renderAll();
   setTimeout(carregarDados, 800);
