@@ -2497,6 +2497,7 @@ async function syncData(){
         };
       }).filter(Boolean).filter(r => !VENDEDORES_EXCLUIDOS.includes(r.vendedor));
       console.log('Motos recebidas do AS:', json.motos.length, '| Parseadas:', parsed.length);
+      if(parsed.length > 0) console.log('Moto[0] formaPgto:', parsed[0].formaPgto, '| raw Forma Pagamento:', json.motos[0]['Forma Pagamento']);
       if(parsed.length > 0) {
         rawMotos = parsed.sort((a,b) => new Date(b.data) - new Date(a.data));
       }
