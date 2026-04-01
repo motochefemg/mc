@@ -1724,14 +1724,6 @@ function renderVendedorDetail(nome,motos,caps){
 // PAGAMENTOS
 // ══════════════════════════════════════════════════════════
 
-function parseDesc(v){
-  if(v===null||v===undefined||v==='') return 0;
-  if(typeof v==='number') return v < 1 ? v*100 : v;
-  const s = String(v).replace('%','').replace(',','.').trim();
-  const n = parseFloat(s)||0;
-  return n < 1 && n > 0 ? n*100 : n;
-}
-
 function buildPagamentosVendedor(mV) {
   if(!mV.length) return '';
   const porFormaV = {};
@@ -1739,7 +1731,7 @@ function buildPagamentosVendedor(mV) {
     const f = r.formaPgto || 'Não informado';
     if(!porFormaV[f]) porFormaV[f] = {count:0, descTotal:0};
     porFormaV[f].count++;
-    porFormaV[f].descTotal += parseDesc(r.desconto);
+    porFormaV[f].descTotal += (function(v){if(!v)return 0;const s=String(v).replace('%','').replace(',','.').trim();const n=parseFloat(s)||0;return n<1&&n>0?n*100:n;})(r.desconto);
   });
   const formasV = Object.entries(porFormaV).sort((a,b)=>b[1].count-a[1].count);
   const porParcV = {};
@@ -1806,7 +1798,7 @@ function renderPagamentos(motos, caps) {
     if(!porForma[forma]) porForma[forma] = { total: 0, count: 0, descTotal: 0, parcelas: {} };
     porForma[forma].total += r.valor;
     porForma[forma].count++;
-    porForma[forma].descTotal += parseDesc(r.desconto);
+    porForma[forma].descTotal += (function(v){if(!v)return 0;const s=String(v).replace('%','').replace(',','.').trim();const n=parseFloat(s)||0;return n<1&&n>0?n*100:n;})(r.desconto);
     const parc = extrairParcelas(r.obsPgto);
     porForma[forma].parcelas[parc] = (porForma[forma].parcelas[parc]||0) + 1;
   });
