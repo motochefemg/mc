@@ -1274,12 +1274,13 @@ function renderGeral(motos,caps,all){
   let tlHtml = '';
   for(let m=1;m<=12;m++){
     const d = mesData[m];
-    const hasData = d && d.motos.length>0;
+    const hasData = d && d.motos.filter(r=>r.data&&r.data.startsWith(String(currentYear))).length>0;
     const isCurrent = currentMonth===m;
-    const fatur = hasData ? d.motos.reduce((s,r)=>s+r.valor,0) : 0;
+    const motosAno = hasData ? d.motos.filter(r=>r.data&&r.data.startsWith(String(currentYear))) : [];
+    const fatur = motosAno.reduce((s,r)=>s+r.valor,0);
     tlHtml += `<div class="timeline-month${isCurrent?' active':''} ${hasData?'':' disabled'}" onclick="setMonth(${m},this)" data-month="${m}">
       <div class="tm-name">${MONTH_NAMES[m].substring(0,3).toUpperCase()}</div>
-      ${hasData ? `<div class="tm-val">${d.motos.length}</div><div class="tm-count">${fmtCurrency(fatur)}</div>` : '<div class="tm-val" style="font-size:14px;color:var(--text3)">—</div>'}
+      ${hasData ? `<div class="tm-val">${motosAno.length}</div><div class="tm-count">${fmtCurrency(fatur)}</div>` : '<div class="tm-val" style="font-size:14px;color:var(--text3)">—</div>'}
     </div>`;
   }
   document.getElementById('timelineRow').innerHTML = tlHtml;
@@ -1713,36 +1714,7 @@ function renderVendedorDetail(nome,motos,caps){
     ${mV.length===0&&cV.length===0?'<div style="text-align:center;padding:40px;color:var(--text3)">Sem vendas no período selecionado</div>':''}
 
     <!-- Pagamentos do vendedor -->
-    ${(()=>{
-      if(!mV.length) return '';
-      const porFormaV = {};
-      mV.forEach(r => {
-        const f = r.formaPgto || 'Não informado';
-        if(!porFormaV[f]) porFormaV[f] = {count:0, descTotal:0};
-        porFormaV[f].count++;
-        porFormaV[f].descTotal += parseDesc(r.desconto);
-      });
-      const formasV = Object.entries(porFormaV).sort((a,b)=>b[1].count-a[1].count);
-      const porParcV = {};
-      mV.forEach(r => {
-        const p = extrairParcelas(r.obsPgto);
-        porParcV[p] = (porParcV[p]||0)+1;
-      });
-      const parcsV = Object.entries(porParcV).sort((a,b)=>b[1]-a[1]);
-      return \`<div style="margin-top:20px">
-        <div style="font-size:10px;color:var(--text3);letter-spacing:2px;text-transform:uppercase;margin-bottom:12px">💳 Pagamentos</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
-          <div style="background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:14px">
-            <div style="font-size:10px;color:var(--text3);margin-bottom:8px;text-transform:uppercase">Formas usadas</div>
-            \${formasV.map(([f,d])=>\`<div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--border);font-size:12px"><span style="color:var(--text)">\${f}</span><span style="color:var(--gold);font-weight:700">\${d.count}x · desc \${d.count>0?(d.descTotal/d.count).toFixed(1):0}%</span></div>\`).join('')}
-          </div>
-          <div style="background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:14px">
-            <div style="font-size:10px;color:var(--text3);margin-bottom:8px;text-transform:uppercase">Parcelamento</div>
-            \${parcsV.map(([p,c])=>\`<div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--border);font-size:12px"><span style="color:var(--text)">\${p}</span><span style="color:var(--accent);font-weight:700">\${c}x</span></div>\`).join('')}
-          </div>
-        </div>
-      </div>\`;
-    })()}
+    ${buildPagamentosVendedor(mV)}
   `;
 }
 
@@ -1751,6 +1723,47 @@ function renderVendedorDetail(nome,motos,caps){
 // ══════════════════════════════════════════════════════════
 // PAGAMENTOS
 // ══════════════════════════════════════════════════════════
+
+function buildPagamentosVendedor(mV) {
+  if(!mV.length) return '';
+  const porFormaV = {};
+  mV.forEach(r => {
+    const f = r.formaPgto || 'Não informado';
+    if(!porFormaV[f]) porFormaV[f] = {count:0, descTotal:0};
+    porFormaV[f].count++;
+    porFormaV[f].descTotal += parseDesc(r.desconto);
+  });
+  const formasV = Object.entries(porFormaV).sort((a,b)=>b[1].count-a[1].count);
+  const porParcV = {};
+  mV.forEach(r => {
+    const p = extrairParcelas(r.obsPgto);
+    porParcV[p] = (porParcV[p]||0)+1;
+  });
+  const parcsV = Object.entries(porParcV).sort((a,b)=>b[1]-a[1]);
+
+  const rowsFormas = formasV.map(([f,d]) =>
+    '<div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--border);font-size:12px">' +
+    '<span style="color:var(--text)">' + f + '</span>' +
+    '<span style="color:var(--gold);font-weight:700">' + d.count + 'x · desc ' + (d.count>0?(d.descTotal/d.count).toFixed(1):0) + '%</span></div>'
+  ).join('');
+
+  const rowsParc = parcsV.map(([p,c]) =>
+    '<div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--border);font-size:12px">' +
+    '<span style="color:var(--text)">' + p + '</span>' +
+    '<span style="color:var(--accent);font-weight:700">' + c + 'x</span></div>'
+  ).join('');
+
+  return '<div style="margin-top:20px">' +
+    '<div style="font-size:10px;color:var(--text3);letter-spacing:2px;text-transform:uppercase;margin-bottom:12px">💳 Pagamentos</div>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">' +
+    '<div style="background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:14px">' +
+    '<div style="font-size:10px;color:var(--text3);margin-bottom:8px;text-transform:uppercase">Formas usadas</div>' +
+    rowsFormas + '</div>' +
+    '<div style="background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:14px">' +
+    '<div style="font-size:10px;color:var(--text3);margin-bottom:8px;text-transform:uppercase">Parcelamento</div>' +
+    rowsParc + '</div></div></div>';
+}
+
 function extrairParcelas(obs) {
   if(!obs) return 'À vista';
   const m = obs.match(/(\d+)\s*[Xx]/);
@@ -1766,6 +1779,8 @@ function renderPagamentos(motos, caps) {
   const el = document.getElementById('pagamentosConteudo');
   if(!el) return;
   const dados = motos; // foca em motos
+
+  console.log('renderPagamentos: motos='+dados.length+' formaPgto exemplo='+(dados[0]?.formaPgto||'vazio'));
 
   if(!dados.length) {
     el.innerHTML = '<div class="empty-state">Sem dados de pagamento para o período</div>';
@@ -2375,7 +2390,10 @@ async function carregarDados() {
         return { data:`${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`, mes,
           num:String(row['Número']||''), desc:String(row['Descrição']||''), valor,
           vendedor:String(row['Nome']||''), loja:String(row['Nome da Loja']||''),
-          desconto:String(row['Desconto']||'0,00%') };
+          desconto:String(row['Desconto']||'0,00%'),
+          formaPgto:String(row['Forma Pagamento']||''),
+          obsPgto:String(row['Obs Pagamento']||''),
+          bandeira:String(row['Bandeira']||'') };
       }).filter(Boolean).filter(r=>!VENDEDORES_EXCLUIDOS.includes(r.vendedor));
       if(parsed.length>0) rawMotos=parsed;
     }
@@ -2472,7 +2490,10 @@ async function syncData(){
           valor,
           vendedor: String(row['Nome']||''),
           loja: String(row['Nome da Loja']||''),
-          desconto: (()=>{ const d=row['Desconto']; if(!d||d===0) return '0,00%'; if(typeof d==='number') return (d<1?d*100:d).toFixed(2).replace('.',',')+' %'; return String(d); })()
+          desconto: (()=>{ const d=row['Desconto']; if(!d||d===0) return '0,00%'; if(typeof d==='number') return (d<1?d*100:d).toFixed(2).replace('.',',')+' %'; return String(d); })(),
+          formaPgto: String(row['Forma Pagamento']||''),
+          obsPgto:   String(row['Obs Pagamento']||''),
+          bandeira:  String(row['Bandeira']||'')
         };
       }).filter(Boolean).filter(r => !VENDEDORES_EXCLUIDOS.includes(r.vendedor));
       console.log('Motos recebidas do AS:', json.motos.length, '| Parseadas:', parsed.length);
