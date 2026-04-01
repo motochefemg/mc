@@ -1783,7 +1783,11 @@ function renderPagamentos(motos, caps) {
   console.log('renderPagamentos: motos='+dados.length+' formaPgto exemplo='+(dados[0]?.formaPgto||'vazio'));
 
   if(!dados.length) {
-    el.innerHTML = '<div class="empty-state">Sem dados de pagamento para o período</div>';
+    el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text3)">' +
+      '<div style="font-size:32px;margin-bottom:12px">💳</div>' +
+      '<div style="font-size:14px;margin-bottom:16px">Clique em <b>Sincronizar</b> para carregar os dados de pagamento</div>' +
+      '<button onclick="syncData()" style="background:var(--accent);color:#fff;border:none;border-radius:8px;padding:10px 24px;font-family:Barlow;font-size:14px;font-weight:700;cursor:pointer">🔄 Sincronizar agora</button>' +
+      '</div>';
     return;
   }
 
