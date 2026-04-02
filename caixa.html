@@ -930,14 +930,16 @@ function saveData(){
     trocoInicial: trocoInicialVal
   };
 
-  fetch(APPS_SCRIPT_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload)
-  }).then(r => r.json()).then(j => {
-    if(statusEl) statusEl.textContent = j.success
-      ? '✓ Salvo na nuvem · ' + new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})
-      : '⚠ Erro ao salvar: ' + (j.error||'');
+  // Envia via GET para evitar bloqueio CORS do browser
+  const params = new URLSearchParams({
+    action: 'caixa_save_all',
+    data: encodeURIComponent(JSON.stringify(payload))
+  });
+  fetch(APPS_SCRIPT_URL + '?' + params.toString(), {
+    method: 'GET',
+    mode: 'no-cors'
+  }).then(() => {
+    if(statusEl) statusEl.textContent = '✓ Salvo na nuvem · ' + new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
   }).catch(e => {
     if(statusEl) statusEl.textContent = '⚠ Sem conexão — salvo localmente';
     console.warn('saveData erro:', e);
@@ -1628,6 +1630,9 @@ async function fetchMovsLoja(lojaKey, dataIni, dataFim) {
 }
 
 async function renderExtrato(){
+  // Só renderiza se a aba extrato estiver visível
+  const viewExt = document.getElementById('view-extrato');
+  if(viewExt && !viewExt.classList.contains('active')) return;
   const filtLojaEl = document.getElementById('filtroLojaExt');
   const filtTipo   = document.getElementById('filtroTipoExt')?.value || '';
   const el         = document.getElementById('listaExtrato');
