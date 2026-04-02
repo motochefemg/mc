@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MotoChefe — Recuperar Dados do Caixa</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', sans-serif; background: #0f0f0f; color: #fff; display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; }
+  .card { background: #1a1a1a; border: 1px solid #333; border-radius: 16px; padding: 40px; max-width: 500px; width: 100%; text-align: center; }
+  .logo { font-size: 48px; margin-bottom: 16px; }
+  h1 { font-size: 22px; color: #ff4b00; margin-bottom: 8px; }
+  p { color: #aaa; font-size: 14px; line-height: 1.6; margin-bottom: 24px; }
+  .btn { background: #ff4b00; color: #fff; border: none; border-radius: 10px; padding: 16px 32px; font-size: 16px; font-weight: 700; cursor: pointer; width: 100%; transition: .2s; }
+  .btn:hover { background: #e04000; }
+  .btn:disabled { background: #444; cursor: not-allowed; }
+  .log { background: #0a0a0a; border: 1px solid #333; border-radius: 8px; padding: 16px; margin-top: 20px; text-align: left; font-size: 13px; line-height: 1.8; max-height: 300px; overflow-y: auto; display: none; }
+  .log.show { display: block; }
+  .ok { color: #4ade80; }
+  .err { color: #f87171; }
+  .info { color: #aaa; }
+  .warn { color: #fbbf24; }
+  .resultado { margin-top: 20px; padding: 16px; border-radius: 10px; display: none; font-weight: 700; font-size: 15px; }
+  .resultado.sucesso { background: rgba(74,222,128,0.1); border: 1px solid rgba(74,222,128,0.3); color: #4ade80; }
+  .resultado.erro { background: rgba(248,113,113,0.1); border: 1px solid rgba(248,113,113,0.3); color: #f87171; }
+  .aviso { background: rgba(251,191,36,0.1); border: 1px solid rgba(251,191,36,0.3); border-radius: 8px; padding: 12px; margin-bottom: 20px; color: #fbbf24; font-size: 13px; }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="logo">🏍</div>
+  <h1>Recuperar Dados do Caixa</h1>
+  <p>Esta ferramenta recupera os dados salvos neste computador e envia para o sistema MotoChefe.</p>
+
+  <div class="aviso">
+    ⚠️ Abra esta página no mesmo computador onde você usa o caixa normalmente.
+  </div>
+
+  <button class="btn" id="btnRecuperar" onclick="recuperar()">
+    🔄 Recuperar e Enviar Dados
+  </button>
+
+  <div class="log" id="log"></div>
+  <div class="resultado" id="resultado"></div>
+</div>
+
+<script>
+const AS = 'https://script.google.com/macros/s/AKfycbzAYDr_pArf5uSPiK0mOQP0K_BMHFEAOJ9xYxMSVBigoCpY_F69GjJlXmE9WOuQZOIn/exec';
+
+function log(msg, tipo) {
+  const el = document.getElementById('log');
+  el.classList.add('show');
+  const linha = document.createElement('div');
+  linha.className = tipo || 'info';
+  linha.textContent = msg;
+  el.appendChild(linha);
+  el.scrollTop = el.scrollHeight;
+}
+
+async function recuperar() {
+  const btn = document.getElementById('btnRecuperar');
+  const resultado = document.getElementById('resultado');
+  btn.disabled = true;
+  btn.textContent = '⟳ Recuperando...';
+  resultado.style.display = 'none';
+
+  log('Buscando dados salvos neste computador...', 'info');
+
+  // Pegar todas as chaves do localStorage relacionadas ao caixa
+  const chaves = Object.keys(localStorage).filter(k =>
+    k.startsWith('caixa_') && !k.startsWith('caixa_sessao')
+  );
+
+  log('Registros encontrados: ' + chaves.length, 'info');
+
+  if (chaves.length === 0) {
+    log('Nenhum dado de caixa encontrado neste computador.', 'warn');
+    resultado.className = 'resultado erro';
+    resultado.style.display = 'block';
+    resultado.textContent = '⚠ Nenhum dado encontrado neste computador.';
+    btn.disabled = false;
+    btn.textContent = '🔄 Recuperar e Enviar Dados';
+    return;
+  }
+
+  let totalEnviado = 0;
+  let totalErros = 0;
+
+  for (const chave of chaves) {
+    try {
+      const raw = localStorage.getItem(chave);
+      if (!raw) continue;
+
+      const dados = JSON.parse(raw);
+      const movs = dados.movimentacoes || [];
+
+      if (!movs.length) {
+        log('[' + chave + '] Sem movimentações — pulando', 'info');
+        continue;
+      }
+
+      // Extrair loja e data da chave: formato caixa_LOJA_YYYY-MM-DD
+      const dataMatch = chave.match(/\d{4}-\d{2}-\d{2}/);
+      const dataFinal = dataMatch ? dataMatch[0] : (dados.data || '');
+      const lojaFinal = dados.loja || dados.currentLoja ||
+        chave.replace('caixa_', '').replace('_' + dataFinal, '').replace(/_/g, ' ');
+
+      log('[' + chave + '] Loja: ' + lojaFinal + ' | Data: ' + dataFinal + ' | ' + movs.length + ' movs', 'info');
+
+      if (!lojaFinal || !dataFinal) {
+        log('[' + chave + '] Loja ou data não identificada — pulando', 'warn');
+        continue;
+      }
+
+      const payload = {
+        action: 'caixa_save_all',
+        loja: lojaFinal,
+        data: dataFinal,
+        movimentacoes: movs,
+        caixaAberto: dados.caixaAberto || false,
+        caixaAbertoEm: dados.caixaAbertoEm || '',
+        trocoInicial: dados.trocoInicialVal || dados.trocoInicial || 0,
+        _append: true
+      };
+
+      const params = new URLSearchParams({
+        action: 'caixa_save_all',
+        data: JSON.stringify(payload)
+      });
+
+      const r = await fetch(AS + '?' + params.toString());
+      const j = await r.json();
+
+      if (j.success) {
+        log('✓ [' + chave + '] ' + (j.salvo || movs.length) + ' movimentações enviadas!', 'ok');
+        totalEnviado += movs.length;
+      } else {
+        log('✗ [' + chave + '] Erro: ' + (j.error || 'desconhecido'), 'err');
+        totalErros++;
+      }
+
+    } catch (e) {
+      log('✗ [' + chave + '] Erro: ' + e.message, 'err');
+      totalErros++;
+    }
+  }
+
+  log('=== CONCLUÍDO ===', 'info');
+  log('Total enviado: ' + totalEnviado + ' movimentações', totalEnviado > 0 ? 'ok' : 'warn');
+
+  resultado.style.display = 'block';
+  if (totalEnviado > 0) {
+    resultado.className = 'resultado sucesso';
+    resultado.textContent = '✓ ' + totalEnviado + ' movimentações recuperadas e enviadas para o Sheets!';
+  } else {
+    resultado.className = 'resultado erro';
+    resultado.textContent = '⚠ Nenhuma movimentação foi enviada. Veja o log acima.';
+  }
+
+  btn.disabled = false;
+  btn.textContent = '🔄 Recuperar e Enviar Dados';
+}
+</script>
+</body>
+</html>
