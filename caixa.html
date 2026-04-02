@@ -1633,6 +1633,9 @@ async function renderExtrato(){
   // Só renderiza se a aba extrato estiver visível
   const viewExt = document.getElementById('view-extrato');
   if(viewExt && !viewExt.classList.contains('active')) return;
+  const _periodo = document.getElementById('filtroPeriodoExt')?.value || 'dia';
+  const _mes = document.getElementById('filtroMesExt')?.value || '';
+  console.log('renderExtrato chamado | periodo:', _periodo, '| mes:', _mes, '| caller:', new Error().stack.split('\n')[2]);
   const filtLojaEl = document.getElementById('filtroLojaExt');
   const filtTipo   = document.getElementById('filtroTipoExt')?.value || '';
   const el         = document.getElementById('listaExtrato');
