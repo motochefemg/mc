@@ -2062,122 +2062,126 @@ function renderLojas(motos,caps){
   const map={};
   motos.forEach(r=>{
     if(!r.loja) return;
-    if(!map[r.loja]) map[r.loja]={qtd:0,valor:0,vendedores:new Set(),items:[]};
+    if(!map[r.loja]) map[r.loja]={qtd:0,valor:0,items:[]};
     map[r.loja].qtd++; map[r.loja].valor+=r.valor;
-    map[r.loja].vendedores.add(r.vendedor);
     map[r.loja].items.push(r);
   });
 
-  const cores = ['#ff4b00','#f59e0b','#2563eb','#16a34a','#7c3aed','#0891b2','#dc2626','#db2777'];
+  const CORES = ['#ff4b00','#f59e0b','#2563eb','#16a34a','#7c3aed','#0891b2','#dc2626','#db2777'];
   const lojas = Object.entries(map).sort((a,b)=>b[1].valor-a[1].valor);
   const maxValor = lojas[0]?.[1]?.valor || 1;
 
-  let html = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px">';
-  lojas.forEach(([loja,d],i)=>{
-    const cor = cores[i%cores.length];
+  const cards = lojas.map(([loja,d],i) => {
+    const cor = CORES[i % CORES.length];
     const lojaShort = loja.replace('MOTOCHEFE ','MC ').replace('ECOMOV ','ECO ');
-    const ticket = d.qtd>0 ? d.valor/d.qtd : 0;
+    const ticket = d.qtd > 0 ? d.valor/d.qtd : 0;
     const pct = (d.valor/maxValor*100).toFixed(0);
-    const venMap={};
-    d.items.forEach(r=>{ if(r.vendedor){ venMap[r.vendedor]=(venMap[r.vendedor]||0)+1; } });
+    const venMap = {};
+    d.items.forEach(r=>{ if(r.vendedor) venMap[r.vendedor]=(venMap[r.vendedor]||0)+1; });
     const topVend = Object.entries(venMap).sort((a,b)=>b[1]-a[1])[0];
-    const descMed = d.items.length>0 ? (d.items.reduce((s,r)=>s+(function(v){if(!v)return 0;const s2=String(v).replace('%','').replace(',','.').trim();const n=parseFloat(s2)||0;return n<1&&n>0?n*100:n;})(r.desconto),0)/d.items.length).toFixed(1) : '0';
+    const descArr = d.items.map(r=>{
+      const v = r.desconto; if(!v) return 0;
+      const n = parseFloat(String(v).replace('%','').replace(',','.')) || 0;
+      return n < 1 && n > 0 ? n*100 : n;
+    });
+    const descMed = descArr.length ? (descArr.reduce((s,v)=>s+v,0)/descArr.length).toFixed(1) : '0';
+    const descCor = parseFloat(descMed)>10 ? 'var(--red)' : parseFloat(descMed)>5 ? 'var(--gold)' : 'var(--green)';
 
-    html += '<div style="background:var(--card2);border:1px solid var(--border);border-radius:14px;overflow:hidden;transition:.2s">\'+'
-      '<div style="height:4px;background:'+cor+'"></div>'+
-      '<div style="padding:18px 20px">'+
-      '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px">'+
-      '<div style="font-family:Bebas Neue;font-size:22px;letter-spacing:2px;color:var(--text)">'+lojaShort.toUpperCase()+'</div>'+
-      '<div style="background:rgba(255,75,0,0.1);border-radius:6px;padding:3px 10px;font-size:11px;font-weight:700;color:'+cor+'">'+d.qtd+' motos</div>'+
-      '</div>'+
-      '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px">'+
-      '<div style="background:var(--bg3);border-radius:8px;padding:10px;text-align:center">'+
-        '<div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Faturamento</div>'+
-        '<div style="font-family:Bebas Neue;font-size:17px;color:'+cor+'">'+fmtK(d.valor)+'</div>'+
-      '</div>'+
-      '<div style="background:var(--bg3);border-radius:8px;padding:10px;text-align:center">'+
-        '<div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Ticket</div>'+
-        '<div style="font-family:Bebas Neue;font-size:17px;color:var(--text)">'+fmtK(ticket)+'</div>'+
-      '</div>'+
-      '<div style="background:var(--bg3);border-radius:8px;padding:10px;text-align:center">'+
-        '<div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Desc. médio</div>'+
-        '<div style="font-family:Bebas Neue;font-size:17px;color:'+(parseFloat(descMed)>10?'var(--red)':parseFloat(descMed)>5?'var(--gold)':'var(--green)')+'">'+descMed+'%</div>'+
-      '</div>'+
-      '</div>'+
-      '<div style="height:6px;background:var(--bg3);border-radius:3px;overflow:hidden;margin-bottom:10px">'+
-        '<div style="height:100%;width:'+pct+'%;background:'+cor+';border-radius:3px;transition:.5s"></div>'+
-      '</div>'+
-      (topVend?'<div style="font-size:11px;color:var(--text3)">🏆 <b style="color:var(--text)">'+shortName(topVend[0])+'</b> · '+topVend[1]+' moto'+(topVend[1]>1?'s':'')+'</div>':'')+
-      '</div></div>';
-  });
-  html += '</div>';
-  document.getElementById('lojasGrid').innerHTML = html || emptyState('Sem dados');
+    return `<div style="background:var(--card2);border:1px solid var(--border);border-radius:14px;overflow:hidden">
+      <div style="height:4px;background:${cor}"></div>
+      <div style="padding:18px 20px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px">
+          <div style="font-family:'Bebas Neue';font-size:22px;letter-spacing:2px">${lojaShort.toUpperCase()}</div>
+          <div style="background:rgba(255,75,0,0.1);border-radius:6px;padding:3px 10px;font-size:11px;font-weight:700;color:${cor}">${d.qtd} motos</div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px">
+          <div style="background:var(--bg3);border-radius:8px;padding:10px;text-align:center">
+            <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Faturamento</div>
+            <div style="font-family:'Bebas Neue';font-size:16px;color:${cor}">${fmtK(d.valor)}</div>
+          </div>
+          <div style="background:var(--bg3);border-radius:8px;padding:10px;text-align:center">
+            <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Ticket</div>
+            <div style="font-family:'Bebas Neue';font-size:16px">${fmtK(ticket)}</div>
+          </div>
+          <div style="background:var(--bg3);border-radius:8px;padding:10px;text-align:center">
+            <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Desc. médio</div>
+            <div style="font-family:'Bebas Neue';font-size:16px;color:${descCor}">${descMed}%</div>
+          </div>
+        </div>
+        <div style="height:5px;background:var(--bg3);border-radius:3px;overflow:hidden;margin-bottom:10px">
+          <div style="height:100%;width:${pct}%;background:${cor};border-radius:3px"></div>
+        </div>
+        ${topVend ? `<div style="font-size:11px;color:var(--text3)">🏆 <b style="color:var(--text)">${shortName(topVend[0])}</b> · ${topVend[1]} moto${topVend[1]>1?'s':''}</div>` : ''}
+      </div>
+    </div>`;
+  }).join('');
 
-  // ── Tabela mês a mês por loja ────────────────────────────
+  document.getElementById('lojasGrid').innerHTML = cards
+    ? `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;margin-top:8px">${cards}</div>`
+    : emptyState('Sem dados');
+
+
+  // ── Tabela mês a mês ─────────────────────────────────────
   const mesesAtivos = [...new Set(rawMotos.filter(r=>r.data&&r.data.startsWith(String(currentYear))).map(r=>r.mes))].sort((a,b)=>a-b);
   const lojasList = [...new Set(rawMotos.filter(r=>r.data&&r.data.startsWith(String(currentYear))).map(r=>r.loja).filter(Boolean))].sort();
   const MESES_NOMES = ['','Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
 
-  if (mesesAtivos.length > 0 && lojasList.length > 0) {
+  if(mesesAtivos.length > 0 && lojasList.length > 0){
+    const CORES2 = ['#ff4b00','#f59e0b','#2563eb','#16a34a','#7c3aed','#0891b2','#dc2626','#db2777'];
     const matriz = {};
-    lojasList.forEach(l => {
-      matriz[l] = {};
-      mesesAtivos.forEach(m => { matriz[l][m] = {qtd:0,valor:0}; });
-    });
-    rawMotos.filter(r=>r.data&&r.data.startsWith(String(currentYear))&&r.loja).forEach(r => {
-      if(matriz[r.loja]&&matriz[r.loja][r.mes]!==undefined){
-        matriz[r.loja][r.mes].qtd++; matriz[r.loja][r.mes].valor+=r.valor;
-      }
+    lojasList.forEach(l => { matriz[l]={}; mesesAtivos.forEach(m=>{ matriz[l][m]={qtd:0,valor:0}; }); });
+    rawMotos.filter(r=>r.data&&r.data.startsWith(String(currentYear))&&r.loja).forEach(r=>{
+      if(matriz[r.loja]&&matriz[r.loja][r.mes]!==undefined){ matriz[r.loja][r.mes].qtd++; matriz[r.loja][r.mes].valor+=r.valor; }
     });
     const totaisMes={};
     mesesAtivos.forEach(m=>{ totaisMes[m]=lojasList.reduce((s,l)=>s+(matriz[l][m]?.valor||0),0); });
     const totalGeral=Object.values(totaisMes).reduce((s,v)=>s+v,0);
     const maxVal=Math.max(...lojasList.flatMap(l=>mesesAtivos.map(m=>matriz[l][m].valor)))||1;
 
-    let tHtml = '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px">';
+    let tHtml = '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse">';
     tHtml += '<thead><tr style="border-bottom:2px solid var(--border)">';
-    tHtml += '<th style="text-align:left;padding:10px 14px;font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1px">Loja</th>';
-    mesesAtivos.forEach(m => {
+    tHtml += '<th style="text-align:left;padding:12px 16px;font-size:13px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;min-width:140px">Loja</th>';
+    mesesAtivos.forEach(m=>{
       const isCur = currentMonth===m;
-      tHtml += '<th style="text-align:right;padding:10px 10px;font-size:10px;color:'+(isCur?'var(--accent)':'var(--text3)')+';text-transform:uppercase;letter-spacing:1px;min-width:80px">'+MESES_NOMES[m]+'</th>';
+      tHtml += `<th style="text-align:right;padding:12px 10px;font-size:13px;font-weight:700;color:${isCur?'var(--accent)':'var(--text3)'};text-transform:uppercase;letter-spacing:1px;min-width:95px">${MESES_NOMES[m]}</th>`;
     });
-    tHtml += '<th style="text-align:right;padding:10px 14px;font-size:10px;color:var(--gold);text-transform:uppercase;letter-spacing:1px">Total</th></tr></thead><tbody>';
+    tHtml += '<th style="text-align:right;padding:12px 16px;font-size:13px;color:var(--gold);text-transform:uppercase;letter-spacing:1px;min-width:120px">Total</th></tr></thead><tbody>';
 
-    lojasList.forEach((l,li) => {
-      const cor = cores[li%cores.length];
+    lojasList.forEach((l,li)=>{
+      const cor = CORES2[li%CORES2.length];
       const totalLoja = mesesAtivos.reduce((s,m)=>s+(matriz[l][m]?.valor||0),0);
       const lojaShortT = l.replace('MOTOCHEFE ','MC ').replace('ECOMOV ','ECO ');
       tHtml += '<tr style="border-bottom:1px solid var(--border)">';
-      tHtml += '<td style="padding:10px 14px;font-weight:700;white-space:nowrap;color:var(--text)"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:'+cor+';margin-right:8px"></span>'+lojaShortT+'</td>';
-      mesesAtivos.forEach(m => {
+      tHtml += `<td style="padding:12px 16px;font-size:13px;font-weight:700;white-space:nowrap"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${cor};margin-right:8px"></span>${lojaShortT}</td>`;
+      mesesAtivos.forEach(m=>{
         const v = matriz[l][m];
         const isCur = currentMonth===m;
         const pctBar = v.valor>0?(v.valor/maxVal*100).toFixed(0):0;
-        tHtml += '<td style="text-align:right;padding:8px 10px">';
+        tHtml += '<td style="text-align:right;padding:10px 10px">';
         if(v.valor>0){
-          tHtml += '<div style="font-family:Bebas Neue;font-size:14px;color:'+(isCur?'var(--accent)':'var(--text)')+'">'+fmtK(v.valor)+'</div>';
-          tHtml += '<div style="height:3px;background:'+(isCur?'var(--accent)':cor)+';opacity:0.5;border-radius:2px;width:'+pctBar+'%;margin-left:auto;margin-top:2px"></div>';
-          tHtml += '<div style="font-size:10px;color:var(--text3);margin-top:1px">'+v.qtd+'un</div>';
+          tHtml += `<div style="font-family:'Bebas Neue';font-size:18px;color:${isCur?'var(--accent)':'var(--text)'}">${fmtK(v.valor)}</div>`;
+          tHtml += `<div style="height:4px;background:${isCur?'var(--accent)':cor};opacity:0.5;border-radius:2px;width:${pctBar}%;margin-left:auto;margin-top:3px"></div>`;
+          tHtml += `<div style="font-size:12px;color:var(--text3);margin-top:2px">${v.qtd}un</div>`;
         } else {
-          tHtml += '<span style="color:var(--text3);font-size:12px">—</span>';
+          tHtml += '<span style="color:var(--text3);font-size:13px">—</span>';
         }
         tHtml += '</td>';
       });
-      tHtml += '<td style="text-align:right;padding:8px 14px;font-family:Bebas Neue;font-size:15px;color:var(--gold)">'+fmtCurrency(totalLoja)+'</td></tr>';
+      tHtml += `<td style="text-align:right;padding:10px 16px;font-family:'Bebas Neue';font-size:18px;color:var(--gold)">${fmtCurrency(totalLoja)}</td></tr>`;
     });
 
     tHtml += '<tr style="border-top:2px solid var(--border);background:var(--card2)">';
-    tHtml += '<td style="padding:10px 14px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text3)">TOTAL</td>';
+    tHtml += '<td style="padding:12px 16px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text3)">TOTAL</td>';
     mesesAtivos.forEach(m=>{
-      tHtml += '<td style="text-align:right;padding:8px 10px;font-family:Bebas Neue;font-size:14px;color:var(--accent)">'+fmtK(totaisMes[m])+'</td>';
+      tHtml += `<td style="text-align:right;padding:10px 10px;font-family:'Bebas Neue';font-size:17px;color:var(--accent)">${fmtK(totaisMes[m])}</td>`;
     });
-    tHtml += '<td style="text-align:right;padding:8px 14px;font-family:Bebas Neue;font-size:15px;color:var(--accent);font-weight:700">'+fmtCurrency(totalGeral)+'</td></tr>';
+    tHtml += `<td style="text-align:right;padding:10px 16px;font-family:'Bebas Neue';font-size:18px;color:var(--accent);font-weight:700">${fmtCurrency(totalGeral)}</td></tr>`;
     tHtml += '</tbody></table></div>';
-
-    document.getElementById('lojasMesMes').innerHTML = '<div style="margin-top:24px"><div style="font-size:10px;color:var(--text3);letter-spacing:2px;text-transform:uppercase;margin-bottom:12px">📊 Faturamento por Loja · Mês a Mês</div>'+tHtml+'</div>';
+    document.getElementById('lojasMesMes').innerHTML = tHtml;
   } else {
     document.getElementById('lojasMesMes').innerHTML = emptyState('Sincronize para ver os dados');
   }
+
 }
 
 
