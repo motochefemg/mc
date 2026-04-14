@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
@@ -1753,6 +1753,9 @@ function renderVendedorDetail(nome,motos,caps){
       </div>
     </div>
 
+    <!-- Pagamentos do vendedor -->
+    ${mV.length>0 ? buildPagamentosVendedor(mV) : ''}
+
     <!-- Tabela motos -->
     ${mV.length>0?`
     <div style="font-size:10px;color:var(--text3);letter-spacing:2px;text-transform:uppercase;margin-bottom:10px">🏍 Motos vendidas no período</div>
@@ -1773,8 +1776,7 @@ function renderVendedorDetail(nome,motos,caps){
 
     ${mV.length===0&&cV.length===0?'<div style="text-align:center;padding:40px;color:var(--text3)">Sem vendas no período selecionado</div>':''}
 
-    <!-- Pagamentos do vendedor -->
-    ${buildPagamentosVendedor(mV)}
+
   `;
 }
 
@@ -2059,108 +2061,125 @@ function renderPagamentos(motos, caps) {
 function renderLojas(motos,caps){
   const map={};
   motos.forEach(r=>{
+    if(!r.loja) return;
     if(!map[r.loja]) map[r.loja]={qtd:0,valor:0,vendedores:new Set(),items:[]};
     map[r.loja].qtd++; map[r.loja].valor+=r.valor;
     map[r.loja].vendedores.add(r.vendedor);
     map[r.loja].items.push(r);
   });
-  let html='';
-  Object.entries(map).sort((a,b)=>b[1].qtd-a[1].qtd).forEach(([loja,d])=>{
-    const lojaShort=loja.replace('MOTOCHEFE ','').replace('ECOMOV ','');
-    const ticket=d.qtd>0?d.valor/d.qtd:0;
-    const venMap={};
-    d.items.forEach(r=>{
-      if(!venMap[r.vendedor]){venMap[r.vendedor]=0;}
-      venMap[r.vendedor]++;
-    });
-    const venRows=Object.entries(venMap).sort((a,b)=>b[1]-a[1]).map(([v,q])=>`<div class="bar-item">
-      <div class="bar-name" style="width:120px">${shortName(v)}</div>
-      <div class="bar-track"><div class="bar-fill" data-val="${q}" style="width:${(q/d.qtd*100).toFixed(0)}%"></div></div>
-      <div style="font-size:11px;color:var(--text3)">${q}</div>
-    </div>`).join('');
 
-    html+=`<div class="panel">
-      <div class="panel-header">
-        <div class="panel-title"><div class="dot"></div>${lojaShort.toUpperCase()}</div>
-      </div>
-      <div class="panel-body">
-        <div class="kpis" style="margin-bottom:16px">
-          <div class="kpi-card" style="padding:14px"><div class="kpi-label">Motos</div><div class="kpi-value">${d.qtd}</div></div>
-          <div class="kpi-card gold" style="padding:14px"><div class="kpi-label">Faturamento</div><div class="kpi-value currency" style="font-size:20px">${fmtCurrency(d.valor)}</div></div>
-          <div class="kpi-card blue" style="padding:14px"><div class="kpi-label">Ticket Médio</div><div class="kpi-value currency" style="font-size:20px">${fmtCurrency(ticket)}</div></div>
-        </div>
-        <div style="font-size:10px;color:var(--text3);letter-spacing:2px;text-transform:uppercase;margin-bottom:10px">Vendedores</div>
-        ${venRows}
-      </div>
-    </div>`;
+  const cores = ['#ff4b00','#f59e0b','#2563eb','#16a34a','#7c3aed','#0891b2','#dc2626','#db2777'];
+  const lojas = Object.entries(map).sort((a,b)=>b[1].valor-a[1].valor);
+  const maxValor = lojas[0]?.[1]?.valor || 1;
+
+  let html = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px">';
+  lojas.forEach(([loja,d],i)=>{
+    const cor = cores[i%cores.length];
+    const lojaShort = loja.replace('MOTOCHEFE ','MC ').replace('ECOMOV ','ECO ');
+    const ticket = d.qtd>0 ? d.valor/d.qtd : 0;
+    const pct = (d.valor/maxValor*100).toFixed(0);
+    const venMap={};
+    d.items.forEach(r=>{ if(r.vendedor){ venMap[r.vendedor]=(venMap[r.vendedor]||0)+1; } });
+    const topVend = Object.entries(venMap).sort((a,b)=>b[1]-a[1])[0];
+    const descMed = d.items.length>0 ? (d.items.reduce((s,r)=>s+(function(v){if(!v)return 0;const s2=String(v).replace('%','').replace(',','.').trim();const n=parseFloat(s2)||0;return n<1&&n>0?n*100:n;})(r.desconto),0)/d.items.length).toFixed(1) : '0';
+
+    html += '<div style="background:var(--card2);border:1px solid var(--border);border-radius:14px;overflow:hidden;transition:.2s">\'+'
+      '<div style="height:4px;background:'+cor+'"></div>'+
+      '<div style="padding:18px 20px">'+
+      '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px">'+
+      '<div style="font-family:Bebas Neue;font-size:22px;letter-spacing:2px;color:var(--text)">'+lojaShort.toUpperCase()+'</div>'+
+      '<div style="background:rgba(255,75,0,0.1);border-radius:6px;padding:3px 10px;font-size:11px;font-weight:700;color:'+cor+'">'+d.qtd+' motos</div>'+
+      '</div>'+
+      '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px">'+
+      '<div style="background:var(--bg3);border-radius:8px;padding:10px;text-align:center">'+
+        '<div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Faturamento</div>'+
+        '<div style="font-family:Bebas Neue;font-size:17px;color:'+cor+'">'+fmtK(d.valor)+'</div>'+
+      '</div>'+
+      '<div style="background:var(--bg3);border-radius:8px;padding:10px;text-align:center">'+
+        '<div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Ticket</div>'+
+        '<div style="font-family:Bebas Neue;font-size:17px;color:var(--text)">'+fmtK(ticket)+'</div>'+
+      '</div>'+
+      '<div style="background:var(--bg3);border-radius:8px;padding:10px;text-align:center">'+
+        '<div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Desc. médio</div>'+
+        '<div style="font-family:Bebas Neue;font-size:17px;color:'+(parseFloat(descMed)>10?'var(--red)':parseFloat(descMed)>5?'var(--gold)':'var(--green)')+'">'+descMed+'%</div>'+
+      '</div>'+
+      '</div>'+
+      '<div style="height:6px;background:var(--bg3);border-radius:3px;overflow:hidden;margin-bottom:10px">'+
+        '<div style="height:100%;width:'+pct+'%;background:'+cor+';border-radius:3px;transition:.5s"></div>'+
+      '</div>'+
+      (topVend?'<div style="font-size:11px;color:var(--text3)">🏆 <b style="color:var(--text)">'+shortName(topVend[0])+'</b> · '+topVend[1]+' moto'+(topVend[1]>1?'s':'')+'</div>':'')+
+      '</div></div>';
   });
-  document.getElementById('lojasGrid').innerHTML=html||emptyState('Sem dados');
+  html += '</div>';
+  document.getElementById('lojasGrid').innerHTML = html || emptyState('Sem dados');
 
   // ── Tabela mês a mês por loja ────────────────────────────
-  // Usa rawMotos para pegar todos os meses independente do filtro atual
   const mesesAtivos = [...new Set(rawMotos.filter(r=>r.data&&r.data.startsWith(String(currentYear))).map(r=>r.mes))].sort((a,b)=>a-b);
   const lojasList = [...new Set(rawMotos.filter(r=>r.data&&r.data.startsWith(String(currentYear))).map(r=>r.loja).filter(Boolean))].sort();
   const MESES_NOMES = ['','Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
 
   if (mesesAtivos.length > 0 && lojasList.length > 0) {
-    // Monta matriz loja × mês
     const matriz = {};
     lojasList.forEach(l => {
       matriz[l] = {};
-      mesesAtivos.forEach(m => { matriz[l][m] = { qtd: 0, valor: 0 }; });
+      mesesAtivos.forEach(m => { matriz[l][m] = {qtd:0,valor:0}; });
     });
     rawMotos.filter(r=>r.data&&r.data.startsWith(String(currentYear))&&r.loja).forEach(r => {
-      if (matriz[r.loja] && matriz[r.loja][r.mes] !== undefined) {
-        matriz[r.loja][r.mes].qtd++;
-        matriz[r.loja][r.mes].valor += r.valor;
+      if(matriz[r.loja]&&matriz[r.loja][r.mes]!==undefined){
+        matriz[r.loja][r.mes].qtd++; matriz[r.loja][r.mes].valor+=r.valor;
       }
     });
+    const totaisMes={};
+    mesesAtivos.forEach(m=>{ totaisMes[m]=lojasList.reduce((s,l)=>s+(matriz[l][m]?.valor||0),0); });
+    const totalGeral=Object.values(totaisMes).reduce((s,v)=>s+v,0);
+    const maxVal=Math.max(...lojasList.flatMap(l=>mesesAtivos.map(m=>matriz[l][m].valor)))||1;
 
-    // Totais por mês (para linha de total)
-    const totaisMes = {};
+    let tHtml = '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px">';
+    tHtml += '<thead><tr style="border-bottom:2px solid var(--border)">';
+    tHtml += '<th style="text-align:left;padding:10px 14px;font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1px">Loja</th>';
     mesesAtivos.forEach(m => {
-      totaisMes[m] = lojasList.reduce((s,l) => s + (matriz[l][m]?.valor||0), 0);
+      const isCur = currentMonth===m;
+      tHtml += '<th style="text-align:right;padding:10px 10px;font-size:10px;color:'+(isCur?'var(--accent)':'var(--text3)')+';text-transform:uppercase;letter-spacing:1px;min-width:80px">'+MESES_NOMES[m]+'</th>';
     });
-    const totalGeral = Object.values(totaisMes).reduce((s,v)=>s+v,0);
+    tHtml += '<th style="text-align:right;padding:10px 14px;font-size:10px;color:var(--gold);text-transform:uppercase;letter-spacing:1px">Total</th></tr></thead><tbody>';
 
-    // Máximo para mini barras
-    const maxLojaMes = Math.max(...lojasList.flatMap(l => mesesAtivos.map(m => matriz[l][m].valor))) || 1;
-
-    let tHtml = '<div class="table-wrap"><table>';
-    // Cabeçalho
-    tHtml += '<thead><tr><th>LOJA</th>';
-    mesesAtivos.forEach(m => { tHtml += `<th style="text-align:right;min-width:90px">${MESES_NOMES[m]}</th>`; });
-    tHtml += '<th style="text-align:right;min-width:100px">TOTAL</th></tr></thead><tbody>';
-
-    lojasList.forEach(l => {
+    lojasList.forEach((l,li) => {
+      const cor = cores[li%cores.length];
       const totalLoja = mesesAtivos.reduce((s,m)=>s+(matriz[l][m]?.valor||0),0);
-      tHtml += `<tr><td style="font-weight:600;white-space:nowrap">${l.replace('MOTOCHEFE ','').replace('ECOMOV ','')}</td>`;
+      const lojaShortT = l.replace('MOTOCHEFE ','MC ').replace('ECOMOV ','ECO ');
+      tHtml += '<tr style="border-bottom:1px solid var(--border)">';
+      tHtml += '<td style="padding:10px 14px;font-weight:700;white-space:nowrap;color:var(--text)"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:'+cor+';margin-right:8px"></span>'+lojaShortT+'</td>';
       mesesAtivos.forEach(m => {
         const v = matriz[l][m];
-        const barPct = (v.valor / maxLojaMes * 50).toFixed(0);
-        const cor = currentMonth===m ? 'var(--accent)' : 'var(--text)';
-        tHtml += `<td style="text-align:right;padding:8px 12px">
-          <div style="font-family:'Bebas Neue';font-size:13px;color:${cor}">${v.valor>0?fmtK(v.valor):'—'}</div>
-          ${v.qtd>0?`<div style="height:3px;background:${cor};opacity:0.4;border-radius:2px;margin-top:3px;width:${barPct}%;margin-left:auto"></div>`:''}
-          ${v.qtd>0?`<div style="font-size:10px;color:var(--text3)">${v.qtd}un</div>`:''}
-        </td>`;
+        const isCur = currentMonth===m;
+        const pctBar = v.valor>0?(v.valor/maxVal*100).toFixed(0):0;
+        tHtml += '<td style="text-align:right;padding:8px 10px">';
+        if(v.valor>0){
+          tHtml += '<div style="font-family:Bebas Neue;font-size:14px;color:'+(isCur?'var(--accent)':'var(--text)')+'">'+fmtK(v.valor)+'</div>';
+          tHtml += '<div style="height:3px;background:'+(isCur?'var(--accent)':cor)+';opacity:0.5;border-radius:2px;width:'+pctBar+'%;margin-left:auto;margin-top:2px"></div>';
+          tHtml += '<div style="font-size:10px;color:var(--text3);margin-top:1px">'+v.qtd+'un</div>';
+        } else {
+          tHtml += '<span style="color:var(--text3);font-size:12px">—</span>';
+        }
+        tHtml += '</td>';
       });
-      tHtml += `<td style="text-align:right;font-family:'Bebas Neue';font-size:14px;color:var(--gold);font-weight:700;padding:8px 12px">${fmtCurrency(totalLoja)}</td></tr>`;
+      tHtml += '<td style="text-align:right;padding:8px 14px;font-family:Bebas Neue;font-size:15px;color:var(--gold)">'+fmtCurrency(totalLoja)+'</td></tr>';
     });
 
-    // Linha de total
-    tHtml += '<tr style="border-top:2px solid var(--border);background:var(--card2)"><td style="font-weight:700;font-size:11px;letter-spacing:1px;text-transform:uppercase">TOTAL</td>';
-    mesesAtivos.forEach(m => {
-      tHtml += `<td style="text-align:right;font-family:'Bebas Neue';font-size:14px;color:var(--accent);padding:8px 12px">${fmtK(totaisMes[m])}</td>`;
+    tHtml += '<tr style="border-top:2px solid var(--border);background:var(--card2)">';
+    tHtml += '<td style="padding:10px 14px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text3)">TOTAL</td>';
+    mesesAtivos.forEach(m=>{
+      tHtml += '<td style="text-align:right;padding:8px 10px;font-family:Bebas Neue;font-size:14px;color:var(--accent)">'+fmtK(totaisMes[m])+'</td>';
     });
-    tHtml += `<td style="text-align:right;font-family:'Bebas Neue';font-size:15px;color:var(--accent);font-weight:700;padding:8px 12px">${fmtCurrency(totalGeral)}</td></tr>`;
+    tHtml += '<td style="text-align:right;padding:8px 14px;font-family:Bebas Neue;font-size:15px;color:var(--accent);font-weight:700">'+fmtCurrency(totalGeral)+'</td></tr>';
     tHtml += '</tbody></table></div>';
 
-    document.getElementById('lojasMesMes').innerHTML = tHtml;
+    document.getElementById('lojasMesMes').innerHTML = '<div style="margin-top:24px"><div style="font-size:10px;color:var(--text3);letter-spacing:2px;text-transform:uppercase;margin-bottom:12px">📊 Faturamento por Loja · Mês a Mês</div>'+tHtml+'</div>';
   } else {
     document.getElementById('lojasMesMes').innerHTML = emptyState('Sincronize para ver os dados');
   }
 }
+
 
 // ── PRODUTOS ──────────────────────────────────────────────
 function renderProdutos(motos,caps){
@@ -2594,40 +2613,53 @@ function renderComparativo() {
     for (let m=1;m<=12;m++) porMesAno[ano][m] = dadosHistoricos[ano].motos.filter(r=>r.mes===m).reduce((s,r)=>s+r.valor,0);
   }
   const maxVal = Math.max(...ANOS.flatMap(a=>Object.values(porMesAno[a])))||1;
-  let grafico = '<div style="overflow-x:auto"><div style="display:flex;gap:4px;align-items:flex-end;min-width:600px;padding:8px 0">';
+  // Legenda
+  let grafico = '<div style="display:flex;gap:16px;margin-bottom:12px;flex-wrap:wrap">';
+  ANOS.forEach(a => { grafico += '<div style="display:flex;align-items:center;gap:6px"><div style="width:12px;height:12px;border-radius:3px;background:'+CORES[a]+'"></div><span style="font-size:12px;font-weight:700;color:var(--text)">'+a+'</span></div>'; });
+  grafico += '</div>';
+  grafico += '<div style="overflow-x:auto"><div style="display:flex;gap:6px;align-items:flex-end;min-width:700px;padding:8px 0 0">';
   for (let m=1;m<=12;m++) {
-    grafico += `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px">`;
-    for (const ano of ANOS) {
+    const temDados = ANOS.some(a=>(porMesAno[a][m]||0)>0);
+    grafico += '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px">';
+    ANOS.forEach(ano => {
       const val = porMesAno[ano][m]||0;
-      const h = Math.max(val>0?2:0, (val/maxVal*160)|0);
-      grafico += `<div title="${ano} ${MESES[m]}: ${fmtCurrency(val)}" style="width:100%;height:${h}px;background:${CORES[ano]};border-radius:3px 3px 0 0;opacity:0.85;cursor:default" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='.85'"></div>`;
-    }
-    grafico += `<div style="font-size:9px;color:var(--text3);margin-top:4px">${MESES[m]}</div></div>`;
+      const h = Math.max(val>0?4:0, (val/maxVal*180)|0);
+      grafico += '<div title="'+ano+' '+MESES[m]+': '+fmtCurrency(val)+'" style="width:90%;height:'+h+'px;background:'+CORES[ano]+';border-radius:4px 4px 0 0"></div>';
+    });
+    grafico += '<div style="font-size:9px;color:'+(currentMonth===m?'var(--accent)':'var(--text3)')+';margin-top:5px;font-weight:'+(currentMonth===m?'700':'400')+'">'+MESES[m]+'</div>';
+    grafico += '</div>';
   }
   grafico += '</div></div>';
   document.getElementById('compGrafico').innerHTML = grafico;
 
   // ── Acumulado por loja ─────────────────────────────────────
-  let lojasHtml = '';
-  lojasList.forEach(loja => {
+  let lojasHtml = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px">';
+  lojasList.forEach((loja,li) => {
     const tots = {};
     for (const ano of ANOS) tots[ano] = dadosHistoricos[ano].motos.filter(r=>r.loja===loja).reduce((s,r)=>s+r.valor,0);
     const maxL = Math.max(...Object.values(tots))||1;
-    lojasHtml += `<div style="margin-bottom:20px"><div style="font-family:'Bebas Neue';font-size:14px;letter-spacing:2px;color:var(--text2);margin-bottom:8px">${loja}</div>`;
+    const lojaShortC = loja.replace('MOTOCHEFE ','MC ').replace('ECOMOV ','ECO ');
+    const cores2 = ['#ff4b00','#f59e0b','#2563eb','#16a34a','#7c3aed','#0891b2','#dc2626','#db2777'];
+    const cor = cores2[li%cores2.length];
+    lojasHtml += '<div style="background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:16px">';
+    lojasHtml += '<div style="font-family:Bebas Neue;font-size:16px;letter-spacing:2px;color:var(--text);margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border)">'+lojaShortC.toUpperCase()+'</div>';
     for (const ano of ANOS) {
       const val=tots[ano], valAnt=tots[ano-1]||0;
       const cresc = valAnt>0?(val-valAnt)/valAnt*100:null;
-      lojasHtml += `<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">
-        <span style="width:36px;font-size:11px;font-weight:700;color:${CORES[ano]}">${ano}</span>
-        <div style="flex:1;height:20px;background:var(--bg2);border-radius:4px;overflow:hidden">
-          <div style="width:${(val/maxL*100).toFixed(1)}%;height:100%;background:${CORES[ano]};border-radius:4px;opacity:0.85"></div>
-        </div>
-        <span style="font-family:'Bebas Neue';font-size:14px;width:90px;text-align:right">${fmtK(val)}</span>
-        ${cresc!==null&&val>0?`<span style="font-size:11px;font-weight:700;color:${cresc>=0?'var(--green)':'var(--red)'};width:52px;text-align:right">${cresc>=0?'+':''}${cresc.toFixed(0)}%</span>`:'<span style="width:52px"></span>'}
-      </div>`;
+      const pct = (val/maxL*100).toFixed(1);
+      lojasHtml += '<div style="margin-bottom:10px">';
+      lojasHtml += '<div style="display:flex;justify-content:space-between;margin-bottom:4px">';
+      lojasHtml += '<span style="font-size:11px;font-weight:700;color:'+CORES[ano]+'">'+ano+'</span>';
+      lojasHtml += '<div style="display:flex;gap:8px;align-items:center">';
+      lojasHtml += '<span style="font-family:Bebas Neue;font-size:13px;color:var(--text)">'+fmtK(val)+'</span>';
+      if(cresc!==null&&val>0) lojasHtml += '<span style="font-size:10px;font-weight:700;color:'+(cresc>=0?'var(--green)':'var(--red)')+'background:rgba(0,0,0,0.05);border-radius:4px;padding:1px 5px">'+(cresc>=0?'+':'')+cresc.toFixed(0)+'%</span>';
+      lojasHtml += '</div></div>';
+      lojasHtml += '<div style="height:5px;background:var(--bg3);border-radius:3px;overflow:hidden"><div style="width:'+pct+'%;height:100%;background:'+CORES[ano]+';border-radius:3px;transition:.4s"></div></div>';
+      lojasHtml += '</div>';
     }
     lojasHtml += '</div>';
   });
+  lojasHtml += '</div>';
   document.getElementById('compLojas').innerHTML = lojasHtml||emptyState('Sem dados');
 
   // ── Tabela loja × mês × ano ────────────────────────────────
@@ -2753,6 +2785,24 @@ function renderFechamento() {
 
   totalEl.innerHTML = `<span style="font-size:13px;color:var(--text3);font-family:'Barlow';font-weight:600">${qtdGeral} motos · </span>${fmtCurrency(totalGeral)}`;
 
+  // Top vendedor do dia
+  const porVend = {};
+  vendas.forEach(r => {
+    const v = r.vendedor || 'Sem vendedor';
+    if(!porVend[v]) porVend[v] = {qtd:0, total:0};
+    porVend[v].qtd++; porVend[v].total += r.valor;
+  });
+  const maxQtd = Math.max(...Object.values(porVend).map(d=>d.qtd));
+  const topVends = Object.entries(porVend).filter(([,d])=>d.qtd===maxQtd).sort((a,b)=>b[1].total-a[1].total);
+  const topHtml = topVends.map(([nome,d]) =>
+    '<div style="display:flex;align-items:center;gap:12px;padding:10px 16px;background:rgba(255,75,0,0.06);border-radius:10px;border:1px solid rgba(255,75,0,0.2)">' +
+    '<span style="font-size:24px">🏆</span>' +
+    '<div><div style="font-family:Bebas Neue;font-size:22px;letter-spacing:1px;color:var(--accent)">' + nome + '</div>' +
+    '<div style="font-size:12px;color:var(--text3)">' + d.qtd + ' moto' + (d.qtd>1?'s':'') + ' · ' + fmtCurrency(d.total) + '</div></div></div>'
+  ).join('');
+  bodyEl.innerHTML = '<div style="margin-bottom:20px"><div style="font-size:10px;color:var(--text3);letter-spacing:2px;text-transform:uppercase;margin-bottom:8px">🥇 Destaque do dia</div>' +
+    '<div style="display:flex;flex-wrap:wrap;gap:8px">' + topHtml + '</div></div>';
+
   // Cards por loja
   const lojas = Object.entries(porLoja).sort((a,b) => b[1].total - a[1].total);
   const maxTotal = lojas[0][1].total;
@@ -2867,12 +2917,18 @@ async function deduplicarMotos() {
   statusEl.textContent = '⟳ Removendo duplicatas...';
   statusEl.style.color = 'var(--gold)';
   try {
+    // Deduplicar aba MOTOS principal
     const r = await fetch(APPS_SCRIPT_URL + '?action=deduplicar');
     const j = await r.json();
+    // Deduplicar abas de anos anteriores
+    const anos = [2024, 2025];
+    for(const ano of anos) {
+      try { await fetch(APPS_SCRIPT_URL + '?action=deduplicar&ano=' + ano); } catch(e) {}
+    }
     if(j.success) {
       statusEl.textContent = '✓ ' + (j.removidas||0) + ' duplicata(s) removida(s) · ' + (j.unicas||0) + ' NFs únicas';
       statusEl.style.color = 'var(--green)';
-      if((j.removidas||0) > 0) syncData(); // recarrega os dados
+      if((j.removidas||0) > 0) syncData();
     } else {
       statusEl.textContent = '⚠ Erro: ' + (j.error||'falha');
       statusEl.style.color = 'var(--red)';
@@ -2997,7 +3053,6 @@ setInterval(()=>{
 
 
 </script>
-
 <script>
 window.addEventListener('load', () => {
   try {
