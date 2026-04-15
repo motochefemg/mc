@@ -1,0 +1,1669 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MC Command · MotoChefe Sul de Minas</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600;700&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
+<style>
+:root {
+  --cream: #faf8f5;
+  --white: #ffffff;
+  --orange: #ff4b00;
+  --orange-light: #fff3ee;
+  --orange-mid: #ffe0d0;
+  --dark: #1a1510;
+  --dark2: #2d2820;
+  --mid: #6b6560;
+  --light: #e8e4df;
+  --light2: #f2efe9;
+  --green: #1a7a4a;
+  --green-light: #e8f5ee;
+  --red: #c0392b;
+  --red-light: #fdf0ef;
+  --blue: #1a4a7a;
+  --blue-light: #eef3f9;
+  --shadow-sm: 0 1px 4px rgba(26,21,16,.06), 0 2px 8px rgba(26,21,16,.04);
+  --shadow-md: 0 4px 16px rgba(26,21,16,.08), 0 8px 32px rgba(26,21,16,.06);
+  --shadow-lg: 0 8px 32px rgba(26,21,16,.12), 0 24px 64px rgba(26,21,16,.08);
+  --radius: 16px;
+  --radius-sm: 10px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--cream);
+  color: var(--dark);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ── TELA DE LOGIN ── */
+#loginScreen {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: var(--cream);
+  position: relative;
+  overflow: hidden;
+}
+
+#loginScreen::before {
+  content: '';
+  position: absolute;
+  top: -200px; right: -200px;
+  width: 600px; height: 600px;
+  background: radial-gradient(circle, rgba(255,75,0,.08) 0%, transparent 70%);
+  border-radius: 50%;
+}
+
+#loginScreen::after {
+  content: '';
+  position: absolute;
+  bottom: -100px; left: -100px;
+  width: 400px; height: 400px;
+  background: radial-gradient(circle, rgba(255,75,0,.05) 0%, transparent 70%);
+  border-radius: 50%;
+}
+
+.login-wrap {
+  width: 100%; max-width: 440px;
+  position: relative; z-index: 1;
+}
+
+.login-brand {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.login-brand .logo-text {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 52px;
+  letter-spacing: 4px;
+  color: var(--orange);
+  line-height: 1;
+}
+
+.login-brand .logo-sub {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 3px;
+  color: var(--mid);
+  text-transform: uppercase;
+  margin-top: 4px;
+}
+
+.login-brand .logo-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--dark);
+  color: var(--white);
+  border-radius: 20px;
+  padding: 5px 14px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  margin-top: 12px;
+}
+
+.login-card {
+  background: var(--white);
+  border-radius: var(--radius);
+  padding: 36px;
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--light);
+}
+
+.login-card h2 {
+  font-family: 'DM Serif Display', serif;
+  font-size: 24px;
+  color: var(--dark);
+  margin-bottom: 6px;
+}
+
+.login-card p {
+  font-size: 13px;
+  color: var(--mid);
+  margin-bottom: 28px;
+}
+
+.field {
+  margin-bottom: 16px;
+}
+
+.field label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--mid);
+  margin-bottom: 6px;
+}
+
+.field input, .field select {
+  width: 100%;
+  background: var(--cream);
+  border: 1.5px solid var(--light);
+  border-radius: var(--radius-sm);
+  padding: 12px 16px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  color: var(--dark);
+  transition: border-color .2s, box-shadow .2s;
+  outline: none;
+}
+
+.field input:focus, .field select:focus {
+  border-color: var(--orange);
+  box-shadow: 0 0 0 3px rgba(255,75,0,.1);
+  background: var(--white);
+}
+
+.btn-primary {
+  width: 100%;
+  background: var(--orange);
+  color: var(--white);
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 14px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  letter-spacing: .5px;
+  transition: transform .15s, box-shadow .15s, background .15s;
+  margin-top: 8px;
+}
+
+.btn-primary:hover {
+  background: #e04000;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(255,75,0,.3);
+}
+
+.btn-primary:active { transform: translateY(0); }
+
+.login-err {
+  color: var(--red);
+  font-size: 12px;
+  margin-top: 10px;
+  min-height: 16px;
+  text-align: center;
+}
+
+.login-footer {
+  text-align: center;
+  margin-top: 24px;
+  font-size: 11px;
+  color: var(--mid);
+}
+
+/* ── APP ── */
+#app { display: none; min-height: 100vh; }
+
+/* TOPBAR */
+.topbar {
+  background: var(--white);
+  border-bottom: 1px solid var(--light);
+  height: 64px;
+  display: flex;
+  align-items: center;
+  padding: 0 32px;
+  gap: 16px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: var(--shadow-sm);
+}
+
+.topbar-brand {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 26px;
+  letter-spacing: 2px;
+  color: var(--orange);
+  flex: 0 0 auto;
+}
+
+.topbar-tag {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: var(--mid);
+  text-transform: uppercase;
+  border-left: 1px solid var(--light);
+  padding-left: 16px;
+}
+
+.topbar-right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.topbar-user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.user-avatar {
+  width: 36px; height: 36px;
+  background: var(--orange);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 15px;
+  color: var(--white);
+  letter-spacing: 1px;
+}
+
+.user-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--dark);
+}
+
+.user-role {
+  font-size: 11px;
+  color: var(--mid);
+}
+
+.btn-sm {
+  background: var(--light2);
+  border: 1px solid var(--light);
+  border-radius: 8px;
+  padding: 6px 14px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--mid);
+  cursor: pointer;
+  transition: .2s;
+}
+
+.btn-sm:hover {
+  background: var(--light);
+  color: var(--dark);
+}
+
+/* MAIN */
+.main {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 40px 32px;
+}
+
+/* ALERTA DOCUMENTOS PENDENTES */
+.alert-docs {
+  background: linear-gradient(135deg, #fff8f5 0%, #fff3ee 100%);
+  border: 1.5px solid var(--orange);
+  border-radius: var(--radius);
+  padding: 20px 24px;
+  margin-bottom: 32px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  animation: slideDown .4s ease;
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.alert-icon {
+  font-size: 32px;
+  flex-shrink: 0;
+}
+
+.alert-text h3 {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--orange);
+  margin-bottom: 3px;
+}
+
+.alert-text p {
+  font-size: 13px;
+  color: var(--mid);
+}
+
+.alert-action {
+  margin-left: auto;
+  background: var(--orange);
+  color: var(--white);
+  border: none;
+  border-radius: 8px;
+  padding: 10px 20px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: .2s;
+}
+
+.alert-action:hover {
+  background: #e04000;
+  transform: translateY(-1px);
+}
+
+/* SAUDAÇÃO */
+.greeting {
+  margin-bottom: 36px;
+}
+
+.greeting h1 {
+  font-family: 'DM Serif Display', serif;
+  font-size: 36px;
+  color: var(--dark);
+  line-height: 1.2;
+}
+
+.greeting h1 span {
+  color: var(--orange);
+}
+
+.greeting p {
+  font-size: 14px;
+  color: var(--mid);
+  margin-top: 6px;
+}
+
+/* SECTION TITLE */
+.section-title {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--mid);
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.section-title::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--light);
+}
+
+/* MODULES GRID */
+.modules-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 16px;
+  margin-bottom: 40px;
+}
+
+.module-card {
+  background: var(--white);
+  border: 1.5px solid var(--light);
+  border-radius: var(--radius);
+  padding: 24px;
+  cursor: pointer;
+  transition: transform .2s, box-shadow .2s, border-color .2s;
+  position: relative;
+  overflow: hidden;
+  text-decoration: none;
+  display: block;
+}
+
+.module-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: var(--card-color, var(--orange));
+  transform: scaleX(0);
+  transition: transform .3s;
+  transform-origin: left;
+}
+
+.module-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-md);
+  border-color: transparent;
+}
+
+.module-card:hover::before {
+  transform: scaleX(1);
+}
+
+.module-card.locked {
+  opacity: .55;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.module-card.locked::after {
+  content: '🔒';
+  position: absolute;
+  top: 12px; right: 12px;
+  font-size: 16px;
+}
+
+.mod-icon {
+  width: 48px; height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  margin-bottom: 16px;
+  background: var(--icon-bg, var(--orange-light));
+}
+
+.mod-name {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--dark);
+  margin-bottom: 4px;
+}
+
+.mod-desc {
+  font-size: 12px;
+  color: var(--mid);
+  line-height: 1.5;
+}
+
+.mod-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--orange-light);
+  color: var(--orange);
+  border-radius: 20px;
+  padding: 3px 10px;
+  font-size: 10px;
+  font-weight: 700;
+  margin-top: 12px;
+}
+
+/* ── TELA DE DOCUMENTOS ── */
+#docsScreen {
+  display: none;
+  min-height: 100vh;
+  background: var(--cream);
+}
+
+.docs-header {
+  background: var(--white);
+  border-bottom: 1px solid var(--light);
+  padding: 24px 32px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.btn-back {
+  background: var(--light2);
+  border: 1px solid var(--light);
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--mid);
+  cursor: pointer;
+  transition: .2s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-back:hover { background: var(--light); color: var(--dark); }
+
+.docs-header-title h2 {
+  font-family: 'DM Serif Display', serif;
+  font-size: 22px;
+  color: var(--dark);
+}
+
+.docs-header-title p {
+  font-size: 12px;
+  color: var(--mid);
+  margin-top: 2px;
+}
+
+.docs-main {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 40px 32px;
+}
+
+.docs-progress {
+  background: var(--white);
+  border: 1px solid var(--light);
+  border-radius: var(--radius);
+  padding: 20px 24px;
+  margin-bottom: 32px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.progress-bar-wrap {
+  flex: 1;
+  height: 8px;
+  background: var(--light);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--orange), #ff8c42);
+  border-radius: 4px;
+  transition: width .5s cubic-bezier(.4,0,.2,1);
+}
+
+.progress-text {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--dark);
+  white-space: nowrap;
+}
+
+.doc-item {
+  background: var(--white);
+  border: 1.5px solid var(--light);
+  border-radius: var(--radius);
+  margin-bottom: 12px;
+  overflow: hidden;
+  transition: border-color .2s, box-shadow .2s;
+}
+
+.doc-item.signed {
+  border-color: var(--green);
+}
+
+.doc-item-header {
+  padding: 20px 24px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.doc-item-header:hover { background: var(--cream); }
+
+.doc-status {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  flex-shrink: 0;
+  background: var(--light);
+  color: var(--mid);
+  font-weight: 700;
+  transition: .3s;
+}
+
+.doc-item.signed .doc-status {
+  background: var(--green-light);
+  color: var(--green);
+}
+
+.doc-item-info { flex: 1; }
+
+.doc-item-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--dark);
+}
+
+.doc-item-sub {
+  font-size: 12px;
+  color: var(--mid);
+  margin-top: 2px;
+}
+
+.doc-tag {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+
+.doc-tag.pendente { background: var(--orange-light); color: var(--orange); }
+.doc-tag.assinado { background: var(--green-light); color: var(--green); }
+
+.doc-chevron {
+  font-size: 12px;
+  color: var(--mid);
+  transition: transform .3s;
+}
+
+.doc-item.open .doc-chevron { transform: rotate(90deg); }
+
+/* DOC CONTENT */
+.doc-content {
+  display: none;
+  border-top: 1px solid var(--light);
+  padding: 28px 24px;
+  background: var(--cream);
+}
+
+.doc-item.open .doc-content { display: block; }
+
+.doc-text {
+  font-size: 13px;
+  line-height: 1.85;
+  color: var(--dark);
+  max-height: 360px;
+  overflow-y: auto;
+  background: var(--white);
+  border: 1px solid var(--light);
+  border-radius: var(--radius-sm);
+  padding: 24px;
+  margin-bottom: 24px;
+}
+
+.doc-text h3 {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--orange);
+  margin: 16px 0 6px;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+}
+
+.doc-text h3:first-child { margin-top: 0; }
+
+.doc-text p { margin-bottom: 10px; }
+.doc-text ul { padding-left: 20px; margin-bottom: 10px; }
+.doc-text li { margin-bottom: 4px; }
+
+.doc-dados {
+  background: var(--blue-light);
+  border: 1px solid #c8d8eb;
+  border-radius: var(--radius-sm);
+  padding: 16px 20px;
+  margin-bottom: 24px;
+  font-size: 13px;
+}
+
+.doc-dados h4 {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--blue);
+  margin-bottom: 10px;
+}
+
+.dados-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px 24px;
+}
+
+.dado-item { display: flex; gap: 8px; font-size: 12px; }
+.dado-label { color: var(--mid); flex-shrink: 0; }
+.dado-value { font-weight: 600; color: var(--dark); }
+
+/* FORMULARIO ACEITE */
+.aceite-form {
+  background: var(--white);
+  border: 1.5px solid var(--light);
+  border-radius: var(--radius-sm);
+  padding: 24px;
+}
+
+.aceite-form h4 {
+  font-family: 'DM Serif Display', serif;
+  font-size: 18px;
+  color: var(--dark);
+  margin-bottom: 16px;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.form-grid .full { grid-column: 1 / -1; }
+
+.form-field label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--mid);
+  margin-bottom: 5px;
+}
+
+.form-field input {
+  width: 100%;
+  background: var(--cream);
+  border: 1.5px solid var(--light);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  color: var(--dark);
+  transition: .2s;
+  outline: none;
+}
+
+.form-field input:focus {
+  border-color: var(--orange);
+  box-shadow: 0 0 0 3px rgba(255,75,0,.08);
+  background: var(--white);
+}
+
+.check-wrap {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 16px 0;
+  cursor: pointer;
+}
+
+.check-wrap input[type=checkbox] {
+  width: 18px; height: 18px;
+  margin-top: 1px;
+  cursor: pointer;
+  accent-color: var(--orange);
+  flex-shrink: 0;
+}
+
+.check-wrap span {
+  font-size: 13px;
+  color: var(--dark);
+  line-height: 1.5;
+}
+
+.form-err {
+  font-size: 12px;
+  color: var(--red);
+  min-height: 16px;
+  margin-bottom: 8px;
+}
+
+.btn-assinar {
+  background: var(--orange);
+  color: var(--white);
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 13px 28px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: .2s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-assinar:hover {
+  background: #e04000;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(255,75,0,.25);
+}
+
+.btn-nao-aplica {
+  background: var(--light2);
+  color: var(--mid);
+  border: 1px solid var(--light);
+  border-radius: var(--radius-sm);
+  padding: 10px 20px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: .2s;
+  margin-left: 10px;
+}
+
+.btn-nao-aplica:hover { background: var(--light); color: var(--dark); }
+
+.signed-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--green-light);
+  border: 1px solid var(--green);
+  border-radius: var(--radius-sm);
+  padding: 14px 20px;
+  font-size: 13px;
+  color: var(--green);
+  font-weight: 600;
+}
+
+/* TOAST */
+.toast {
+  position: fixed;
+  bottom: 24px; left: 50%;
+  transform: translateX(-50%) translateY(100px);
+  background: var(--dark);
+  color: var(--white);
+  border-radius: 12px;
+  padding: 12px 24px;
+  font-size: 14px;
+  font-weight: 600;
+  z-index: 9999;
+  box-shadow: var(--shadow-lg);
+  transition: transform .35s cubic-bezier(.4,0,.2,1), opacity .35s;
+  opacity: 0;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.toast.show {
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+}
+
+/* MODAL BLOQUEIO */
+.modal-overlay {
+  display: none;
+  position: fixed; inset: 0;
+  background: rgba(26,21,16,.5);
+  z-index: 500;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  backdrop-filter: blur(4px);
+}
+
+.modal-overlay.show { display: flex; }
+
+.modal-box {
+  background: var(--white);
+  border-radius: var(--radius);
+  padding: 40px;
+  max-width: 480px;
+  width: 100%;
+  text-align: center;
+  box-shadow: var(--shadow-lg);
+  animation: scaleIn .3s cubic-bezier(.4,0,.2,1);
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(.92); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.modal-icon { font-size: 48px; margin-bottom: 16px; }
+
+.modal-box h3 {
+  font-family: 'DM Serif Display', serif;
+  font-size: 22px;
+  color: var(--dark);
+  margin-bottom: 10px;
+}
+
+.modal-box p {
+  font-size: 14px;
+  color: var(--mid);
+  line-height: 1.6;
+  margin-bottom: 28px;
+}
+
+.modal-actions { display: flex; gap: 10px; justify-content: center; }
+
+/* LOADING */
+.loading-spin {
+  display: inline-block;
+  width: 16px; height: 16px;
+  border: 2px solid rgba(255,255,255,.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin .6s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ANIMAÇÕES DE ENTRADA */
+.fade-up {
+  animation: fadeUp .5s ease both;
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.stagger-1 { animation-delay: .05s; }
+.stagger-2 { animation-delay: .1s; }
+.stagger-3 { animation-delay: .15s; }
+.stagger-4 { animation-delay: .2s; }
+.stagger-5 { animation-delay: .25s; }
+.stagger-6 { animation-delay: .3s; }
+
+/* RESPONSIVE */
+@media (max-width: 600px) {
+  .main, .docs-main { padding: 24px 16px; }
+  .topbar { padding: 0 16px; }
+  .modules-grid { grid-template-columns: 1fr 1fr; }
+  .form-grid { grid-template-columns: 1fr; }
+  .dados-grid { grid-template-columns: 1fr; }
+  .greeting h1 { font-size: 26px; }
+  .login-card { padding: 24px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ══ TELA DE LOGIN ══ -->
+<div id="loginScreen">
+  <div class="login-wrap">
+    <div class="login-brand">
+      <div class="logo-text">MC</div>
+      <div class="logo-sub">MotoChefe Sul de Minas</div>
+      <div class="logo-badge">⚡ COMMAND</div>
+    </div>
+    <div class="login-card">
+      <h2>Bem-vindo de volta</h2>
+      <p>Acesse sua plataforma de gestão</p>
+      <div class="field">
+        <label>Usuário</label>
+        <select id="selUsuario">
+          <option value="">Selecione seu nome...</option>
+          <option value="Pablo Albinati">Pablo Albinati</option>
+          <option value="Tiago Souza Gomes">Tiago Souza Gomes</option>
+          <option value="Cesar Rodrigues">Cesar Rodrigues</option>
+          <option value="Luiz Paulo Arouca">Luiz Paulo Arouca</option>
+          <option value="Karla Souza Chagas">Karla Souza Chagas</option>
+          <option value="Murilo Belo">Murilo Belo</option>
+          <option value="Julia Nascimento">Julia Nascimento</option>
+          <option value="Julia Sampaio">Julia Sampaio</option>
+          <option value="Rayssa Dayane Muniz Martins">Rayssa Martins</option>
+          <option value="Fernando Lopes">Fernando Lopes</option>
+          <option value="Emanuel Paiva">Emanuel Paiva</option>
+          <option value="Kawan Manso">Kawan Manso</option>
+          <option value="Charles Carvalho">Charles Carvalho</option>
+          <option value="Anne Ester">Anne Ester</option>
+          <option value="Juscelino Junior">Juscelino Junior</option>
+          <option value="Carlos Barbosa">Carlos Barbosa</option>
+          <option value="Luara Alkmin">Luara Alkmin</option>
+          <option value="Pedro Henrique de Carvalho Porto">Pedro Henrique</option>
+          <option value="__rh__">Mikaela Paiva — RH</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Senha</label>
+        <input type="password" id="inputSenha" placeholder="••••••••••" onkeydown="if(event.key==='Enter')fazerLogin()">
+      </div>
+      <div class="login-err" id="loginErr"></div>
+      <button class="btn-primary" onclick="fazerLogin()">Entrar na plataforma →</button>
+    </div>
+    <div class="login-footer">MC Command · MotoChefe Sul de Minas · v1.0</div>
+  </div>
+</div>
+
+<!-- ══ APP PRINCIPAL ══ -->
+<div id="app">
+  <div class="topbar">
+    <div class="topbar-brand">MC</div>
+    <div class="topbar-tag">COMMAND</div>
+    <div class="topbar-right">
+      <div class="topbar-user">
+        <div class="user-avatar" id="topAvatar">--</div>
+        <div>
+          <div class="user-name" id="topNome">--</div>
+          <div class="user-role" id="topFuncao">--</div>
+        </div>
+      </div>
+      <button class="btn-sm" onclick="fazerLogout()">Sair</button>
+    </div>
+  </div>
+
+  <div class="main">
+    <!-- Alerta documentos pendentes -->
+    <div class="alert-docs" id="alertDocs" style="display:none">
+      <div class="alert-icon">📋</div>
+      <div class="alert-text">
+        <h3>Documentos pendentes de assinatura</h3>
+        <p id="alertDocsText">Você possui termos que precisam ser assinados antes de acessar as ferramentas.</p>
+      </div>
+      <button class="alert-action" onclick="abrirDocumentos()">Assinar agora →</button>
+    </div>
+
+    <div class="greeting fade-up">
+      <h1>Olá, <span id="greetNome">--</span> 👋</h1>
+      <p id="greetData">--</p>
+    </div>
+
+    <div class="section-title fade-up stagger-1">Suas ferramentas</div>
+
+    <div class="modules-grid" id="modulesGrid">
+      <!-- preenchido por JS -->
+    </div>
+
+    <div class="section-title fade-up stagger-2">Documentos</div>
+
+    <div class="modules-grid">
+      <div class="module-card fade-up stagger-3" onclick="abrirDocumentos()" style="--card-color:#1a4a7a;--icon-bg:#eef3f9">
+        <div class="mod-icon">📄</div>
+        <div class="mod-name">Documentos & Termos</div>
+        <div class="mod-desc">Aditivos contratuais, políticas internas e termos para assinatura digital.</div>
+        <div class="mod-badge" id="badgeDocs">⏳ Carregando...</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ TELA DE DOCUMENTOS ══ -->
+<div id="docsScreen">
+  <div class="docs-header">
+    <button class="btn-back" onclick="voltarApp()">← Voltar</button>
+    <div class="docs-header-title">
+      <h2>Documentos & Termos</h2>
+      <p id="docsSubtitle">Leia cada documento com atenção antes de assinar</p>
+    </div>
+  </div>
+  <div class="docs-main">
+    <div class="docs-progress">
+      <div style="font-size:13px;color:var(--mid);white-space:nowrap">Progresso:</div>
+      <div class="progress-bar-wrap">
+        <div class="progress-bar-fill" id="progressBar" style="width:0%"></div>
+      </div>
+      <div class="progress-text" id="progressText">0 / 0</div>
+    </div>
+    <div id="docsList"></div>
+  </div>
+</div>
+
+<!-- MODAL ACESSO BLOQUEADO -->
+<div class="modal-overlay" id="modalBloqueio">
+  <div class="modal-box">
+    <div class="modal-icon">🔐</div>
+    <h3>Assinatura pendente</h3>
+    <p>Para acessar esta ferramenta você precisa primeiro assinar todos os documentos e termos pendentes.</p>
+    <div class="modal-actions">
+      <button class="btn-back" onclick="document.getElementById('modalBloqueio').classList.remove('show')">Fechar</button>
+      <button class="btn-primary" style="width:auto;margin-top:0" onclick="document.getElementById('modalBloqueio').classList.remove('show');abrirDocumentos()">Ir para Documentos →</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+const AS = 'https://script.google.com/macros/s/AKfycbzAYDr_pArf5uSPiK0mOQP0K_BMHFEAOJ9xYxMSVBigoCpY_F69GjJlXmE9WOuQZOIn/exec';
+
+// ── SENHAS ──
+const SENHAS = {
+  'Pablo Albinati':                   'VRG@2k26#pa',
+  'Tiago Souza Gomes':                'LAV@2k26#tz',
+  'Pedro Henrique de Carvalho Porto': 'PSA@2k26#ph',
+  'Julia Sampaio':                    'JS#Poc26s',
+  'Cesar Rodrigues':                  'CR$Mg26!gest',
+  'Luiz Paulo Arouca':                'LP$Mg26!gest',
+  'Karla Souza Chagas':               'KS#Chefe7',
+  'Murilo Belo':                      'MB!Vrg2026',
+  'Julia Nascimento':                 'JN*Poc831',
+  'Rayssa Dayane Muniz Martins':      'RM@Day526',
+  'Fernando Lopes':                   'FL#Poc77x',
+  'Emanuel Paiva':                    'EP@Lav314',
+  'Kawan Manso':                      'KM!Pso26m',
+  'Charles Carvalho':                 'CC@Pso5k2',
+  'Anne Ester':                       'AE@Pso26a',
+  'Juscelino Junior':                 'JJ#Itj26k',
+  'Carlos Barbosa':                   'CB@Itj26b',
+  'Luara Alkmin':                     'LA!Itj26l',
+  '__rh__':                           'RH@Mk26!rh',
+};
+
+// ── MÓDULOS ──
+const MODULOS_CONFIG = {
+  '__rh__': [
+    { nome:'Dashboard de Vendas', desc:'Relatórios e KPIs de todas as lojas', icon:'📊', color:'#ff4b00', iconBg:'#fff3ee', url:'https://motochefemg.github.io/mc/GESTAO.html' },
+    { nome:'Simulador de Comissão', desc:'Metas e premiação OTE 2026', icon:'💰', color:'#1a7a4a', iconBg:'#e8f5ee', url:'https://motochefemg.github.io/mc/simulador.html' },
+    { nome:'Aceites Regulamento', desc:'Registros de aceite dos colaboradores', icon:'✅', color:'#1a4a7a', iconBg:'#eef3f9', url:'https://motochefemg.github.io/mc/simulador.html' },
+  ],
+  'gestores': [
+    { nome:'Dashboard de Vendas', desc:'Relatórios e KPIs completos', icon:'📊', color:'#ff4b00', iconBg:'#fff3ee', url:'https://motochefemg.github.io/mc/GESTAO.html' },
+    { nome:'Caixa', desc:'Movimentações financeiras da loja', icon:'🏦', color:'#1a7a4a', iconBg:'#e8f5ee', url:'https://motochefemg.github.io/mc/caixa.html' },
+    { nome:'Estoque', desc:'Controle de motocicletas', icon:'🏍', color:'#7c2d12', iconBg:'#fef3ee', url:'https://motochefemg.github.io/mc/estoque_motochefe.html' },
+    { nome:'Simulador de Comissão', desc:'Metas e premiação OTE 2026', icon:'💰', color:'#b45309', iconBg:'#fef9ee', url:'https://motochefemg.github.io/mc/simulador.html' },
+  ],
+  'vendedores': [
+    { nome:'Simulador de Comissão', desc:'Simule sua comissão e premiação', icon:'💰', color:'#ff4b00', iconBg:'#fff3ee', url:'https://motochefemg.github.io/mc/simulador.html' },
+  ],
+};
+
+const GESTORES = ['Pablo Albinati','Tiago Souza Gomes','Cesar Rodrigues','Luiz Paulo Arouca','Pedro Henrique de Carvalho Porto','Julia Sampaio'];
+
+// ── DOCUMENTOS ──
+const DOCUMENTOS = [
+  {
+    id: 'REG_INTERNO_V1',
+    nome: 'Regulamento Interno',
+    sub: 'Política de Conduta e Procedimentos · Versão 1.0 · Abril 2026',
+    paraQuem: 'todos',
+    byod: false,
+    conteudo: `
+      <h3>MOTOCHEFE SUL DE MINAS — REGULAMENTO INTERNO</h3>
+      <p>Válida para todas as unidades | Versão 1.0 | Abril/2026</p>
+
+      <h3>01. APRESENTAÇÃO E OBJETIVO</h3>
+      <p>A MotoChefe é uma empresa comprometida com a excelência no atendimento e a ética nos negócios. Este documento orienta o comportamento esperado de todos que fazem parte do nosso time. O cumprimento desta política é condição essencial para um ambiente saudável e produtivo.</p>
+      <p>Parágrafo Único: Esta Política é complementada por Aditivos Específicos (Sigilo, BYOD, Câmeras, Responsabilidade sobre Veículos), cujas cláusulas foram aceitas individualmente via MC Command, formando um conjunto único de normas.</p>
+
+      <h3>02. CONDUTA, COMPORTAMENTO E RELAÇÕES HIERÁRQUICAS</h3>
+      <p><strong>2.1 Princípios:</strong> Respeito irrestrito; honestidade e transparência; responsabilidade pessoal por metas e zelo pelo patrimônio.</p>
+      <p><strong>2.2 Abuso de Autoridade:</strong> É vedado ao superior expor subordinados a situações humilhantes. A gestão deve ser baseada em fatos, dados e respeito mútuo.</p>
+      <p><strong>2.3 Insubordinação:</strong> É terminantemente proibida qualquer forma de ameaça, intimidação ou postura agressiva de subordinados contra gestores ou diretoria.</p>
+
+      <h3>03. USO DE DISPOSITIVOS E REDES SOCIAIS (BYOD)</h3>
+      <p><strong>3.1</strong> O uso profissional de celulares e MacBooks segue o Aditivo BYOD, com isenção de manutenção pela empresa e respeito ao Direito à Desconexão.</p>
+      <p><strong>3.2 Marketing Obrigatório:</strong> É dever do vendedor: 1 Story diário, 1 Reel semanal e foto de cada entrega com marcação da MC Brasil.</p>
+
+      <h3>04. DRESS CODE E APRESENTAÇÃO PESSOAL</h3>
+      <p><strong>4.1 Uniforme:</strong> Uso completo, limpo e passado é OBRIGATÓRIO. Danos por mau uso podem ser descontados (Art. 462 da CLT).</p>
+      <p><strong>4.2 Higiene:</strong> Apresentação impecável e calçados adequados ao ambiente de vendas premium.</p>
+
+      <h3>05. PADRÃO DE ATENDIMENTO E SISTEMAS</h3>
+      <p><strong>5.1 Atendimento:</strong> Foco total no cliente. Abordagem em até 1 minuto. Proibido uso de celular pessoal durante o atendimento.</p>
+      <p><strong>5.2 CRM Kommo:</strong> O Lead é propriedade da MotoChefe. Registro obrigatório em até 1 minuto; proibido deixar LEADs sem atualização por mais de 3 dias.</p>
+
+      <h3>06. POLÍTICA DE PREVENÇÃO AO ASSÉDIO</h3>
+      <p>Tolerância zero ao assédio moral ou sexual. Qualquer prática deve ser comunicada formalmente à gestão. A empresa aplica sanções disciplinares rigorosas quando comprovada a infração.</p>
+
+      <h3>07. BANCO DE HORAS</h3>
+      <p>Limite de 2h de crédito diário. Prazo de compensação: 6 meses. Solicitações com 5 dias úteis de antecedência.</p>
+    `
+  },
+  {
+    id: 'TERMO_CAMERAS_V1',
+    nome: 'Termo Aditivo — Monitoramento por Câmeras',
+    sub: 'Ciência e consentimento LGPD · Monitoramento nas dependências',
+    paraQuem: 'todos',
+    byod: false,
+    conteudo: `
+      <h3>TERMO ADITIVO — MONITORAMENTO POR CÂMERAS E PROTEÇÃO DE DADOS</h3>
+
+      <h3>CLÁUSULA 01: DO OBJETO E FINALIDADE</h3>
+      <p>Este Termo regulamenta o monitoramento por câmeras nas dependências da MotoChefe, visando a segurança patrimonial, a proteção de colaboradores e clientes, a prevenção de fraudes e a melhoria dos processos de trabalho e atendimento.</p>
+
+      <h3>CLÁUSULA 02: DA CIÊNCIA E CONSENTIMENTO (LGPD)</h3>
+      <p>O(A) EMPREGADO(A) declara ciência e consente com a instalação e operação de sistema de câmeras de segurança e monitoramento por vídeo (incluindo biometria facial para controle de jornada e acesso, se aplicável).</p>
+      <p>O(A) EMPREGADO(A) reconhece que o monitoramento é realizado de forma lícita e transparente, com finalidade legítima, não se destinando à vigilância abusiva sobre a vida privada ou intimidade.</p>
+
+      <h3>CLÁUSULA 03: DA LOCALIZAÇÃO E PRIVACIDADE</h3>
+      <p>O monitoramento não será realizado em áreas de uso pessoal ou íntimo, como banheiros e vestiários, respeitando a dignidade do colaborador conforme a Constituição Federal e a LGPD.</p>
+
+      <h3>CLÁUSULA 04: DA PROIBIÇÃO DE COMPARTILHAMENTO</h3>
+      <p>As imagens captadas são para uso exclusivo da administração da empresa. É terminantemente proibida a extração ou compartilhamento de vídeos que exponham colegas, clientes ou fornecedores em situações constrangedoras em grupos de mensagens ou redes sociais.</p>
+
+      <h3>CLÁUSULA 05: DAS PENALIDADES</h3>
+      <p>O descumprimento deste Termo sujeita o colaborador às penalidades previstas no Regulamento Interno, podendo resultar em advertência, suspensão ou dispensa por justa causa, além das sanções legais aplicáveis.</p>
+    `
+  },
+  {
+    id: 'TERMO_VEICULOS_V1',
+    nome: 'Termo de Responsabilidade — Veículos e Equipamentos',
+    sub: 'Responsabilidade no transporte, entregas e uso de hardware',
+    paraQuem: 'todos',
+    byod: false,
+    conteudo: `
+      <h3>TERMO DE RESPONSABILIDADE: VEÍCULOS E EQUIPAMENTOS</h3>
+
+      <h3>CLÁUSULA PRIMEIRA: DO USO DE VEÍCULOS E CAMINHONETES</h3>
+      <p>As caminhonetes e motocicletas da MotoChefe são ferramentas de trabalho destinadas exclusivamente ao serviço de entrega, logística e vendas.</p>
+      <p><strong>1.2 Monitoramento:</strong> O colaborador declara estar ciente de que os veículos são equipados com rastreamento via satélite/GPRS.</p>
+      <p><strong>1.3 Multas:</strong> O colaborador é integralmente responsável pelo valor e pontuação de infrações de trânsito.</p>
+
+      <h3>CLÁUSULA SEGUNDA: DA RESPONSABILIDADE NO TRANSPORTE</h3>
+      <p><strong>2.1 Amarração:</strong> O colaborador é responsável pela segurança das motos transportadas, devendo utilizar cintas de carga adequadas.</p>
+      <p><strong>2.2 Danos:</strong> Avarias ocorridas durante o transporte, decorrentes de amarração inadequada ou queda por falta de fixação, serão de responsabilidade do colaborador.</p>
+      <p><strong>2.3 Checklist:</strong> O colaborador deve conferir a integridade da moto antes de sair da loja e no ato da entrega.</p>
+      <p><strong>2.4 Desconto:</strong> O colaborador autoriza o desconto dos custos de reparo de avarias causadas, nos termos do Art. 462, §1º da CLT.</p>
+
+      <h3>CLÁUSULA TERCEIRA: DA HABILITAÇÃO E TEST RIDE</h3>
+      <p>O colaborador deve portar CNH compatível e conferir a CNH do cliente antes de qualquer Test Ride.</p>
+
+      <h3>CLÁUSULA QUARTA: DO HARDWARE E USO EXCLUSIVO EM LOJA</h3>
+      <p>Equipamentos de informática (Notebook, PCs, tablets) são de uso exclusivo dentro das dependências da loja. É proibida a retirada do estabelecimento sem autorização.</p>
+    `
+  },
+  {
+    id: 'TERMO_SIGILO_V1',
+    nome: 'Termo de Sigilo e Confidencialidade',
+    sub: 'Proteção de dados, leads, faturamento e ecossistema digital',
+    paraQuem: 'todos',
+    byod: false,
+    conteudo: `
+      <h3>TERMO DE SIGILO, PROTEÇÃO DE DADOS E USO DO ECOSSISTEMA DIGITAL</h3>
+
+      <h3>CLÁUSULA PRIMEIRA: DO OBJETO</h3>
+      <p>Este Termo visa proteger as Informações Confidenciais e os Dados Pessoais de clientes e Leads da MotoChefe, aos quais o colaborador terá acesso através da plataforma MC Command, do CRM Kommo, dos sistemas Bling/Linx, planilhas compartilhadas e WhatsApp.</p>
+
+      <h3>CLÁUSULA SEGUNDA: USO DE EQUIPAMENTO PESSOAL</h3>
+      <p>O colaborador que opta por utilizar equipamentos pessoais declara que tal uso não gera direito a aluguel, indenização ou ressarcimento de plano de dados. A EMPRESA fica totalmente isenta de responsabilidade por danos físicos, quebras, furtos ou falhas de software nos bens pessoais.</p>
+
+      <h3>CLÁUSULA TERCEIRA: DA PROPRIEDADE DOS LEADS E DADOS</h3>
+      <p><strong>3.1</strong> O colaborador reconhece que 100% dos Leads e dados inseridos no Kommo ou na MC Command são de propriedade exclusiva da MotoChefe.</p>
+      <p><strong>3.2 Sigilo de Faturamento:</strong> As informações contidas no Bling/Linx são segredos de negócio. É proibida a extração de relatórios ou fotos dessas telas para fins externos.</p>
+      <p><strong>3.3 Concorrência Desleal:</strong> A utilização de qualquer dado após o desligamento caracteriza crime de concorrência desleal (Lei 9.279/96).</p>
+
+      <h3>CLÁUSULA QUARTA: DO WHATSAPP E DIREITO À DESCONEXÃO</h3>
+      <p>O uso do WhatsApp para fins profissionais deve ocorrer estritamente dentro da jornada de trabalho. A Empresa não exige visualização ou resposta de mensagens fora do horário contratual.</p>
+
+      <h3>CLÁUSULA QUINTA: DAS PENALIDADES</h3>
+      <p>O descumprimento deste Termo acarreta responsabilidade civil e criminal, incluindo indenização por danos materiais e morais à Empresa.</p>
+    `
+  },
+  {
+    id: 'BYOD_V1',
+    nome: 'Termo Aditivo BYOD — Uso de Equipamento Pessoal',
+    sub: 'Notebook e celular pessoais no trabalho · Ou declaração de não utilização',
+    paraQuem: 'todos',
+    byod: true,
+    conteudo: `
+      <h3>TERMO ADITIVO — POLÍTICA DE USO DE EQUIPAMENTO PESSOAL (BYOD)</h3>
+
+      <h3>CLÁUSULA PRIMEIRA: DO OBJETO E AUTORIZAÇÃO DE USO</h3>
+      <p>O colaborador, por sua livre iniciativa e com o objetivo de otimizar sua produtividade, opta por utilizar seu equipamento pessoal de informática para o desempenho de suas atividades profissionais na MotoChefe.</p>
+      <p><strong>1.2</strong> O uso do equipamento pessoal é facultativo e não caracteriza alteração unilateral do contrato.</p>
+
+      <h3>CLÁUSULA SEGUNDA: DA GRATUIDADE E ISENÇÃO</h3>
+      <p>O colaborador declara que a utilização do seu equipamento pessoal não gera direito a aluguel, indenização, ressarcimento ou acréscimo salarial. A Empresa não se responsabiliza por custos de internet, energia elétrica ou planos de dados.</p>
+
+      <h3>CLÁUSULA TERCEIRA: DA MANUTENÇÃO</h3>
+      <p>A EMPRESA fica totalmente isenta de responsabilidade por danos físicos, quebras, desgastes ou falhas de software. Todos os custos de manutenção são de responsabilidade única e exclusiva do colaborador.</p>
+
+      <h3>CLÁUSULA QUARTA: DA SEGURANÇA DA INFORMAÇÃO (LGPD)</h3>
+      <p><strong>4.1</strong> Todos os dados acessados através do equipamento pessoal (Leads, faturamento, indicadores) são de propriedade intelectual exclusiva da Empresa.</p>
+      <p><strong>4.2</strong> É vedado o download e armazenamento de bancos de dados, planilhas de clientes ou Notas Fiscais no disco rígido pessoal.</p>
+
+      <h3>NÃO UTILIZA NOTEBOOK PESSOAL?</h3>
+      <p>Se você não utiliza notebook pessoal no trabalho, selecione a opção "Não se aplica" abaixo. Ao fazê-lo, você declara estar ciente de que caso passe a utilizar, deverá informar imediatamente o RH para assinar este termo.</p>
+    `
+  },
+];
+
+// ── ESTADO ──
+let currentUser = null;
+let isRH = false;
+let dadosColab = null;
+let aceitesDocs = {};
+
+// ── LOGIN ──
+function fazerLogin() {
+  const usuario = document.getElementById('selUsuario').value;
+  const senha = document.getElementById('inputSenha').value;
+  const err = document.getElementById('loginErr');
+  if(!usuario){ err.textContent = 'Selecione seu usuário.'; return; }
+  if(!senha){ err.textContent = 'Digite sua senha.'; return; }
+  if(SENHAS[usuario] !== senha){ err.textContent = 'Senha incorreta.'; return; }
+  err.textContent = '';
+  currentUser = usuario;
+  isRH = (usuario === '__rh__');
+  iniciarApp();
+}
+
+async function iniciarApp() {
+  // Buscar dados do colaborador
+  await carregarDadosColab();
+  // Verificar aceites
+  await verificarAceites();
+  // Montar UI
+  montarApp();
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+}
+
+async function carregarDadosColab() {
+  if(isRH) {
+    dadosColab = { COLABORADOR:'Mikaela Paiva', FUNÇÃO:'Gestora de RH', LOJA:'Matriz', LOGIN: '__rh__' };
+    return;
+  }
+  try {
+    const r = await fetch(`${AS}?action=dados_colab&login=${encodeURIComponent(currentUser)}`);
+    const j = await r.json();
+    if(j.success && j.dados) dadosColab = j.dados;
+    else dadosColab = { COLABORADOR: currentUser, FUNÇÃO: '', LOJA: '' };
+  } catch(e) {
+    dadosColab = { COLABORADOR: currentUser, FUNÇÃO: '', LOJA: '' };
+  }
+}
+
+async function verificarAceites() {
+  aceitesDocs = {};
+  try {
+    const r = await fetch(`${AS}?action=listar_aceites_docs&login=${encodeURIComponent(currentUser)}`);
+    const j = await r.json();
+    if(j.success && j.aceites) aceitesDocs = j.aceites;
+  } catch(e) {}
+}
+
+function montarApp() {
+  const nome = dadosColab?.COLABORADOR || currentUser;
+  const primeiroNome = nome.split(' ')[0];
+  const ini = nome.trim().split(' ').map(p=>p[0]).filter(Boolean).slice(0,2).join('').toUpperCase();
+
+  document.getElementById('topAvatar').textContent = ini;
+  document.getElementById('topNome').textContent = nome;
+  document.getElementById('topFuncao').textContent = dadosColab?.FUNÇÃO || (isRH ? 'Gestora de RH' : '');
+  document.getElementById('greetNome').textContent = primeiroNome;
+
+  const agora = new Date();
+  const hora = agora.getHours();
+  const saudacao = hora < 12 ? 'Bom dia' : hora < 18 ? 'Boa tarde' : 'Boa noite';
+  document.getElementById('greetData').textContent = `${saudacao}! Hoje é ${agora.toLocaleDateString('pt-BR', {weekday:'long', day:'numeric', month:'long'})}.`;
+
+  // Módulos
+  const tipoUser = isRH ? '__rh__' : GESTORES.includes(currentUser) ? 'gestores' : 'vendedores';
+  const modulos = MODULOS_CONFIG[tipoUser] || MODULOS_CONFIG['vendedores'];
+  const pendentes = docsPendentes();
+  const bloqueado = pendentes.length > 0 && !isRH;
+
+  const grid = document.getElementById('modulesGrid');
+  grid.innerHTML = modulos.map((m, i) => `
+    <a class="module-card fade-up stagger-${i+1} ${bloqueado?'locked':''}"
+       style="--card-color:${m.color};--icon-bg:${m.iconBg}"
+       href="${bloqueado?'#':m.url}"
+       target="${bloqueado?'_self':'_blank'}"
+       onclick="${bloqueado?'mostrarBloqueio();return false;':''}">
+      <div class="mod-icon">${m.icon}</div>
+      <div class="mod-name">${m.nome}</div>
+      <div class="mod-desc">${m.desc}</div>
+    </a>
+  `).join('');
+
+  // Docs badge
+  const badge = document.getElementById('badgeDocs');
+  if(isRH) {
+    badge.textContent = '👔 Gestão de aceites';
+    badge.style.background = 'var(--blue-light)';
+    badge.style.color = 'var(--blue)';
+  } else if(pendentes.length === 0) {
+    badge.textContent = '✅ Tudo assinado';
+    badge.style.background = 'var(--green-light)';
+    badge.style.color = 'var(--green)';
+  } else {
+    badge.textContent = `⏳ ${pendentes.length} pendente${pendentes.length>1?'s':''}`;
+  }
+
+  // Alerta
+  if(pendentes.length > 0 && !isRH) {
+    const alertEl = document.getElementById('alertDocs');
+    alertEl.style.display = 'flex';
+    document.getElementById('alertDocsText').textContent =
+      `Você tem ${pendentes.length} documento${pendentes.length>1?'s':''} pendente${pendentes.length>1?'s':''} de assinatura. Assine para liberar o acesso completo.`;
+  }
+}
+
+function docsPendentes() {
+  return DOCUMENTOS.filter(d => !aceitesDocs[d.id]);
+}
+
+function mostrarBloqueio() {
+  document.getElementById('modalBloqueio').classList.add('show');
+}
+
+// ── DOCUMENTOS ──
+function abrirDocumentos() {
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('docsScreen').style.display = 'block';
+  renderizarDocs();
+  window.scrollTo(0,0);
+}
+
+function voltarApp() {
+  document.getElementById('docsScreen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  montarApp(); // atualiza badges
+  window.scrollTo(0,0);
+}
+
+function renderizarDocs() {
+  const total = DOCUMENTOS.length;
+  const assinados = DOCUMENTOS.filter(d => aceitesDocs[d.id]).length;
+  document.getElementById('progressBar').style.width = (assinados/total*100) + '%';
+  document.getElementById('progressText').textContent = `${assinados} / ${total}`;
+  document.getElementById('docsSubtitle').textContent =
+    assinados === total ? '✅ Todos os documentos assinados!' :
+    `${total - assinados} documento${total-assinados>1?'s':''} aguardando sua assinatura`;
+
+  const lista = document.getElementById('docsList');
+  lista.innerHTML = DOCUMENTOS.map(doc => {
+    const assinado = !!aceitesDocs[doc.id];
+    return `
+    <div class="doc-item ${assinado?'signed':''}" id="docItem_${doc.id}">
+      <div class="doc-item-header" onclick="toggleDoc('${doc.id}')">
+        <div class="doc-status">${assinado ? '✓' : '!'}</div>
+        <div class="doc-item-info">
+          <div class="doc-item-name">${doc.nome}</div>
+          <div class="doc-item-sub">${doc.sub}</div>
+        </div>
+        <span class="doc-tag ${assinado?'assinado':'pendente'}">${assinado?'✓ Assinado':'Pendente'}</span>
+        <span class="doc-chevron">›</span>
+      </div>
+      <div class="doc-content">
+        ${renderDocConteudo(doc)}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderDocConteudo(doc) {
+  const assinado = !!aceitesDocs[doc.id];
+  const dados = dadosColab || {};
+
+  const dadosHtml = `
+    <div class="doc-dados">
+      <h4>📋 Dados das Partes — Preenchidos automaticamente</h4>
+      <div class="dados-grid">
+        <div class="dado-item"><span class="dado-label">Colaborador:</span><span class="dado-value">${dados.COLABORADOR||'—'}</span></div>
+        <div class="dado-item"><span class="dado-label">CPF:</span><span class="dado-value">${dados.CPF||'—'}</span></div>
+        <div class="dado-item"><span class="dado-label">Função:</span><span class="dado-value">${dados['FUNÇÃO']||dados.FUNCAO||'—'}</span></div>
+        <div class="dado-item"><span class="dado-label">Loja:</span><span class="dado-value">${dados.LOJA||'—'}</span></div>
+        <div class="dado-item"><span class="dado-label">Razão Social:</span><span class="dado-value">${dados['RAZAO SOCIAL']||dados.RAZAO_SOCIAL||'—'}</span></div>
+        <div class="dado-item"><span class="dado-label">CNPJ:</span><span class="dado-value">${dados.CNPJ||'—'}</span></div>
+        <div class="dado-item"><span class="dado-label">Data contrato:</span><span class="dado-value">${dados['DATA CONTRATO']||dados.DATA_CONTRATO||'—'}</span></div>
+      </div>
+    </div>`;
+
+  const textoHtml = `<div class="doc-text">${doc.conteudo}</div>`;
+
+  if(assinado) {
+    const a = aceitesDocs[doc.id];
+    return dadosHtml + textoHtml + `
+      <div class="signed-banner">
+        ✅ Documento assinado em ${a.data||''} às ${a.hora||''} · CPF: ${a.cpf||''}
+      </div>`;
+  }
+
+  const naoAplicaBtn = doc.byod ? `
+    <button class="btn-nao-aplica" onclick="assinarNaoAplica('${doc.id}')">
+      Não se aplica a mim
+    </button>` : '';
+
+  return dadosHtml + textoHtml + `
+    <div class="aceite-form">
+      <h4>Confirmar assinatura digital</h4>
+      <div class="form-grid">
+        <div class="form-field full">
+          <label>Nome Completo</label>
+          <input type="text" id="nome_${doc.id}" value="${dados.COLABORADOR||''}" placeholder="Seu nome completo">
+        </div>
+        <div class="form-field">
+          <label>CPF</label>
+          <input type="text" id="cpf_${doc.id}" value="${dados.CPF||''}" placeholder="000.000.000-00" maxlength="14" oninput="fmtCPF(this)">
+        </div>
+        <div class="form-field">
+          <label>Data de Hoje</label>
+          <input type="date" id="data_${doc.id}" value="${hojeISO()}">
+        </div>
+        <div class="form-field full">
+          <label>E-mail (receberá cópia)</label>
+          <input type="email" id="email_${doc.id}" placeholder="seuemail@gmail.com">
+        </div>
+      </div>
+      <div class="check-wrap">
+        <input type="checkbox" id="check_${doc.id}">
+        <span>Declaro que li o documento <strong>${doc.nome}</strong> na íntegra, compreendi seus termos e concordo com todas as condições nele estabelecidas.</span>
+      </div>
+      <div class="form-err" id="err_${doc.id}"></div>
+      <div style="display:flex;align-items:center;flex-wrap:wrap;gap:8px">
+        <button class="btn-assinar" onclick="assinarDoc('${doc.id}')">
+          <span>✍️</span> Assinar documento
+        </button>
+        ${naoAplicaBtn}
+      </div>
+    </div>`;
+}
+
+function toggleDoc(id) {
+  const item = document.getElementById('docItem_' + id);
+  const isOpen = item.classList.contains('open');
+  document.querySelectorAll('.doc-item').forEach(el => el.classList.remove('open'));
+  if(!isOpen) item.classList.add('open');
+}
+
+function fmtCPF(el) {
+  let v = el.value.replace(/\D/g,'').substring(0,11);
+  if(v.length>9) v=v.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/,'$1.$2.$3-$4');
+  else if(v.length>6) v=v.replace(/(\d{3})(\d{3})(\d{1,3})/,'$1.$2.$3');
+  else if(v.length>3) v=v.replace(/(\d{3})(\d{1,3})/,'$1.$2');
+  el.value=v;
+}
+
+function validarCPF(cpf) {
+  cpf = cpf.replace(/\D/g,'');
+  if(cpf.length !== 11 || /^(\d)\1{10}$/.test(cpf)) return false;
+  let s=0,r;
+  for(let i=1;i<=9;i++) s+=parseInt(cpf[i-1])*(11-i);
+  r=(s*10)%11; if(r===10||r===11) r=0;
+  if(r!==parseInt(cpf[9])) return false;
+  s=0;
+  for(let i=1;i<=10;i++) s+=parseInt(cpf[i-1])*(12-i);
+  r=(s*10)%11; if(r===10||r===11) r=0;
+  return r===parseInt(cpf[10]);
+}
+
+function hojeISO() {
+  const d = new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+
+async function assinarDoc(docId) {
+  const nome  = document.getElementById('nome_'+docId).value.trim();
+  const cpf   = document.getElementById('cpf_'+docId).value.replace(/\D/g,'');
+  const data  = document.getElementById('data_'+docId).value;
+  const email = document.getElementById('email_'+docId).value.trim();
+  const check = document.getElementById('check_'+docId).checked;
+  const err   = document.getElementById('err_'+docId);
+
+  if(nome.split(' ').filter(Boolean).length < 2){ err.textContent='Informe nome e sobrenome completos.'; return; }
+  if(!validarCPF(cpf)){ err.textContent='CPF inválido.'; return; }
+  if(!data){ err.textContent='Informe a data.'; return; }
+  if(!email||!email.includes('@')){ err.textContent='Informe um e-mail válido.'; return; }
+  if(!check){ err.textContent='Confirme que leu e concorda com o documento.'; return; }
+  err.textContent='';
+
+  const btn = document.querySelector(`#docItem_${docId} .btn-assinar`);
+  if(btn){ btn.disabled=true; btn.innerHTML='<span class="loading-spin"></span> Registrando...'; }
+
+  // Capturar IP
+  let ip = '';
+  try { const r=await fetch('https://api.ipify.org?format=json'); ip=(await r.json()).ip||''; } catch(e){}
+
+  const doc = DOCUMENTOS.find(d=>d.id===docId);
+
+  try {
+    const params = new URLSearchParams({
+      action: 'registrar_aceite_doc',
+      login: currentUser,
+      nome, cpf, data, email, ip,
+      documento: docId,
+      nomeDoc: doc?.nome||docId,
+      hora: new Date().toLocaleTimeString('pt-BR'),
+      naoAplica: 'false'
+    });
+    const r = await fetch(AS+'?'+params.toString());
+    const j = await r.json();
+    if(j.success){
+      aceitesDocs[docId] = { data, hora: new Date().toLocaleTimeString('pt-BR'), cpf };
+      toast('✅ Documento assinado com sucesso!');
+      renderizarDocs();
+      // Reabrir o doc para mostrar o banner de assinado
+      setTimeout(()=>{ const item=document.getElementById('docItem_'+docId); if(item) item.classList.add('open'); }, 100);
+    } else {
+      err.textContent = 'Erro: '+(j.error||'tente novamente');
+      if(btn){ btn.disabled=false; btn.innerHTML='<span>✍️</span> Assinar documento'; }
+    }
+  } catch(e){
+    err.textContent='Sem conexão. Tente novamente.';
+    if(btn){ btn.disabled=false; btn.innerHTML='<span>✍️</span> Assinar documento'; }
+  }
+}
+
+async function assinarNaoAplica(docId) {
+  const dados = dadosColab || {};
+  const ip_val = '';
+  const doc = DOCUMENTOS.find(d=>d.id===docId);
+  const hojeStr = hojeISO();
+  const cpfVal = dados.CPF||'';
+  const nomeVal = dados.COLABORADOR||currentUser;
+
+  if(!cpfVal){ toast('⚠ CPF não encontrado nos seus dados. Contacte o RH.'); return; }
+
+  try {
+    const params = new URLSearchParams({
+      action: 'registrar_aceite_doc',
+      login: currentUser,
+      nome: nomeVal,
+      cpf: cpfVal.replace(/\D/g,''),
+      data: hojeStr,
+      email: '',
+      ip: ip_val,
+      documento: docId,
+      nomeDoc: doc?.nome||docId,
+      hora: new Date().toLocaleTimeString('pt-BR'),
+      naoAplica: 'true'
+    });
+    const r = await fetch(AS+'?'+params.toString());
+    const j = await r.json();
+    if(j.success){
+      aceitesDocs[docId] = { data: hojeStr, hora: new Date().toLocaleTimeString('pt-BR'), cpf: cpfVal, naoAplica: true };
+      toast('📝 Declaração registrada. O RH foi notificado.');
+      renderizarDocs();
+    }
+  } catch(e){ toast('Erro ao registrar. Tente novamente.'); }
+}
+
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(()=>el.classList.remove('show'), 3000);
+}
+
+function fazerLogout() {
+  currentUser = null; isRH = false; dadosColab = null; aceitesDocs = {};
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('docsScreen').style.display = 'none';
+  document.getElementById('loginScreen').style.display = 'flex';
+  document.getElementById('inputSenha').value = '';
+  document.getElementById('selUsuario').value = '';
+}
+</script>
+</body>
+</html>
