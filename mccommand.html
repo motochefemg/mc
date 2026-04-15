@@ -1327,7 +1327,7 @@ const DOCUMENTOS = [
       <h3>NÃO UTILIZA NOTEBOOK PESSOAL?</h3>
       <p>Se você não utiliza notebook pessoal no trabalho, selecione a opção "Não se aplica" abaixo. Ao fazê-lo, você declara estar ciente de que caso passe a utilizar, deverá informar imediatamente o RH para assinar este termo.</p>
     `
-  },,
+  },
   {
     id: 'ASSEDIO_V1',
     nome: 'Política de Prevenção e Combate ao Assédio',
@@ -1462,6 +1462,48 @@ const DOCUMENTOS = [
       <p>O descumprimento deste Termo acarreta responsabilidade civil e criminal, incluindo indenização por danos materiais e morais à Empresa.</p>
     `
   },
+  {
+    id: 'ADITIVO_MECANICA_V1',
+    nome: 'Termo Aditivo — Procedimentos Técnicos e Responsabilidade da Oficina',
+    sub: 'Ordem de Serviço obrigatória · Uso de veículos · Tabela de infrações específicas',
+    paraQuem: 'mecanico',
+    byod: false,
+    conteudo: `
+      <h3>TERMO ADITIVO: PROCEDIMENTOS TÉCNICOS E RESPONSABILIDADE DA OFICINA</h3>
+
+      <h3>CLÁUSULA PRIMEIRA: DA OBRIGATORIEDADE DA ORDEM DE SERVIÇO (OS)</h3>
+      <p><strong>1.1 Início do Serviço:</strong> É terminantemente proibido iniciar qualquer manutenção, montagem ou reparo em veículos (seja de estoque ou de clientes) sem a abertura imediata da <strong>Ordem de Serviço (OS)</strong> no sistema (<strong>Bling/Linx</strong>).</p>
+      <p><strong>1.2 Registro de Peças:</strong> Todo e qualquer item (peças, lubrificantes ou acessórios) utilizado deve ser lançado na OS no exato momento da retirada do estoque.</p>
+      <p><strong>1.3 Punição por Descumprimento:</strong> A realização de serviços "por fora" do sistema ou a omissão na abertura de OS é considerada falta <strong>Grave</strong>, sujeita a suspensão imediata, visto que impede o controle de faturamento e a segurança jurídica da empresa.</p>
+
+      <h3>CLÁUSULA SEGUNDA: ÉTICA E USO DE VEÍCULOS</h3>
+      <p><strong>2.1 Moto do Cliente:</strong> É terminantemente proibido o uso de motocicletas de clientes para fins não técnicos. Utilizar o veículo para deslocamentos pessoais ou lazer é falta <strong>Gravíssima (Justa Causa)</strong>.</p>
+      <p><strong>2.2 Tabela de Preços:</strong> É proibido vender peças ou serviços com valores diferentes dos estabelecidos no sistema sem autorização prévia. Alterar preços sem permissão é falta <strong>Grave</strong>.</p>
+
+      <h3>TABELA DE INFRAÇÕES ESPECÍFICAS — OFICINA</h3>
+      <table style="width:100%;border-collapse:collapse;font-size:13px;margin:12px 0;">
+        <thead>
+          <tr style="background:#1a3a5c;color:#fff;">
+            <th style="padding:8px 10px;text-align:left;border:1px solid #2d4e7a;">INFRAÇÃO</th>
+            <th style="padding:8px 10px;text-align:center;border:1px solid #2d4e7a;white-space:nowrap;">GRAVIDADE</th>
+            <th style="padding:8px 10px;text-align:left;border:1px solid #2d4e7a;">PENALIDADE</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td style="padding:7px 10px;border:1px solid #e5e7eb;">Realizar serviço sem abertura de OS no sistema</td><td style="padding:7px 10px;border:1px solid #e5e7eb;text-align:center;font-weight:bold;color:#b45309;">GRAVE</td><td style="padding:7px 10px;border:1px solid #e5e7eb;">Suspensão / Justa Causa</td></tr>
+          <tr style="background:#fafafa;"><td style="padding:7px 10px;border:1px solid #e5e7eb;">Vender peças/serviços com preço diferente sem autorização</td><td style="padding:7px 10px;border:1px solid #e5e7eb;text-align:center;font-weight:bold;color:#b45309;">GRAVE</td><td style="padding:7px 10px;border:1px solid #e5e7eb;">Suspensão / Justa Causa</td></tr>
+          <tr><td style="padding:7px 10px;border:1px solid #e5e7eb;">Utilizar motocicleta de cliente para fins não técnicos</td><td style="padding:7px 10px;border:1px solid #e5e7eb;text-align:center;font-weight:bold;color:#b91c1c;">GRAVÍSSIMA</td><td style="padding:7px 10px;border:1px solid #e5e7eb;">Demissão por Justa Causa</td></tr>
+          <tr style="background:#fafafa;"><td style="padding:7px 10px;border:1px solid #e5e7eb;">Retirar peça do estoque sem lançar na OS/Sistema</td><td style="padding:7px 10px;border:1px solid #e5e7eb;text-align:center;font-weight:bold;color:#b91c1c;">GRAVÍSSIMA</td><td style="padding:7px 10px;border:1px solid #e5e7eb;">Demissão por Justa Causa</td></tr>
+          <tr><td style="padding:7px 10px;border:1px solid #e5e7eb;">Entregar veículo sem realizar o checklist de segurança</td><td style="padding:7px 10px;border:1px solid #e5e7eb;text-align:center;font-weight:bold;color:#1d4ed8;">MODERADA</td><td style="padding:7px 10px;border:1px solid #e5e7eb;">Advertência</td></tr>
+          <tr style="background:#fafafa;"><td style="padding:7px 10px;border:1px solid #e5e7eb;">Danos à bateria por negligência (falta de carga na oficina)</td><td style="padding:7px 10px;border:1px solid #e5e7eb;text-align:center;font-weight:bold;color:#1d4ed8;">MODERADA</td><td style="padding:7px 10px;border:1px solid #e5e7eb;">Advertência + Ressarcimento</td></tr>
+          <tr><td style="padding:7px 10px;border:1px solid #e5e7eb;">Manobras perigosas com veículos de estoque ou cliente</td><td style="padding:7px 10px;border:1px solid #e5e7eb;text-align:center;font-weight:bold;color:#b91c1c;">GRAVÍSSIMA</td><td style="padding:7px 10px;border:1px solid #e5e7eb;">Demissão por Justa Causa</td></tr>
+        </tbody>
+      </table>
+
+      <h3>CLÁUSULA TERCEIRA: DA VALIDADE DIGITAL</h3>
+      <p>Este aditivo complementa a Política Interna da <strong>MotoChefe</strong> e possui plena validade jurídica mediante aceite na plataforma <strong>MC Command</strong>.</p>
+    `
+  },
 ];
 
 // ── ESTADO ──
@@ -1469,6 +1511,25 @@ let currentUser = null;
 let isRH = false;
 let dadosColab = null;
 let aceitesDocs = {};
+
+// ── HELPER: detecta se o colaborador é mecânico ──
+function isMecanico() {
+  const funcao = (dadosColab?.FUNÇÃO || dadosColab?.FUNCAO || '').toLowerCase();
+  return funcao.includes('mecânico') || funcao.includes('mecanico') || funcao.includes('mecanic');
+}
+
+// ── HELPER: retorna os documentos aplicáveis ao cargo atual ──
+function docsParaCargo() {
+  return DOCUMENTOS.filter(doc => {
+    if (doc.paraQuem === 'mecanico') return isMecanico();
+    if (doc.paraQuem === 'todos') {
+      // Mecânicos NÃO recebem BYOD nem ECOSSISTEMA
+      if (isMecanico() && (doc.id === 'BYOD_V1' || doc.id === 'ECOSSISTEMA_V1')) return false;
+      return true;
+    }
+    return true;
+  });
+}
 
 // ── LOGIN ──
 function fazerLogin() {
@@ -1584,7 +1645,7 @@ function montarApp() {
 }
 
 function docsPendentes() {
-  return DOCUMENTOS.filter(d => !aceitesDocs[d.id]);
+  return docsParaCargo().filter(d => !aceitesDocs[d.id]);
 }
 
 function mostrarBloqueio() {
@@ -1607,8 +1668,8 @@ function voltarApp() {
 }
 
 function renderizarDocs() {
-  const total = DOCUMENTOS.length;
-  const assinados = DOCUMENTOS.filter(d => aceitesDocs[d.id]).length;
+  const total = docsParaCargo().length;
+  const assinados = docsParaCargo().filter(d => aceitesDocs[d.id]).length;
   document.getElementById('progressBar').style.width = (assinados/total*100) + '%';
   document.getElementById('progressText').textContent = `${assinados} / ${total}`;
   document.getElementById('docsSubtitle').textContent =
@@ -1616,7 +1677,7 @@ function renderizarDocs() {
     `${total - assinados} documento${total-assinados>1?'s':''} aguardando sua assinatura`;
 
   const lista = document.getElementById('docsList');
-  lista.innerHTML = DOCUMENTOS.map(doc => {
+  lista.innerHTML = docsParaCargo().map(doc => {
     const assinado = !!aceitesDocs[doc.id];
     return `
     <div class="doc-item ${assinado?'signed':''}" id="docItem_${doc.id}">
