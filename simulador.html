@@ -299,18 +299,25 @@ tr.futura td{color:var(--text3);}
       <div style="display:grid;gap:12px">
         <div>
           <label style="font-size:11px;color:#aaa;letter-spacing:1px;text-transform:uppercase;display:block;margin-bottom:4px">Nome Completo</label>
-          <input id="aceitNome" type="text" placeholder="Seu nome completo"
+          <input id="aceitNome" type="text" placeholder="Seu nome completo conforme RG/CPF"
             style="width:100%;background:#0f0f0f;border:1px solid #333;border-radius:8px;padding:10px 14px;color:#fff;font-size:14px;box-sizing:border-box">
         </div>
-        <div>
-          <label style="font-size:11px;color:#aaa;letter-spacing:1px;text-transform:uppercase;display:block;margin-bottom:4px">CPF</label>
-          <input id="aceitCPF" type="text" placeholder="000.000.000-00" maxlength="14" oninput="formatarCPF(this)"
-            style="width:100%;background:#0f0f0f;border:1px solid #333;border-radius:8px;padding:10px 14px;color:#fff;font-size:14px;box-sizing:border-box">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div>
+            <label style="font-size:11px;color:#aaa;letter-spacing:1px;text-transform:uppercase;display:block;margin-bottom:4px">CPF</label>
+            <input id="aceitCPF" type="text" placeholder="000.000.000-00" maxlength="14" oninput="formatarCPF(this)"
+              style="width:100%;background:#0f0f0f;border:1px solid #333;border-radius:8px;padding:10px 14px;color:#fff;font-size:14px;box-sizing:border-box">
+          </div>
+          <div>
+            <label style="font-size:11px;color:#aaa;letter-spacing:1px;text-transform:uppercase;display:block;margin-bottom:4px">Data de Hoje</label>
+            <input id="aceitData" type="date"
+              style="width:100%;background:#0f0f0f;border:1px solid #333;border-radius:8px;padding:10px 14px;color:#fff;font-size:14px;box-sizing:border-box;color-scheme:dark">
+          </div>
         </div>
         <div>
-          <label style="font-size:11px;color:#aaa;letter-spacing:1px;text-transform:uppercase;display:block;margin-bottom:4px">Data de Hoje</label>
-          <input id="aceitData" type="date"
-            style="width:100%;background:#0f0f0f;border:1px solid #333;border-radius:8px;padding:10px 14px;color:#fff;font-size:14px;box-sizing:border-box;color-scheme:dark">
+          <label style="font-size:11px;color:#aaa;letter-spacing:1px;text-transform:uppercase;display:block;margin-bottom:4px">E-mail <span style="color:#666;font-size:10px">(você receberá uma cópia de confirmação)</span></label>
+          <input id="aceitEmail" type="email" placeholder="seuemail@gmail.com"
+            style="width:100%;background:#0f0f0f;border:1px solid #333;border-radius:8px;padding:10px 14px;color:#fff;font-size:14px;box-sizing:border-box">
         </div>
         <div style="display:flex;align-items:flex-start;gap:10px;margin-top:4px">
           <input id="aceitCheck" type="checkbox" style="margin-top:3px;width:16px;height:16px;flex-shrink:0;cursor:pointer">
@@ -869,7 +876,7 @@ async function verificarAceite(usuario) {
   if(usuario === '__gestor__') { abrirApp(); return; }
   // Sempre verificar no servidor — não usa cache local para garantir registro
   try {
-    const r = await fetch(AS + '?action=verificar_aceite&vendedor=' + encodeURIComponent(usuario));
+    const r = await fetch(APPS_SCRIPT_URL + '?action=verificar_aceite&vendedor=' + encodeURIComponent(usuario));
     const j = await r.json();
     if(j.aceitou) { abrirApp(); return; }
   } catch(e) {
@@ -914,31 +921,56 @@ function formatarCPF(el) {
   el.value=v;
 }
 
+function validarCPF(cpf) {
+  cpf = cpf.replace(/\D/g,'');
+  if(cpf.length !== 11) return false;
+  if(/^(\d)\1{10}$/.test(cpf)) return false;
+  let soma=0, resto;
+  for(let i=1;i<=9;i++) soma += parseInt(cpf[i-1])*(11-i);
+  resto = (soma*10)%11; if(resto===10||resto===11) resto=0;
+  if(resto!==parseInt(cpf[9])) return false;
+  soma=0;
+  for(let i=1;i<=10;i++) soma += parseInt(cpf[i-1])*(12-i);
+  resto = (soma*10)%11; if(resto===10||resto===11) resto=0;
+  return resto===parseInt(cpf[10]);
+}
+
 async function confirmarAceite() {
   const nome  = document.getElementById('aceitNome').value.trim();
   const cpf   = document.getElementById('aceitCPF').value.replace(/\D/g,'');
   const data  = document.getElementById('aceitData').value;
+  const email = document.getElementById('aceitEmail').value.trim();
   const check = document.getElementById('aceitCheck').checked;
   const err   = document.getElementById('aceitErr');
-  if(!nome)          { err.textContent='Informe seu nome completo.'; return; }
-  if(cpf.length!==11){ err.textContent='CPF inválido — informe os 11 dígitos.'; return; }
-  if(!data)          { err.textContent='Informe a data de hoje.'; return; }
-  if(!check)         { err.textContent='Você precisa confirmar que leu e concorda com o regulamento.'; return; }
+
+  if(nome.split(' ').filter(Boolean).length < 2){ err.textContent='Informe nome e sobrenome completos.'; return; }
+  if(!validarCPF(cpf)){ err.textContent='CPF inválido — verifique os números digitados.'; return; }
+  if(!data){ err.textContent='Informe a data de hoje.'; return; }
+  if(!email||!email.includes('@')){ err.textContent='Informe um e-mail válido para receber a confirmação.'; return; }
+  if(!check){ err.textContent='Você precisa confirmar que leu e concorda com o regulamento.'; return; }
   err.textContent='';
+
   const btn = document.getElementById('btnAceitar');
   btn.disabled=true; btn.textContent='⟳ Registrando...';
   try {
     const params = new URLSearchParams({
       action:'registrar_aceite', vendedor:currentUser,
-      nome, cpf, data, regulamento:'OTE_ABRIL_2026',
+      nome, cpf, data, email,
+      regulamento:'OTE_ABRIL_2026_v1',
       hora: new Date().toLocaleTimeString('pt-BR')
     });
-    const r = await fetch(AS+'?'+params.toString());
+    const r = await fetch(APPS_SCRIPT_URL+'?'+params.toString());
     const j = await r.json();
     if(j.success){
-      abrirApp(); // Sem cache local — sempre verifica no servidor
-    } else { err.textContent='Erro: '+(j.error||'tente novamente'); btn.disabled=false; btn.textContent='✓ Li, entendi e aceito o regulamento'; }
-  } catch(e){ err.textContent='Sem conexão. Tente novamente.'; btn.disabled=false; btn.textContent='✓ Li, entendi e aceito o regulamento'; }
+      abrirApp();
+    } else {
+      err.textContent='Erro: '+(j.error||'tente novamente');
+      btn.disabled=false; btn.textContent='✓ Li, entendi e aceito o regulamento';
+    }
+  } catch(e){
+    err.textContent='Sem conexão. Tente novamente.';
+    btn.disabled=false; btn.textContent='✓ Li, entendi e aceito o regulamento';
+  }
 }
 
 </script>
@@ -980,7 +1012,7 @@ async function verAceites() {
   const el = document.getElementById('aceitesList');
   el.innerHTML = '<div style="text-align:center;padding:40px;color:#666">⟳ Carregando registros...</div>';
   try {
-    const r = await fetch(AS + '?action=listar_aceites');
+    const r = await fetch(APPS_SCRIPT_URL + '?action=listar_aceites');
     const j = await r.json();
     if(!j.success) { el.innerHTML = '<div style="color:red;padding:20px">Erro: '+(j.error||'')+'</div>'; return; }
     const aceites = j.aceites || [];
@@ -995,6 +1027,7 @@ async function verAceites() {
     html += '<th style="padding:12px 14px;text-align:left;font-size:11px;letter-spacing:1px">CPF</th>';
     html += '<th style="padding:12px 14px;text-align:left;font-size:11px;letter-spacing:1px">DATA</th>';
     html += '<th style="padding:12px 14px;text-align:left;font-size:11px;letter-spacing:1px">HORA</th>';
+    html += '<th style="padding:12px 14px;text-align:left;font-size:11px;letter-spacing:1px">E-MAIL</th>';
     html += '<th style="padding:12px 14px;text-align:left;font-size:11px;letter-spacing:1px">REGULAMENTO</th>';
     html += '<th style="padding:12px 14px;text-align:left;font-size:11px;letter-spacing:1px">REGISTRO</th>';
     html += '</tr></thead><tbody>';
@@ -1008,6 +1041,7 @@ async function verAceites() {
       html += '<td style="padding:10px 14px;color:#333;font-family:monospace">'+(a.cpf||'—')+'</td>';
       html += '<td style="padding:10px 14px;color:#333">'+(a.data||'—')+'</td>';
       html += '<td style="padding:10px 14px;color:#333">'+(a.hora||'—')+'</td>';
+      html += '<td style="padding:10px 14px;color:#333;font-size:12px">'+(a.email||'—')+'</td>';
       html += '<td style="padding:10px 14px"><span style="background:#fef3c7;color:#92400e;border-radius:4px;padding:2px 8px;font-size:11px;font-weight:700">'+(a.regulamento||'—')+'</span></td>';
       html += '<td style="padding:10px 14px;color:#666;font-size:12px">'+(a.timestamp||'—')+'</td>';
       html += '</tr>';
