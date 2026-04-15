@@ -1000,12 +1000,22 @@ async function confirmarAceite() {
 
   const btn = document.getElementById('btnAceitar');
   btn.disabled=true; btn.textContent='⟳ Registrando...';
+
+  // Capturar IP do dispositivo do vendedor
+  let ipUsuario = '';
+  try {
+    const ipResp = await fetch('https://api.ipify.org?format=json');
+    const ipJson = await ipResp.json();
+    ipUsuario = ipJson.ip || '';
+  } catch(e) { ipUsuario = 'não capturado'; }
+
   try {
     const params = new URLSearchParams({
       action:'registrar_aceite', vendedor:currentUser,
       nome, cpf, data, email,
       regulamento:'OTE_ABRIL_2026_v1',
-      hora: new Date().toLocaleTimeString('pt-BR')
+      hora: new Date().toLocaleTimeString('pt-BR'),
+      ip: ipUsuario
     });
     const r = await fetch(APPS_SCRIPT_URL+'?'+params.toString());
     const j = await r.json();
