@@ -984,6 +984,7 @@ body {
           <option value="Pablo Albinati">Pablo Albinati</option>
           <option value="Tiago Souza Gomes">Tiago Souza Gomes</option>
           <option value="Cesar Rodrigues">Cesar Rodrigues</option>
+          <option value="Joao Brito">João Brito</option>
           <option value="Luiz Paulo Arouca">Luiz Paulo Arouca</option>
           <option value="Karla Souza Chagas">Karla Souza Chagas</option>
           <option value="Murilo Belo">Murilo Belo</option>
@@ -999,7 +1000,7 @@ body {
           <option value="Carlos Barbosa">Carlos Barbosa</option>
           <option value="Luara Alkmin">Luara Alkmin</option>
           <option value="Pedro Henrique de Carvalho Porto">Pedro Henrique</option>
-          <option value="__rh__">Mikaela Paiva — RH</option>
+          <option value="Marina Paiva">Marina Paiva — Gestora de RH</option>
         </select>
       </div>
       <div class="field">
@@ -1007,6 +1008,10 @@ body {
         <input type="password" id="inputSenha" placeholder="••••••••••" onkeydown="if(event.key==='Enter')fazerLogin()">
       </div>
       <div class="login-err" id="loginErr"></div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+        <input type="checkbox" id="lembrar" style="width:15px;height:15px;cursor:pointer;accent-color:var(--orange)">
+        <label for="lembrar" style="font-size:13px;color:var(--mid);cursor:pointer;user-select:none">Lembrar de mim por 7 dias</label>
+      </div>
       <button class="btn-primary" onclick="fazerLogin()">Entrar na plataforma →</button>
     </div>
     <div class="login-footer">MC Command · MotoChefe Sul de Minas · v1.0</div>
@@ -1086,6 +1091,15 @@ body {
   </div>
 </div>
 
+<!-- IFRAME MODAL — abre ferramentas sem novo login -->
+<div id="iframeModal" style="display:none;position:fixed;inset:0;z-index:200;background:var(--cream);flex-direction:column">
+  <div style="background:var(--white);border-bottom:1px solid var(--light);padding:12px 20px;display:flex;align-items:center;gap:12px;box-shadow:var(--shadow-sm)">
+    <button onclick="fecharIframe()" style="background:var(--light2);border:1px solid var(--light);border-radius:8px;padding:7px 14px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;color:var(--mid);cursor:pointer;display:flex;align-items:center;gap:6px" onmouseover="this.style.background='var(--light)'" onmouseout="this.style.background='var(--light2)'">← Voltar ao MC Command</button>
+    <div style="font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:2px;color:var(--orange)" id="iframeTitle">--</div>
+  </div>
+  <iframe id="iframeContent" src="" style="flex:1;border:none;width:100%;height:calc(100vh - 57px)"></iframe>
+</div>
+
 <!-- MODAL ACESSO BLOQUEADO -->
 <div class="modal-overlay" id="modalBloqueio">
   <div class="modal-box">
@@ -1107,12 +1121,17 @@ const AS = 'https://script.google.com/macros/s/AKfycbzAYDr_pArf5uSPiK0mOQP0K_BMH
 
 // ── SENHAS ──
 const SENHAS = {
+  // Gestores
+  'Cesar Rodrigues':                  'CR$Mg26!gest',
+  'Luiz Paulo Arouca':                'LP$Mg26!gest',
+  'Joao Brito':                       'JB$Mg26!gest',
   'Pablo Albinati':                   'VRG@2k26#pa',
   'Tiago Souza Gomes':                'LAV@2k26#tz',
   'Pedro Henrique de Carvalho Porto': 'PSA@2k26#ph',
   'Julia Sampaio':                    'JS#Poc26s',
-  'Cesar Rodrigues':                  'CR$Mg26!gest',
-  'Luiz Paulo Arouca':                'LP$Mg26!gest',
+  // RH
+  'Marina Paiva':                     'MP@RH26!mc',
+  // Vendedores
   'Karla Souza Chagas':               'KS#Chefe7',
   'Murilo Belo':                      'MB!Vrg2026',
   'Julia Nascimento':                 'JN*Poc831',
@@ -1125,15 +1144,16 @@ const SENHAS = {
   'Juscelino Junior':                 'JJ#Itj26k',
   'Carlos Barbosa':                   'CB@Itj26b',
   'Luara Alkmin':                     'LA!Itj26l',
-  '__rh__':                           'RH@Mk26!rh',
 };
 
 // ── MÓDULOS ──
 const MODULOS_CONFIG = {
-  '__rh__': [
+  'rh': [
     { nome:'Dashboard de Vendas', desc:'Relatórios e KPIs de todas as lojas', icon:'📊', color:'#ff4b00', iconBg:'#fff3ee', url:'https://motochefemg.github.io/mc/GESTAO.html' },
     { nome:'Simulador de Comissão', desc:'Metas e premiação OTE 2026', icon:'💰', color:'#1a7a4a', iconBg:'#e8f5ee', url:'https://motochefemg.github.io/mc/simulador.html' },
-    { nome:'Aceites Regulamento', desc:'Registros de aceite dos colaboradores', icon:'✅', color:'#1a4a7a', iconBg:'#eef3f9', url:'https://motochefemg.github.io/mc/simulador.html' },
+    { nome:'Aceites & Registros', desc:'Aceites de regulamento e documentos assinados', icon:'✅', color:'#1a4a7a', iconBg:'#eef3f9', url:'https://motochefemg.github.io/mc/simulador.html', rhOnly:true },
+    { nome:'Caixa', desc:'Movimentações financeiras', icon:'🏦', color:'#166534', iconBg:'#e8f5ee', url:'https://motochefemg.github.io/mc/caixa.html' },
+    { nome:'Estoque', desc:'Controle de motocicletas', icon:'🏍', color:'#7c2d12', iconBg:'#fef3ee', url:'https://motochefemg.github.io/mc/estoque_motochefe.html' },
   ],
   'gestores': [
     { nome:'Dashboard de Vendas', desc:'Relatórios e KPIs completos', icon:'📊', color:'#ff4b00', iconBg:'#fff3ee', url:'https://motochefemg.github.io/mc/GESTAO.html' },
@@ -1146,7 +1166,8 @@ const MODULOS_CONFIG = {
   ],
 };
 
-const GESTORES = ['Pablo Albinati','Tiago Souza Gomes','Cesar Rodrigues','Luiz Paulo Arouca','Pedro Henrique de Carvalho Porto','Julia Sampaio'];
+const GESTORES = ['Pablo Albinati','Tiago Souza Gomes','Cesar Rodrigues','Luiz Paulo Arouca','Joao Brito','Pedro Henrique de Carvalho Porto','Julia Sampaio'];
+const RH_USERS = ['Marina Paiva'];
 
 // ── DOCUMENTOS ──
 const DOCUMENTOS = [
@@ -1313,7 +1334,13 @@ function fazerLogin() {
   if(SENHAS[usuario] !== senha){ err.textContent = 'Senha incorreta.'; return; }
   err.textContent = '';
   currentUser = usuario;
-  isRH = (usuario === '__rh__');
+  isRH = RH_USERS.includes(usuario);
+  // Salvar sessão se lembrar marcado
+  if(document.getElementById('lembrar')?.checked){
+    localStorage.setItem('mc_cmd_session', JSON.stringify({u: usuario, p: senha, ts: Date.now()}));
+  } else {
+    localStorage.removeItem('mc_cmd_session');
+  }
   iniciarApp();
 }
 
@@ -1330,7 +1357,7 @@ async function iniciarApp() {
 
 async function carregarDadosColab() {
   if(isRH) {
-    dadosColab = { COLABORADOR:'Mikaela Paiva', FUNÇÃO:'Gestora de RH', LOJA:'Matriz', LOGIN: '__rh__' };
+    dadosColab = { COLABORADOR:'Marina Paiva', FUNÇÃO:'Gestora de RH', LOJA:'Matriz', LOGIN: '__rh__' };
     return;
   }
   try {
@@ -1368,23 +1395,24 @@ function montarApp() {
   document.getElementById('greetData').textContent = `${saudacao}! Hoje é ${agora.toLocaleDateString('pt-BR', {weekday:'long', day:'numeric', month:'long'})}.`;
 
   // Módulos
-  const tipoUser = isRH ? '__rh__' : GESTORES.includes(currentUser) ? 'gestores' : 'vendedores';
+  const tipoUser = isRH ? 'rh' : GESTORES.includes(currentUser) ? 'gestores' : 'vendedores';
   const modulos = MODULOS_CONFIG[tipoUser] || MODULOS_CONFIG['vendedores'];
   const pendentes = docsPendentes();
   const bloqueado = pendentes.length > 0 && !isRH;
 
   const grid = document.getElementById('modulesGrid');
-  grid.innerHTML = modulos.map((m, i) => `
-    <a class="module-card fade-up stagger-${i+1} ${bloqueado?'locked':''}"
+  grid.innerHTML = modulos.map((m, i) => {
+    const click = bloqueado
+      ? 'mostrarBloqueio();return false;'
+      : `abrirFerramenta('${m.url}','${m.nome.replace(/'/g,"\\'")}');return false;`;
+    return `<a class="module-card fade-up stagger-${i+1} ${bloqueado?'locked':''}"
        style="--card-color:${m.color};--icon-bg:${m.iconBg}"
-       href="${bloqueado?'#':m.url}"
-       target="${bloqueado?'_self':'_blank'}"
-       onclick="${bloqueado?'mostrarBloqueio();return false;':''}">
+       href="#" onclick="${click}">
       <div class="mod-icon">${m.icon}</div>
       <div class="mod-name">${m.nome}</div>
       <div class="mod-desc">${m.desc}</div>
-    </a>
-  `).join('');
+    </a>`;
+  }).join('');
 
   // Docs badge
   const badge = document.getElementById('badgeDocs');
@@ -1658,12 +1686,39 @@ function toast(msg) {
 
 function fazerLogout() {
   currentUser = null; isRH = false; dadosColab = null; aceitesDocs = {};
+  localStorage.removeItem('mc_cmd_session');
   document.getElementById('app').style.display = 'none';
   document.getElementById('docsScreen').style.display = 'none';
   document.getElementById('loginScreen').style.display = 'flex';
   document.getElementById('inputSenha').value = '';
   document.getElementById('selUsuario').value = '';
 }
+// ── IFRAME ──
+function abrirFerramenta(url, nome) {
+  document.getElementById('iframeTitle').textContent = nome;
+  document.getElementById('iframeContent').src = url;
+  document.getElementById('iframeModal').style.display = 'flex';
+  window.scrollTo(0,0);
+}
+
+function fecharIframe() {
+  document.getElementById('iframeModal').style.display = 'none';
+  document.getElementById('iframeContent').src = '';
+}
+
+// Auto-login ao carregar
+window.addEventListener('load', function() {
+  try {
+    const s = JSON.parse(localStorage.getItem('mc_cmd_session') || 'null');
+    if(s && s.u && s.p && (Date.now() - s.ts) < 7*24*60*60*1000) {
+      document.getElementById('selUsuario').value = s.u;
+      document.getElementById('inputSenha').value = s.p;
+      document.getElementById('lembrar').checked = true;
+      fazerLogin();
+    }
+  } catch(e) {}
+});
+
 </script>
 </body>
 </html>
