@@ -224,9 +224,13 @@ tr.futura td{color:var(--text3);}
         <option value="Pedro Henrique de Carvalho Porto">Pedro Henrique — Pouso Alegre</option>
         <option value="Rayssa Dayane Muniz Martins">Rayssa Martins — Poços de Caldas</option>
         <option value="Tiago Souza Gomes">Tiago Souza Gomes — Lavras</option>
+        <option value="Anne Ester">Anne Ester — Pouso Alegre</option>
+        <option value="Juscelino Junior">Juscelino Junior — Itajubá</option>
+        <option value="Carlos Barbosa">Carlos Barbosa — Itajubá</option>
+        <option value="Luara Alkmin">Luara Alkmin — Itajubá</option>
       </optgroup>
       <optgroup label="Gestão">
-        <option value="__gestor__">Gestor — Visão Geral</option>
+        <option value="__gestor__">Rafaela Albinati — Gestora RH</option>
       </optgroup>
     </select>
     <label class="ll">Senha</label>
@@ -240,6 +244,90 @@ tr.futura td{color:var(--text3);}
   </div>
 </div>
 
+<!-- TELA DE ACEITE DO REGULAMENTO -->
+<div id="aceitScreen" style="display:none;position:fixed;inset:0;z-index:500;background:#0f0f0f;flex-direction:column;align-items:center;justify-content:flex-start;padding:20px;overflow-y:auto">
+  <div style="width:100%;max-width:680px;margin:0 auto">
+    <div style="text-align:center;padding:32px 0 24px">
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:3px;color:#ff4b00">REGULAMENTO OFICIAL</div>
+      <div style="font-size:13px;color:#aaa;margin-top:4px">Leia com atenção antes de aceitar</div>
+      <div style="margin-top:10px;background:rgba(255,75,0,0.1);border:1px solid rgba(255,75,0,0.3);border-radius:8px;padding:8px 16px;display:inline-block;font-size:12px;color:#ff4b00;font-weight:700">
+        Olá, <span id="aceitNomeExibido"></span> — aceite obrigatório para acessar a premiação OTE
+      </div>
+    </div>
+
+    <div style="background:#f5f5f0;border-radius:14px;padding:24px;margin-bottom:20px;color:#1a1a1a;font-size:13px;line-height:1.7;max-height:50vh;overflow-y:auto">
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:2px;text-align:center;margin-bottom:20px">MOTOCHEFE SUL DE MINAS<br><span style="font-size:13px">Plano de Comissionamento, Performance e Premiações 2026</span></div>
+
+      <div style="margin-bottom:14px"><b style="color:#c2410c">01 · COMISSÃO MENSAL</b><br>
+      Comissão de <b>0,5%</b> sobre vendas de motos, apurada mensalmente. Verba <b>remuneratória</b> — integra férias, 13º, FGTS e verbas trabalhistas (CLT Art. 457).</div>
+
+      <div style="margin-bottom:14px"><b style="color:#b45309">02 · PREMIAÇÃO OTE — PROGRESSIVA</b><br>
+      Concedida ao vendedor que atingir os patamares de vendas, desde que cumpridos <b>integralmente</b> os indicadores da Seção 03. Caráter <b>exclusivamente indenizatório</b>, sem reflexos trabalhistas (Art. 457, §4º da CLT). <b>Tabela válida para Abril/2026.</b></div>
+
+      <div style="margin-bottom:14px;background:#fff0f0;border-left:4px solid #dc2626;padding:10px 14px;border-radius:0 6px 6px 0"><b style="color:#dc2626">03 · REQUISITOS ⚠ — NÃO CUMPRIMENTO DESQUALIFICA DO CICLO</b><br><br>
+      <b>3.1 Ponto:</b> 100% pelo reconhecimento facial.<br>
+      <b>3.2 CRM Kommo:</b> Script de vendas + LEAD completo (nome, cidade, modelo, fonte) + dados do ganho (valor, data, veículo) + manual ao cliente + tarefas agendadas + follow-up em até 3 dias.<br>
+      <b>3.3 Google:</b> Avaliações = nº de vendas, todas 5 estrelas.<br>
+      <b>3.4 Digital:</b> Foto de cada venda + 1 Story/dia + 1 Reel/semana.<br>
+      <b>3.5 Entrega:</b> 100% com checklist preenchido e validado.</div>
+
+      <div style="margin-bottom:14px"><b style="color:#166534">04 · ELEGIBILIDADE</b><br>
+      Empregados ativos, adimplentes, sem penalidades, com assiduidade adequada e que cumpram a Seção 03. Afastamentos e licenças excluem do ciclo automaticamente.</div>
+
+      <div style="margin-bottom:14px"><b style="color:#991b1b">05 · NÃO ELEGIBILIDADE</b><br>
+      Não recebe prêmio quem não atingir a meta; descumprir a Seção 03; incorrer em faltas graves, assédio, fraude ou violação de compliance.</div>
+
+      <div style="margin-bottom:14px"><b style="color:#5b21b6">06 · NATUREZA JURÍDICA</b><br>
+      <b>Comissão:</b> remuneratória, gera reflexos trabalhistas.<br>
+      <b>Prêmio OTE:</b> indenizatório, sem reflexos (Art. 457 §4º). Holerite: "Prêmio por Desempenho".</div>
+
+      <div style="margin-bottom:14px"><b style="color:#0c4a6e">07 · REGRAS ADMINISTRATIVAS</b><br>
+      <b>Fechamento:</b> dias 14 e 28 de cada mês.<br>
+      <b>Auditoria:</b> Karol Bonfim — MC Brasil.<br>
+      <b>Contestação:</b> 24 horas após resultado, por escrito.<br>
+      <b>Flexibilidade:</b> Empresa pode revisar ou encerrar a qualquer tempo mediante comunicação formal, sem gerar direito adquirido.</div>
+
+      <div style="margin-bottom:14px"><b style="color:#7c2d12">08 · VALIDADE</b><br>
+      Válido por 12 meses, com possibilidade de ajustes mensais mediante comunicação formal.</div>
+
+      <div style="margin-bottom:0"><b>09 · DISPOSIÇÕES FINAIS</b><br>
+      Regulamento conforme CLT. <b>Não há previsão de premiação no contrato de trabalho.</b> Concessão e valor são sempre discricionários da Empresa, baseados no desempenho alcançado.</div>
+    </div>
+
+    <div style="background:#1a1a1a;border:1px solid rgba(255,255,255,0.1);border-radius:14px;padding:24px;margin-bottom:80px">
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:1px;color:#fff;margin-bottom:16px">📝 Confirmar Aceite</div>
+      <div style="display:grid;gap:12px">
+        <div>
+          <label style="font-size:11px;color:#aaa;letter-spacing:1px;text-transform:uppercase;display:block;margin-bottom:4px">Nome Completo</label>
+          <input id="aceitNome" type="text" placeholder="Seu nome completo"
+            style="width:100%;background:#0f0f0f;border:1px solid #333;border-radius:8px;padding:10px 14px;color:#fff;font-size:14px;box-sizing:border-box">
+        </div>
+        <div>
+          <label style="font-size:11px;color:#aaa;letter-spacing:1px;text-transform:uppercase;display:block;margin-bottom:4px">CPF</label>
+          <input id="aceitCPF" type="text" placeholder="000.000.000-00" maxlength="14" oninput="formatarCPF(this)"
+            style="width:100%;background:#0f0f0f;border:1px solid #333;border-radius:8px;padding:10px 14px;color:#fff;font-size:14px;box-sizing:border-box">
+        </div>
+        <div>
+          <label style="font-size:11px;color:#aaa;letter-spacing:1px;text-transform:uppercase;display:block;margin-bottom:4px">Data de Hoje</label>
+          <input id="aceitData" type="date"
+            style="width:100%;background:#0f0f0f;border:1px solid #333;border-radius:8px;padding:10px 14px;color:#fff;font-size:14px;box-sizing:border-box;color-scheme:dark">
+        </div>
+        <div style="display:flex;align-items:flex-start;gap:10px;margin-top:4px">
+          <input id="aceitCheck" type="checkbox" style="margin-top:3px;width:16px;height:16px;flex-shrink:0;cursor:pointer">
+          <label for="aceitCheck" style="font-size:13px;color:#ccc;cursor:pointer;line-height:1.5">
+            Declaro que li o <b style="color:#fff">Regulamento Oficial de Comissionamento e Premiação OTE 2026</b> da MotoChefe Sul de Minas na íntegra, compreendi seus termos e concordo com todas as condições nele estabelecidas.
+          </label>
+        </div>
+        <div id="aceitErr" style="color:#f87171;font-size:12px;min-height:16px"></div>
+        <button id="btnAceitar" onclick="confirmarAceite()"
+          style="background:#ff4b00;color:#fff;border:none;border-radius:10px;padding:14px;font-size:15px;font-weight:700;cursor:pointer;width:100%">
+          ✓ Li, entendi e aceito o regulamento
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- APP -->
 <div id="app">
   <div class="topbar">
@@ -248,6 +336,7 @@ tr.futura td{color:var(--text3);}
     <div class="ttitle">Simulador de Comissão</div>
     <div class="tsp"></div>
     <div class="tuser" id="topUser"></div>
+    <button id="btnVerAceites" onclick="verAceites()" style="display:none;background:rgba(255,193,7,0.2);border:1px solid rgba(255,193,7,0.4);color:#f59e0b;font-weight:700;font-size:11px" class="tbtn">📋 Aceites</button>
     <button class="tbtn" onclick="logout()">Sair</button>
   </div>
 
@@ -407,23 +496,31 @@ const MESES = ['','Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho',
 
 // Senhas — não óbvias, mistura nome+ano+código
 const SENHAS = {
-  // ADMs — senha da loja no caixa
+  // ADMs / Gestores de loja
   'Pablo Albinati':                  'VRG@2k26#pa',
   'Tiago Souza Gomes':               'LAV@2k26#tz',
   'Pedro Henrique de Carvalho Porto':'PSA@2k26#ph',
-  'Julia Sampaio':                   'POC@2k26#js',
-  // Vendedores — senha do simulador (inalteradas)
+  'Julia Sampaio':                   'JS#Poc26s',
+  'Cesar Rodrigues':                 'CR$Mg26!gest',
+  'Luiz Paulo Arouca':               'LP$Mg26!gest',
+  // Vendedores — Varginha
   'Karla Souza Chagas':              'KS#Chefe7',
   'Murilo Belo':                     'MB!Vrg2026',
+  // Vendedores — Poços de Caldas
   'Julia Nascimento':                'JN*Poc831',
   'Rayssa Dayane Muniz Martins':     'RM@Day526',
   'Fernando Lopes':                  'FL#Poc77x',
+  // Vendedores — Lavras
   'Emanuel Paiva':                   'EP@Lav314',
+  // Vendedores — Pouso Alegre
   'Kawan Manso':                     'KM!Pso26m',
   'Charles Carvalho':                'CC@Pso5k2',
-  // Gestores — senha do caixa
-  'Cesar Rodrigues':                 'CR$Mg26!gest',
-  'Luiz Paulo Arouca':               'LP$Mg26!gest',
+  'Anne Ester':                      'AE@Pso26a',
+  // Vendedores — Itajubá
+  'Juscelino Junior':                'JJ#Itj26k',
+  'Carlos Barbosa':                  'CB@Itj26b',
+  'Luara Alkmin':                    'LA!Itj26l',
+  // Acesso gestor RH (Rafaela Albinati)
   '__gestor__':                      'Gest0r@MC26',
 };
 
@@ -505,8 +602,8 @@ function doLogin(){
   currentUser = usuario;
   isGestor = usuario === '__gestor__';
   err.textContent='';
-  document.getElementById('loginScreen').style.display='none';
-  document.getElementById('app').style.display='block';
+  // Verificar se já aceitou o regulamento
+  verificarAceite(usuario);
     // Salvar sessão
   if(document.getElementById('lembrar')?.checked){
     localStorage.setItem('mc_sim_session', JSON.stringify({u: document.getElementById('selUsuario').value, p: document.getElementById('inputSenha').value, ts: Date.now()}));
@@ -531,10 +628,13 @@ function initApp(){
   document.getElementById('selAno').value = hoje.getFullYear();
 
   if(isGestor){
-    document.getElementById('topUser').textContent = '👔 Gestor';
+    document.getElementById('topUser').textContent = '👔 Rafaela Albinati — RH';
     document.getElementById('gestorArea').style.display='block';
     document.getElementById('vendedorArea').style.display='none';
     document.getElementById('ctrlVendedor').style.display='flex';
+    // Mostrar botão de aceites para gestor RH
+    const btnAceites = document.getElementById('btnVerAceites');
+    if(btnAceites) btnAceites.style.display='inline-flex';
     // Popula select de vendedor
     const sel = document.getElementById('selVendedor');
     Object.keys(LOJA_VENDEDOR).sort((a,b)=>a.localeCompare(b,'pt-BR')).forEach(v=>{
@@ -762,6 +862,85 @@ function fmtR(v){ return 'R$ '+Math.round(v).toLocaleString('pt-BR'); }
 function fmtPct(v){ return v.toFixed(2).replace('.',',')+'%'; }
 
 
+
+// ── ACEITE DO REGULAMENTO ─────────────────────────────────
+
+async function verificarAceite(usuario) {
+  if(usuario === '__gestor__') { abrirApp(); return; }
+  // Sempre verificar no servidor — não usa cache local para garantir registro
+  try {
+    const r = await fetch(AS + '?action=verificar_aceite&vendedor=' + encodeURIComponent(usuario));
+    const j = await r.json();
+    if(j.aceitou) { abrirApp(); return; }
+  } catch(e) {
+    // Se offline, bloquear — aceite precisa ser registrado online
+    document.getElementById('loginScreen').style.display='none';
+    document.getElementById('aceitScreen').style.display='flex';
+    document.getElementById('aceitNomeExibido').textContent = usuario;
+    document.getElementById('aceitNome').value = usuario;
+    document.getElementById('aceitErr').textContent = '⚠ Sem conexão com o servidor. Conecte-se à internet para registrar seu aceite.';
+    const btn = document.getElementById('btnAceitar');
+    if(btn) btn.disabled = true;
+    return;
+  }
+  mostrarTelaAceite(usuario);
+}
+
+function abrirApp() {
+  document.getElementById('loginScreen').style.display='none';
+  document.getElementById('aceitScreen').style.display='none';
+  document.getElementById('app').style.display='block';
+  if(document.getElementById('lembrar')?.checked){
+    localStorage.setItem('mc_sim_session', JSON.stringify({u: document.getElementById('selUsuario').value, p: document.getElementById('inputSenha').value, ts: Date.now()}));
+  } else { localStorage.removeItem('mc_sim_session'); }
+  initApp();
+}
+
+function mostrarTelaAceite(usuario) {
+  document.getElementById('loginScreen').style.display='none';
+  document.getElementById('aceitScreen').style.display='flex';
+  document.getElementById('aceitNomeExibido').textContent = usuario;
+  document.getElementById('aceitNome').value = usuario;
+  // Data padrão = hoje
+  const h = new Date();
+  document.getElementById('aceitData').value = h.getFullYear()+'-'+String(h.getMonth()+1).padStart(2,'0')+'-'+String(h.getDate()).padStart(2,'0');
+}
+
+function formatarCPF(el) {
+  let v = el.value.replace(/\D/g,'').substring(0,11);
+  if(v.length>9) v=v.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/,'$1.$2.$3-$4');
+  else if(v.length>6) v=v.replace(/(\d{3})(\d{3})(\d{1,3})/,'$1.$2.$3');
+  else if(v.length>3) v=v.replace(/(\d{3})(\d{1,3})/,'$1.$2');
+  el.value=v;
+}
+
+async function confirmarAceite() {
+  const nome  = document.getElementById('aceitNome').value.trim();
+  const cpf   = document.getElementById('aceitCPF').value.replace(/\D/g,'');
+  const data  = document.getElementById('aceitData').value;
+  const check = document.getElementById('aceitCheck').checked;
+  const err   = document.getElementById('aceitErr');
+  if(!nome)          { err.textContent='Informe seu nome completo.'; return; }
+  if(cpf.length!==11){ err.textContent='CPF inválido — informe os 11 dígitos.'; return; }
+  if(!data)          { err.textContent='Informe a data de hoje.'; return; }
+  if(!check)         { err.textContent='Você precisa confirmar que leu e concorda com o regulamento.'; return; }
+  err.textContent='';
+  const btn = document.getElementById('btnAceitar');
+  btn.disabled=true; btn.textContent='⟳ Registrando...';
+  try {
+    const params = new URLSearchParams({
+      action:'registrar_aceite', vendedor:currentUser,
+      nome, cpf, data, regulamento:'OTE_ABRIL_2026',
+      hora: new Date().toLocaleTimeString('pt-BR')
+    });
+    const r = await fetch(AS+'?'+params.toString());
+    const j = await r.json();
+    if(j.success){
+      abrirApp(); // Sem cache local — sempre verifica no servidor
+    } else { err.textContent='Erro: '+(j.error||'tente novamente'); btn.disabled=false; btn.textContent='✓ Li, entendi e aceito o regulamento'; }
+  } catch(e){ err.textContent='Sem conexão. Tente novamente.'; btn.disabled=false; btn.textContent='✓ Li, entendi e aceito o regulamento'; }
+}
+
 </script>
 
 <script>
@@ -794,6 +973,73 @@ window.addEventListener('load', function() {
     }
   } catch(e) { console.warn('Auto-login erro:', e); }
 });
+// ── GESTORA RH — VER ACEITES ─────────────────────────────
+
+async function verAceites() {
+  document.getElementById('modalAceites').style.display='flex';
+  const el = document.getElementById('aceitesList');
+  el.innerHTML = '<div style="text-align:center;padding:40px;color:#666">⟳ Carregando registros...</div>';
+  try {
+    const r = await fetch(AS + '?action=listar_aceites');
+    const j = await r.json();
+    if(!j.success) { el.innerHTML = '<div style="color:red;padding:20px">Erro: '+(j.error||'')+'</div>'; return; }
+    const aceites = j.aceites || [];
+    if(aceites.length === 0) { el.innerHTML = '<div style="text-align:center;padding:40px;color:#666">Nenhum aceite registrado ainda.</div>'; return; }
+
+    let html = '<div style="margin-bottom:16px;font-size:12px;color:#666">Total de aceites registrados: <b style="color:#1a1a1a">'+aceites.length+'</b></div>';
+    html += '<table style="width:100%;border-collapse:collapse;font-size:13px;background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.1)">';
+    html += '<thead><tr style="background:#1a1a1a;color:#fff">';
+    html += '<th style="padding:12px 14px;text-align:left;font-size:11px;letter-spacing:1px">Nº</th>';
+    html += '<th style="padding:12px 14px;text-align:left;font-size:11px;letter-spacing:1px">VENDEDOR</th>';
+    html += '<th style="padding:12px 14px;text-align:left;font-size:11px;letter-spacing:1px">NOME COMPLETO</th>';
+    html += '<th style="padding:12px 14px;text-align:left;font-size:11px;letter-spacing:1px">CPF</th>';
+    html += '<th style="padding:12px 14px;text-align:left;font-size:11px;letter-spacing:1px">DATA</th>';
+    html += '<th style="padding:12px 14px;text-align:left;font-size:11px;letter-spacing:1px">HORA</th>';
+    html += '<th style="padding:12px 14px;text-align:left;font-size:11px;letter-spacing:1px">REGULAMENTO</th>';
+    html += '<th style="padding:12px 14px;text-align:left;font-size:11px;letter-spacing:1px">REGISTRO</th>';
+    html += '</tr></thead><tbody>';
+
+    aceites.forEach((a, i) => {
+      const par = i%2===0;
+      html += '<tr style="border-bottom:1px solid #e5e5e5;background:'+(par?'#fff':'#fafaf8')+'">';
+      html += '<td style="padding:10px 14px;color:#888;font-size:12px">'+(i+1)+'</td>';
+      html += '<td style="padding:10px 14px;font-weight:700;color:#1a1a1a">'+(a.vendedor||'—')+'</td>';
+      html += '<td style="padding:10px 14px;color:#333">'+(a.nome||'—')+'</td>';
+      html += '<td style="padding:10px 14px;color:#333;font-family:monospace">'+(a.cpf||'—')+'</td>';
+      html += '<td style="padding:10px 14px;color:#333">'+(a.data||'—')+'</td>';
+      html += '<td style="padding:10px 14px;color:#333">'+(a.hora||'—')+'</td>';
+      html += '<td style="padding:10px 14px"><span style="background:#fef3c7;color:#92400e;border-radius:4px;padding:2px 8px;font-size:11px;font-weight:700">'+(a.regulamento||'—')+'</span></td>';
+      html += '<td style="padding:10px 14px;color:#666;font-size:12px">'+(a.timestamp||'—')+'</td>';
+      html += '</tr>';
+    });
+    html += '</tbody></table>';
+    html += '<div style="margin-top:16px;padding:12px 16px;background:#fff;border-radius:8px;border:1px solid #e5e5e5;font-size:11px;color:#666;line-height:1.7">';
+    html += '<b style="color:#1a1a1a">Base jurídica:</b> Aceite eletrônico com validade legal nos termos da <b>Lei 14.063/2020</b> e do <b>Marco Civil da Internet</b>. ';
+    html += 'Registros incluem: identificação do colaborador, nome completo, CPF, data e hora do aceite, e nome do regulamento aceito. ';
+    html += 'Este documento pode ser utilizado como prova de ciência e concordância em eventual demanda trabalhista.';
+    html += '</div>';
+
+    el.innerHTML = html;
+  } catch(e) {
+    el.innerHTML = '<div style="color:red;padding:20px">Erro de conexão: '+e.message+'</div>';
+  }
+}
+
+function imprimirAceites() {
+  const conteudo = document.getElementById('aceitesList').innerHTML;
+  const janela = window.open('','_blank');
+  janela.document.write('<html><head><title>Aceites Regulamento OTE 2026 — MotoChefe</title>');
+  janela.document.write('<style>body{font-family:Arial,sans-serif;padding:20px;color:#1a1a1a} table{width:100%;border-collapse:collapse;font-size:12px} th,td{padding:8px 10px;border:1px solid #ddd;text-align:left} th{background:#1a1a1a;color:#fff} @media print{button{display:none}}</style>');
+  janela.document.write('</head><body>');
+  janela.document.write('<h2 style="color:#1a1a1a;margin-bottom:4px">ACEITES DO REGULAMENTO OTE 2026</h2>');
+  janela.document.write('<p style="color:#666;font-size:12px;margin-bottom:16px">MotoChefe Sul de Minas · Emitido em: '+new Date().toLocaleString('pt-BR')+'</p>');
+  janela.document.write(conteudo);
+  janela.document.write('</body></html>');
+  janela.document.close();
+  janela.print();
+}
+
+
 </script>
 
 
@@ -930,6 +1176,26 @@ window.addEventListener('load', function() {
       <div style="text-align:center;padding:12px;color:#888;font-size:12px;border-top:1px solid #d0c8b0">
         Dúvidas? Fale com seu gestor ou com a auditoria — <b>Karol Bonfim · MC Brasil</b>
       </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- MODAL ACEITES RH -->
+<div id="modalAceites" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,0.8);align-items:center;justify-content:center;padding:16px" onclick="if(event.target===this)this.style.display='none'">
+  <div style="background:#fff;border-radius:16px;width:100%;max-width:900px;max-height:90vh;overflow:hidden;display:flex;flex-direction:column">
+    <div style="background:#1a1a1a;padding:16px 24px;display:flex;justify-content:space-between;align-items:center;flex-shrink:0">
+      <div>
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:2px;color:#f59e0b">ACEITES DO REGULAMENTO OTE 2026</div>
+        <div style="font-size:11px;color:#aaa;margin-top:2px">Registro jurídico — MotoChefe Sul de Minas</div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button onclick="imprimirAceites()" style="background:#f59e0b;color:#000;border:none;border-radius:8px;padding:8px 16px;font-weight:700;font-size:12px;cursor:pointer">🖨 Imprimir</button>
+        <button onclick="document.getElementById('modalAceites').style.display='none'" style="background:rgba(255,255,255,0.1);border:none;border-radius:8px;padding:8px 14px;color:#fff;cursor:pointer;font-size:16px">✕</button>
+      </div>
+    </div>
+    <div id="aceitesList" style="overflow-y:auto;padding:20px;flex:1;background:#f5f5f0">
+      <div style="text-align:center;padding:40px;color:#666">⟳ Carregando...</div>
     </div>
   </div>
 </div>
