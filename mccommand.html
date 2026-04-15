@@ -1012,8 +1012,8 @@ body {
         </select>
       </div>
       <div class="field">
-        <label>Senha</label>
-        <input type="password" id="inputSenha" placeholder="••••••••••" onkeydown="if(event.key==='Enter')fazerLogin()">
+        <label>Senha — CPF (somente números)</label>
+        <input type="password" id="inputSenha" placeholder="Digite seu CPF (somente números)" onkeydown="if(event.key==='Enter')fazerLogin()">
       </div>
       <div class="login-err" id="loginErr"></div>
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
@@ -1127,32 +1127,7 @@ body {
 <script>
 const AS = 'https://script.google.com/macros/s/AKfycbzAYDr_pArf5uSPiK0mOQP0K_BMHFEAOJ9xYxMSVBigoCpY_F69GjJlXmE9WOuQZOIn/exec';
 
-// ── SENHAS ──
-const SENHAS = {
-  // Gestores
-  'Cesar Rodrigues':                  'CR$Mg26!gest',
-  'Luiz Paulo Arouca':                'LP$Mg26!gest',
-  'Joao Brito':                       'JB$Mg26!gest',
-  'Pablo Albinati':                   'VRG@2k26#pa',
-  'Tiago Souza Gomes':                'LAV@2k26#tz',
-  'Pedro Henrique de Carvalho Porto': 'PSA@2k26#ph',
-  'Julia Sampaio':                    'JS#Poc26s',
-  // RH
-  'Marina Paiva':                     'MP@RH26!mc',
-  // Vendedores
-  'Karla Souza Chagas':               'KS#Chefe7',
-  'Murilo Belo':                      'MB!Vrg2026',
-  'Julia Nascimento':                 'JN*Poc831',
-  'Rayssa Dayane Muniz Martins':      'RM@Day526',
-  'Fernando Lopes':                   'FL#Poc77x',
-  'Emanuel Paiva':                    'EP@Lav314',
-  'Kawan Manso':                      'KM!Pso26m',
-  'Charles Carvalho':                 'CC@Pso5k2',
-  'Anne Ester':                       'AE@Pso26a',
-  'Juscelino Junior':                 'JJ#Itj26k',
-  'Carlos Barbosa':                   'CB@Itj26b',
-  'Luara Alkmin':                     'LA!Itj26l',
-};
+// Senhas removidas — autenticação via CPF no Sheets
 
 // ── MÓDULOS ──
 const MODULOS_CONFIG = {
@@ -1534,28 +1509,60 @@ function docsParaCargo() {
 }
 
 // ── LOGIN ──
-function fazerLogin() {
+async function fazerLogin() {
   const usuario = document.getElementById('selUsuario').value;
-  const senha = document.getElementById('inputSenha').value;
-  const err = document.getElementById('loginErr');
+  const senha   = document.getElementById('inputSenha').value.replace(/\D/g,'');
+  const err     = document.getElementById('loginErr');
+  const btn     = document.querySelector('#loginScreen .btn-primary');
+
   if(!usuario){ err.textContent = 'Selecione seu usuário.'; return; }
-  if(!senha){ err.textContent = 'Digite sua senha.'; return; }
-  if(SENHAS[usuario] !== senha){ err.textContent = 'Senha incorreta.'; return; }
-  err.textContent = '';
-  currentUser = usuario;
-  isRH = RH_USERS.includes(usuario);
-  // Salvar sessão se lembrar marcado
-  if(document.getElementById('lembrar')?.checked){
-    localStorage.setItem('mc_cmd_session', JSON.stringify({u: usuario, p: senha, ts: Date.now()}));
-  } else {
-    localStorage.removeItem('mc_cmd_session');
+  if(!senha)  { err.textContent = 'Digite seu CPF como senha.'; return; }
+
+  // RH tem senha própria fixa
+  if(RH_USERS.includes(usuario)){
+    if(senha !== '00000000000'){ err.textContent = 'CPF incorreto.'; return; }
+    err.textContent = '';
+    currentUser = usuario;
+    isRH = true;
+    if(document.getElementById('lembrar')?.checked){
+      localStorage.setItem('mc_cmd_session', JSON.stringify({u: usuario, p: senha, ts: Date.now()}));
+    } else { localStorage.removeItem('mc_cmd_session'); }
+    iniciarApp();
+    return;
   }
-  iniciarApp();
+
+  // Validar CPF contra o Sheets
+  btn.disabled = true;
+  btn.textContent = 'Verificando...';
+  err.textContent = '';
+
+  try {
+    const r = await fetch(`${AS}?action=dados_colab&login=${encodeURIComponent(usuario)}`);
+    const j = await r.json();
+    if(!j.success || !j.dados){ err.textContent = 'Usuário não encontrado. Contacte o RH.'; btn.disabled=false; btn.textContent='Entrar na plataforma →'; return; }
+    const cpfSheets = (j.dados.CPF||'').replace(/\D/g,'');
+    if(cpfSheets !== senha){ err.textContent = 'CPF incorreto. Use apenas os números.'; btn.disabled=false; btn.textContent='Entrar na plataforma →'; return; }
+    // Login válido
+    dadosColab = j.dados;
+    currentUser = usuario;
+    isRH = false;
+    if(document.getElementById('lembrar')?.checked){
+      localStorage.setItem('mc_cmd_session', JSON.stringify({u: usuario, p: senha, ts: Date.now()}));
+    } else { localStorage.removeItem('mc_cmd_session'); }
+    await verificarAceites();
+    montarApp();
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+  } catch(e){
+    err.textContent = 'Sem conexão. Tente novamente.';
+    btn.disabled=false;
+    btn.textContent='Entrar na plataforma →';
+  }
 }
 
 async function iniciarApp() {
-  // Buscar dados do colaborador
-  await carregarDadosColab();
+  // Buscar dados do colaborador (só se ainda não carregado — ex: fluxo RH)
+  if(!dadosColab) await carregarDadosColab();
   // Verificar aceites
   await verificarAceites();
   // Montar UI
