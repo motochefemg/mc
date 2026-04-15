@@ -924,7 +924,7 @@ async function verificarAceite(usuario) {
   if(usuario === '__gestor__') { abrirApp(); return; }
   // Sempre verificar no servidor — não usa cache local para garantir registro
   try {
-    const r = await fetch(APPS_SCRIPT_URL + '?action=verificar_aceite&vendedor=' + encodeURIComponent(usuario));
+    const r = await fetch(APPS_SCRIPT_URL + '?action=verificar_aceite&vendedor=' + encodeURIComponent(usuario) + '&regulamento=OTE_ABRIL_2026_v1');
     const j = await r.json();
     if(j.aceitou) { abrirApp(); return; }
   } catch(e) {
