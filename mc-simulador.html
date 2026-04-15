@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MC Simulador · MotoChefe</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:'Barlow',sans-serif; background:#f4f4f2; min-height:100vh; display:flex; flex-direction:column; }
+#bloqueio {
+  min-height:100vh; display:flex; align-items:center; justify-content:center;
+  background:radial-gradient(ellipse at 50% 0%, rgba(255,75,0,.07) 0%, transparent 60%);
+}
+.bloqueio-box {
+  text-align:center; padding:52px 40px; background:#fff;
+  border:1px solid rgba(0,0,0,.1); border-radius:18px;
+  box-shadow:0 8px 40px rgba(0,0,0,.08); max-width:400px;
+}
+.bloqueio-icon { font-size:52px; margin-bottom:20px; }
+.bloqueio-titulo { font-family:'Bebas Neue'; font-size:28px; letter-spacing:3px; color:#ff4b00; margin-bottom:8px; }
+.bloqueio-sub { font-size:14px; color:#888; line-height:1.6; margin-bottom:28px; }
+.bloqueio-btn {
+  display:inline-block; padding:14px 32px; background:#ff4b00; color:#fff;
+  border-radius:10px; font-family:'Barlow'; font-size:14px; font-weight:700;
+  letter-spacing:2px; text-transform:uppercase; text-decoration:none; transition:.2s;
+}
+.bloqueio-btn:hover { background:#ff6a2a; }
+#carregando {
+  min-height:100vh; display:none; align-items:center; justify-content:center; flex-direction:column; gap:16px;
+}
+.spin { width:28px; height:28px; border:3px solid #e5e5e5; border-top-color:#ff4b00; border-radius:50%; animation:spin .7s linear infinite; }
+@keyframes spin { to { transform:rotate(360deg); } }
+.loading-txt { font-size:13px; color:#999; }
+#frameWrap { display:none; flex:1; flex-direction:column; }
+.mc-header {
+  height:44px; background:#1a1a1a; display:flex; align-items:center; padding:0 16px; gap:12px; flex-shrink:0;
+}
+.mc-header-logo { font-family:'Bebas Neue'; font-size:16px; letter-spacing:3px; color:#ff4b00; }
+.mc-header-sep { width:1px; height:16px; background:rgba(255,255,255,.15); }
+.mc-header-user { font-size:11px; color:rgba(255,255,255,.5); flex:1; }
+.mc-header-back {
+  padding:4px 12px; border:1px solid rgba(255,255,255,.2); border-radius:6px;
+  color:rgba(255,255,255,.6); font-size:11px; cursor:pointer; background:transparent;
+  font-family:'Barlow'; transition:.2s;
+}
+.mc-header-back:hover { border-color:#ff4b00; color:#ff4b00; }
+iframe { flex:1; border:none; width:100%; min-height:calc(100vh - 44px); }
+</style>
+</head>
+<body>
+
+<div id="bloqueio">
+  <div class="bloqueio-box">
+    <div class="bloqueio-icon">🔐</div>
+    <div class="bloqueio-titulo">Acesso Restrito</div>
+    <div class="bloqueio-sub">
+      Esta ferramenta só pode ser acessada através do portal <strong>MC Command</strong>.<br>
+      Faça login no portal para continuar.
+    </div>
+    <a href="https://motochefemg.github.io/mc/mccommand.html" class="bloqueio-btn">
+      → Acessar MC Command
+    </a>
+  </div>
+</div>
+
+<div id="carregando">
+  <div class="spin"></div>
+  <div class="loading-txt">Autenticando sessão...</div>
+</div>
+
+<div id="frameWrap">
+  <div class="mc-header">
+    <div class="mc-header-logo">MC Command</div>
+    <div class="mc-header-sep"></div>
+    <div class="mc-header-user" id="headerUser">—</div>
+    <button class="mc-header-back" onclick="voltarCommand()">← Voltar ao Portal</button>
+  </div>
+  <iframe id="mainFrame" src="" title="MC Simulador"></iframe>
+</div>
+
+<script>
+const SIMULADOR_URL = 'https://motochefemg.github.io/mc/simulador.html';
+const COMMAND_URL   = 'https://motochefemg.github.io/mc/mccommand.html';
+const TOKEN_EXPIRY  = 8 * 60 * 60 * 1000;
+
+// Mapeamento nome completo → login do simulador
+// O simulador usa login = nome completo igual ao mccommand
+const SIMULADOR_MAP = {
+  'Pablo Albinati':                   'Pablo Albinati',
+  'Tiago Souza Gomes':                'Tiago Souza Gomes',
+  'Pedro Henrique de Carvalho Porto': 'Pedro Henrique de Carvalho Porto',
+  'Julia Sampaio':                    'Julia Sampaio',
+  'Cesar Rodrigues':                  'Cesar Rodrigues',
+  'Luiz Paulo Arouca':                'Luiz Paulo Arouca',
+  'Joao Brito':                       'Joao Brito',
+  'Marina Paiva':                     'Marina Paiva',
+  'Karla Souza Chagas':               'Karla Souza Chagas',
+  'Murilo Belo':                      'Murilo Belo',
+  'Julia Nascimento':                 'Julia Nascimento',
+  'Rayssa Dayane Muniz Martins':      'Rayssa Dayane Muniz Martins',
+  'Fernando Lopes':                   'Fernando Lopes',
+  'Emanuel Paiva':                    'Emanuel Paiva',
+  'Kawan Manso':                      'Kawan Manso',
+  'Charles Carvalho':                 'Charles Carvalho',
+  'Anne Ester':                       'Anne Ester',
+  'Carlos Barbosa':                   'Carlos Barbosa',
+  'Juscelino Junior':                 'Juscelino Junior',
+  'Luara Alkmin':                     'Luara Alkmin',
+};
+
+function getURLParam(name) {
+  return new URLSearchParams(window.location.search).get(name);
+}
+
+function validarToken(token, user, ts) {
+  if (!token || !user || !ts) return false;
+  if (Date.now() - parseInt(ts) > TOKEN_EXPIRY) return false;
+  return token === btoa(user + '|' + ts + '|MC2026');
+}
+
+function iniciar(sso) {
+  document.getElementById('carregando').style.display = 'flex';
+  document.getElementById('bloqueio').style.display = 'none';
+
+  if (!SIMULADOR_MAP[sso.user]) {
+    document.getElementById('bloqueio').style.display = 'flex';
+    document.getElementById('carregando').style.display = 'none';
+    return;
+  }
+
+  // Grava sessão no formato que o simulador espera
+  localStorage.setItem('mc_sim_session', JSON.stringify({
+    user: sso.user,
+    nome: sso.nome || sso.user,
+    funcao: sso.funcao || '',
+    ts: Date.now()
+  }));
+  // Também grava mc_sso completo para o simulador ler se precisar
+  localStorage.setItem('mc_sso', JSON.stringify({ ...sso, ts: sso.ts || Date.now() }));
+
+  document.getElementById('headerUser').textContent =
+    (sso.nome || sso.user) + (sso.funcao ? ' · ' + sso.funcao : '');
+
+  const frame = document.getElementById('mainFrame');
+  frame.src = SIMULADOR_URL;
+  frame.onload = () => {
+    document.getElementById('carregando').style.display = 'none';
+    document.getElementById('frameWrap').style.display = 'flex';
+  };
+}
+
+function voltarCommand() {
+  window.location.href = COMMAND_URL;
+}
+
+window.addEventListener('load', () => {
+  const urlToken = getURLParam('mc_token');
+  const urlUser  = getURLParam('mc_user');
+
+  if (urlToken && urlUser) {
+    try {
+      const sso = JSON.parse(localStorage.getItem('mc_sso') || '{}');
+      if (validarToken(urlToken, urlUser, sso.ts || Date.now())) {
+        iniciar({ ...sso, user: urlUser });
+        return;
+      }
+    } catch(e) {}
+  }
+
+  try {
+    const sso = JSON.parse(localStorage.getItem('mc_sso') || '{}');
+    if (sso.user && sso.token && sso.ts && validarToken(sso.token, sso.user, sso.ts)) {
+      iniciar(sso);
+      return;
+    }
+  } catch(e) {}
+
+  document.getElementById('bloqueio').style.display = 'flex';
+});
+</script>
+</body>
+</html>
