@@ -1154,6 +1154,11 @@ const SENHAS = {
 
 // ── MÓDULOS ──
 const MODULOS_CONFIG = {
+  'adms': [
+    { nome:'Caixa', desc:'Movimentações financeiras da loja', icon:'🏦', color:'#1a7a4a', iconBg:'#e8f5ee', url:'https://motochefemg.github.io/mc/caixa.html' },
+    { nome:'Estoque', desc:'Controle de motocicletas', icon:'🏍', color:'#7c2d12', iconBg:'#fef3ee', url:'https://motochefemg.github.io/mc/estoque_motochefe.html' },
+    { nome:'Simulador de Comissão', desc:'Metas e premiação OTE 2026', icon:'💰', color:'#b45309', iconBg:'#fef9ee', url:'https://motochefemg.github.io/mc/simulador.html' },
+  ],
   'rh': [
     { nome:'Dashboard de Vendas', desc:'Relatórios e KPIs de todas as lojas', icon:'📊', color:'#ff4b00', iconBg:'#fff3ee', url:'https://motochefemg.github.io/mc/GESTAO.html' },
     { nome:'Simulador de Comissão', desc:'Metas e premiação OTE 2026', icon:'💰', color:'#1a7a4a', iconBg:'#e8f5ee', url:'https://motochefemg.github.io/mc/simulador.html' },
@@ -1172,8 +1177,9 @@ const MODULOS_CONFIG = {
   ],
 };
 
-const GESTORES = ['Pablo Albinati','Tiago Souza Gomes','Cesar Rodrigues','Luiz Paulo Arouca','Joao Brito','Pedro Henrique de Carvalho Porto','Julia Sampaio'];
+const GESTORES = ['Cesar Rodrigues','Luiz Paulo Arouca','Joao Brito'];
 const RH_USERS = ['Marina Paiva'];
+const ADMS = ['Pablo Albinati','Tiago Souza Gomes','Pedro Henrique de Carvalho Porto','Julia Sampaio'];
 
 // ── DOCUMENTOS ──
 const DOCUMENTOS = [
@@ -1535,7 +1541,7 @@ function montarApp() {
   document.getElementById('greetData').textContent = `${saudacao}! Hoje é ${agora.toLocaleDateString('pt-BR', {weekday:'long', day:'numeric', month:'long'})}.`;
 
   // Módulos
-  const tipoUser = isRH ? 'rh' : GESTORES.includes(currentUser) ? 'gestores' : 'vendedores';
+  const tipoUser = isRH ? 'rh' : GESTORES.includes(currentUser) ? 'gestores' : ADMS.includes(currentUser) ? 'adms' : 'vendedores';
   const modulos = MODULOS_CONFIG[tipoUser] || MODULOS_CONFIG['vendedores'];
   const pendentes = docsPendentes();
   const bloqueado = pendentes.length > 0 && !isRH;
