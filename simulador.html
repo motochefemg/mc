@@ -804,77 +804,131 @@ window.addEventListener('load', function() {
 </button>
 
 <!-- MODAL REGULAMENTO -->
-<div id="modalReg" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,0.7);align-items:center;justify-content:center;padding:20px" onclick="if(event.target===this)this.style.display='none'">
-  <div style="background:var(--card,#1a1a1a);border:1px solid rgba(255,255,255,0.1);border-radius:16px;width:100%;max-width:680px;max-height:90vh;overflow-y:auto;font-family:'Barlow',sans-serif">
+<div id="modalReg" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,0.8);align-items:center;justify-content:center;padding:16px" onclick="if(event.target===this)this.style.display='none'">
+  <div style="background:#f5f5f0;border-radius:16px;width:100%;max-width:700px;max-height:92vh;overflow-y:auto;color:#1a1a1a;font-family:'Barlow',sans-serif">
+
     <!-- Header -->
-    <div style="padding:20px 24px;border-bottom:1px solid rgba(255,255,255,0.08);display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:var(--card,#1a1a1a);border-radius:16px 16px 0 0;z-index:1">
+    <div style="background:#1a1a1a;padding:20px 24px;border-radius:16px 16px 0 0;position:sticky;top:0;z-index:1;display:flex;justify-content:space-between;align-items:center">
       <div>
-        <div style="font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:2px;color:#ff4b00">REGULAMENTO OTE</div>
-        <div style="font-size:11px;color:#888;margin-top:2px">MotoChefe Sul de Minas · Abril 2026</div>
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:2px;color:#ff4b00">REGULAMENTO OFICIAL · MOTOCHEFE SUL DE MINAS</div>
+        <div style="font-size:11px;color:#aaa;margin-top:2px">Plano de Comissionamento, Performance e Premiações 2026</div>
       </div>
-      <button onclick="document.getElementById('modalReg').style.display='none'" style="background:rgba(255,255,255,0.08);border:none;border-radius:8px;padding:8px 12px;color:#fff;cursor:pointer;font-size:16px">✕</button>
+      <button onclick="document.getElementById('modalReg').style.display='none'" style="background:rgba(255,255,255,0.1);border:none;border-radius:8px;padding:8px 14px;color:#fff;cursor:pointer;font-size:16px;flex-shrink:0">✕</button>
     </div>
 
-    <div style="padding:20px 24px">
+    <div style="padding:24px">
 
-      <!-- Seção 01 -->
-      <div style="margin-bottom:16px;border:1px solid rgba(255,75,0,0.2);border-radius:10px;overflow:hidden">
-        <div style="background:rgba(255,75,0,0.08);padding:12px 16px;font-weight:700;font-size:13px;letter-spacing:.5px;color:#ff4b00">01 · COMISSÃO MENSAL</div>
-        <div style="padding:12px 16px;font-size:13px;color:#ccc;line-height:1.6">
-          <b style="color:#fff">0,5%</b> sobre o valor total de vendas de motos, apurada mensalmente. Verba de natureza <b style="color:#fff">remuneratória</b> — integra férias, 13º, FGTS e demais verbas trabalhistas.
+      <!-- 01 -->
+      <div style="margin-bottom:16px;border:1px solid #d0c8b0;border-radius:10px;overflow:hidden">
+        <div style="background:#1a1a1a;padding:10px 16px;font-weight:800;font-size:12px;letter-spacing:1px;color:#ff4b00">01 · COMISSÃO MENSAL</div>
+        <div style="padding:14px 16px;font-size:13px;color:#1a1a1a;line-height:1.7">
+          O vendedor fará jus a comissão de <b>0,5% (meio por cento)</b> sobre o valor total de vendas de motos, apurada mensalmente com base nas vendas efetivamente concluídas e registradas no sistema.<br><br>
+          A comissão é verba de natureza <b>remuneratória</b> e integra a base de cálculo das verbas trabalhistas, previdenciárias e fiscais aplicáveis, nos termos da CLT.
         </div>
       </div>
 
-      <!-- Seção 02 -->
-      <div style="margin-bottom:16px;border:1px solid rgba(255,193,7,0.2);border-radius:10px;overflow:hidden">
-        <div style="background:rgba(255,193,7,0.08);padding:12px 16px;font-weight:700;font-size:13px;letter-spacing:.5px;color:#f59e0b">02 · PREMIAÇÃO OTE — PROGRESSIVA</div>
-        <div style="padding:12px 16px;font-size:13px;color:#ccc;line-height:1.6">
-          Liberada a partir de <b style="color:#fff">R$ 162.000,01</b> em vendas no mês. Caráter <b style="color:#fff">indenizatório</b> — não gera reflexos trabalhistas (Art. 457 §4º CLT). Tabela válida para Abril/2026.
+      <!-- 02 -->
+      <div style="margin-bottom:16px;border:1px solid #d0c8b0;border-radius:10px;overflow:hidden">
+        <div style="background:#1a1a1a;padding:10px 16px;font-weight:800;font-size:12px;letter-spacing:1px;color:#f59e0b">02 · PREMIAÇÃO OTE — PROGRESSIVA POR VOLUME DE VENDAS</div>
+        <div style="padding:14px 16px;font-size:13px;color:#1a1a1a;line-height:1.7">
+          A premiação progressiva (OTE - On Target Earnings) será concedida ao vendedor que atingir os patamares de vendas estabelecidos, desde que cumpridos <b>integralmente</b> os indicadores de processo da Seção 03.<br><br>
+          A premiação OTE possui caráter <b>exclusivamente indenizatório</b>, não se incorporando à remuneração para fins trabalhistas, previdenciários ou fiscais, conforme <b>Art. 457, §4º da CLT</b>.<br><br>
+          <span style="background:#fff3cd;border-radius:4px;padding:3px 8px;font-size:12px;font-weight:700;color:#856404">⚠ TABELA VÁLIDA PARA O MÊS DE ABRIL DE 2026</span>
         </div>
       </div>
 
-      <!-- Seção 03 -->
-      <div style="margin-bottom:16px;border:1px solid rgba(59,130,246,0.2);border-radius:10px;overflow:hidden">
-        <div style="background:rgba(59,130,246,0.08);padding:12px 16px;font-weight:700;font-size:13px;letter-spacing:.5px;color:#3b82f6">03 · REQUISITOS PARA A PREMIAÇÃO</div>
-        <div style="padding:12px 16px;font-size:12px;color:#ccc;line-height:1.8">
-          <div style="color:#f87171;font-size:11px;margin-bottom:8px;font-weight:700">⚠ O não atendimento de qualquer item desqualifica do ciclo</div>
-          <div><b style="color:#fff">3.1 Ponto:</b> 100% pelo sistema de reconhecimento facial</div>
-          <div><b style="color:#fff">3.2 CRM (Kommo):</b> Script de vendas + lead completo (nome, cidade, modelo, fonte) + dados do lead ganho + manual ao cliente + tarefas agendadas + follow-up em até 3 dias</div>
-          <div><b style="color:#fff">3.3 Google:</b> Avaliações = nº de vendas, todas com ⭐⭐⭐⭐⭐</div>
-          <div><b style="color:#fff">3.4 Digital:</b> Foto de cada venda + 1 Story/dia + 1 Reel/semana</div>
-          <div><b style="color:#fff">3.5 Entrega:</b> 100% das entregas com checklist preenchido</div>
+      <!-- 03 -->
+      <div style="margin-bottom:16px;border:2px solid #dc2626;border-radius:10px;overflow:hidden">
+        <div style="background:#dc2626;padding:10px 16px;font-weight:800;font-size:12px;letter-spacing:1px;color:#fff">03 · REQUISITOS PARA A PREMIAÇÃO ⚠</div>
+        <div style="background:#fff5f5;padding:14px 16px;font-size:13px;color:#1a1a1a;line-height:1.7">
+          <b style="color:#dc2626">O não atendimento de qualquer item abaixo desqualifica o vendedor da premiação no ciclo vigente.</b><br><br>
+
+          <b>3.1 Controle de Ponto</b><br>
+          100% do ponto concluído pelo sistema de reconhecimento facial.<br><br>
+
+          <b>3.2 CRM — KOMMO</b><br>
+          • Primeiro atendimento seguindo o script de vendas padronizado<br>
+          • Informações obrigatórias do LEAD: nome completo, cidade, modelo de interesse, fonte (Instagram, Facebook, Indicação, Porta, etc.)<br>
+          • Dados obrigatórios no LEAD ganho: valor de venda, data da venda, dados do veículo<br>
+          • Envio do Manual ao cliente<br>
+          • Todos os LEADs nos funis "Tem interesse" e "Em Negociação" com tarefas agendadas<br>
+          • Follow-up obrigatório para LEADs com mais de 3 dias sem interação<br><br>
+
+          <b>3.3 Avaliação Google</b><br>
+          • Número de avaliações do mês = número de vendas realizadas<br>
+          • Todas as avaliações com nota mínima de ⭐⭐⭐⭐⭐<br><br>
+
+          <b>3.4 Posicionamento Digital</b><br>
+          • Foto de cada venda publicada (com menção do cliente e da MC Brasil)<br>
+          • Mínimo de 1 Story diário nas redes sociais<br>
+          • Mínimo de 1 Reel semanal<br><br>
+
+          <b>3.5 Processo de Vendas</b><br>
+          100% das entregas realizadas com checklist preenchido e validado.
         </div>
       </div>
 
-      <!-- Seção 04 -->
-      <div style="margin-bottom:16px;border:1px solid rgba(34,197,94,0.2);border-radius:10px;overflow:hidden">
-        <div style="background:rgba(34,197,94,0.08);padding:12px 16px;font-weight:700;font-size:13px;letter-spacing:.5px;color:#22c55e">04 · ELEGIBILIDADE</div>
-        <div style="padding:12px 16px;font-size:12px;color:#ccc;line-height:1.7">
-          Empregados ativos, adimplentes, sem penalidades disciplinares, com assiduidade e desempenho OK, e que cumpram todos os requisitos da Seção 03. Afastamentos e licenças excluem automaticamente do ciclo.
+      <!-- 04 -->
+      <div style="margin-bottom:16px;border:1px solid #d0c8b0;border-radius:10px;overflow:hidden">
+        <div style="background:#1a1a1a;padding:10px 16px;font-weight:800;font-size:12px;letter-spacing:1px;color:#22c55e">04 · ELEGIBILIDADE AO PROGRAMA</div>
+        <div style="padding:14px 16px;font-size:13px;color:#1a1a1a;line-height:1.7">
+          São elegíveis todos os empregados ativos da MotoChefe Sul de Minas em efetivo exercício, desde que:<br>
+          • Estejam adimplentes com suas obrigações contratuais<br>
+          • Não tenham sofrido penalidades disciplinares no período<br>
+          • Cumpram os requisitos de assiduidade, pontualidade e desempenho<br>
+          • Atendam integralmente os indicadores de processo da Seção 03<br><br>
+          <b>O afastamento por licenças (remuneradas ou não) ou suspensão contratual exclui automaticamente o empregado do ciclo vigente.</b>
         </div>
       </div>
 
-      <!-- Seção 05 -->
-      <div style="margin-bottom:16px;border:1px solid rgba(239,68,68,0.2);border-radius:10px;overflow:hidden">
-        <div style="background:rgba(239,68,68,0.08);padding:12px 16px;font-weight:700;font-size:13px;letter-spacing:.5px;color:#ef4444">05 · NÃO ELEGIBILIDADE</div>
-        <div style="padding:12px 16px;font-size:12px;color:#ccc;line-height:1.7">
-          Não recebe prêmio quem: não atingir a meta mínima; descumprir indicadores da Seção 03; incorrer em faltas graves, assédio, fraude, conduta antiética ou violação de compliance.
+      <!-- 05 -->
+      <div style="margin-bottom:16px;border:1px solid #d0c8b0;border-radius:10px;overflow:hidden">
+        <div style="background:#1a1a1a;padding:10px 16px;font-weight:800;font-size:12px;letter-spacing:1px;color:#f87171">05 · CONDIÇÕES DE NÃO ELEGIBILIDADE</div>
+        <div style="padding:14px 16px;font-size:13px;color:#1a1a1a;line-height:1.7">
+          Não fará jus à premiação o empregado que: não atingir os patamares mínimos de vendas; descumprir quaisquer indicadores de processo da Seção 03; incorrer em faltas graves, assédio, fraude, conduta antiética ou violação de normas de compliance e integridade.
         </div>
       </div>
 
-      <!-- Seções 06-09 agrupadas -->
-      <div style="margin-bottom:16px;border:1px solid rgba(255,255,255,0.08);border-radius:10px;overflow:hidden">
-        <div style="background:rgba(255,255,255,0.04);padding:12px 16px;font-weight:700;font-size:13px;letter-spacing:.5px;color:#aaa">06–09 · JURÍDICO, ADMIN & DISPOSIÇÕES</div>
-        <div style="padding:12px 16px;font-size:12px;color:#ccc;line-height:1.8">
-          <div><b style="color:#fff">06 — Natureza:</b> Comissão = remuneratória (reflexos trabalhistas). Prêmio OTE = indenizatório (sem reflexos). Destacado no holerite como "Prêmio por Desempenho".</div>
-          <div style="margin-top:6px"><b style="color:#fff">07 — Fechamento:</b> Quinzenal — dias 14 e 28. Auditoria: Karol Bonfim (MC Brasil). Contestação: 24h por escrito após resultado.</div>
-          <div style="margin-top:6px"><b style="color:#fff">08 — Validade:</b> 12 meses com possibilidade de ajustes mensais mediante comunicação formal.</div>
-          <div style="margin-top:6px"><b style="color:#fff">09 — Discricionariedade:</b> Empresa pode revisar, suspender ou encerrar o programa a qualquer tempo. Participação facultativa. Interpretação conforme CLT Art. 457 §4º.</div>
+      <!-- 06 -->
+      <div style="margin-bottom:16px;border:1px solid #d0c8b0;border-radius:10px;overflow:hidden">
+        <div style="background:#1a1a1a;padding:10px 16px;font-weight:800;font-size:12px;letter-spacing:1px;color:#a78bfa">06 · NATUREZA JURÍDICA DAS VERBAS</div>
+        <div style="padding:14px 16px;font-size:13px;color:#1a1a1a;line-height:1.7">
+          <b>6.1 Comissão:</b> Natureza remuneratória — gera reflexos em férias, 13º salário, FGTS, aviso prévio e demais verbas trabalhistas (Art. 457 da CLT).<br><br>
+          <b>6.2 Premiação OTE:</b> Caráter exclusivamente indenizatório e não salarial — concedida em razão de desempenho superior (Art. 457, §4º da CLT). Não gera reflexos em férias, 13º, FGTS, aviso prévio ou verbas rescisórias, tampouco integra encargos sociais.<br><br>
+          Toda premiação será destacada no holerite como <b>"Prêmio por Desempenho"</b>.
         </div>
       </div>
 
-      <div style="text-align:center;padding:12px;color:#555;font-size:11px">
-        Dúvidas? Fale com seu gestor ou com a auditoria (Karol Bonfim — MC Brasil)
+      <!-- 07 -->
+      <div style="margin-bottom:16px;border:1px solid #d0c8b0;border-radius:10px;overflow:hidden">
+        <div style="background:#1a1a1a;padding:10px 16px;font-weight:800;font-size:12px;letter-spacing:1px;color:#38bdf8">07 · REGRAS ADMINISTRATIVAS</div>
+        <div style="padding:14px 16px;font-size:13px;color:#1a1a1a;line-height:1.7">
+          <b>7.1 Fechamentos:</b> Quinzenal — dias <b>14 e 28</b> de cada mês.<br><br>
+          <b>7.2 Auditoria:</b> Responsável: <b>Karol Bonfim — MC Brasil</b>. Verificará o cumprimento integral de todos os indicadores antes da liberação de qualquer premiação.<br><br>
+          <b>7.3 Contestação:</b> Prazo de <b>24 horas</b> após a apresentação dos resultados. Deve ser realizada por escrito ao responsável pela auditoria.<br><br>
+          <b>7.4 Flexibilidade:</b> A Empresa reserva-se o direito de revisar, suspender ou encerrar este Programa a qualquer tempo, mediante comunicação formal, sem gerar direito adquirido ou obrigação de indenizar. Participação facultativa.
+        </div>
+      </div>
+
+      <!-- 08 -->
+      <div style="margin-bottom:16px;border:1px solid #d0c8b0;border-radius:10px;overflow:hidden">
+        <div style="background:#1a1a1a;padding:10px 16px;font-weight:800;font-size:12px;letter-spacing:1px;color:#fb923c">08 · VALIDADE E REAVALIAÇÃO</div>
+        <div style="padding:14px 16px;font-size:13px;color:#1a1a1a;line-height:1.7">
+          Válido por <b>12 meses</b> a partir da assinatura, passível de ajustes mensais para adequação às demandas e objetivos da Empresa. Ajustes em metas ou valores dos prêmios serão comunicados previamente e formalmente.
+        </div>
+      </div>
+
+      <!-- 09 -->
+      <div style="margin-bottom:24px;border:1px solid #d0c8b0;border-radius:10px;overflow:hidden">
+        <div style="background:#1a1a1a;padding:10px 16px;font-weight:800;font-size:12px;letter-spacing:1px;color:#e2e8f0">09 · DISPOSIÇÕES FINAIS</div>
+        <div style="padding:14px 16px;font-size:13px;color:#1a1a1a;line-height:1.7">
+          Este Regulamento visa assegurar um ambiente de trabalho justo e motivador, onde o mérito é valorizado, sem desvirtuar a natureza das verbas. Interpretação sempre em conformidade com a legislação trabalhista brasileira — Art. 457, §4º da CLT.<br><br>
+          <b>Não haverá previsão ou promessa de premiação no contrato de trabalho.</b> A decisão de conceder e o valor da premiação serão sempre discricionários da Empresa, baseados na análise do desempenho e nos resultados alcançados.
+        </div>
+      </div>
+
+      <div style="text-align:center;padding:12px;color:#888;font-size:12px;border-top:1px solid #d0c8b0">
+        Dúvidas? Fale com seu gestor ou com a auditoria — <b>Karol Bonfim · MC Brasil</b>
       </div>
     </div>
   </div>
