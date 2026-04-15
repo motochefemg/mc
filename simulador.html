@@ -311,6 +311,25 @@ tr.futura td{color:var(--text3);}
 
       <!-- SLIDER -->
       <div class="slider-card">
+        <div class="slider-header">
+          <div>
+            <div class="slider-label">Faturamento simulado</div>
+            <div class="slider-val" id="sliderVal">R$ 0</div>
+            <div id="pctBadge" class="pct-badge" style="background:rgba(255,75,0,.1);color:var(--accent)">0%</div>
+          </div>
+          <div class="meta-box">
+            <div class="ml">Meta mensal</div>
+            <div class="mv">R$ 160.000</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:3px">Mín: R$ 0</div>
+          </div>
+        </div>
+        <div class="range-wrap">
+          <div class="range-fill" id="rangeFill"></div>
+          <input type="range" id="slider" min="0" max="260000" step="1000" value="160000" oninput="onSlider(+this.value)">
+        </div>
+        <div class="range-labels">
+          <span>R$ 0</span><span>R$ 81k</span><span>R$ 162k ★</span><span>R$ 214k</span><span>R$ 260k</span>
+        </div>
         <div class="faixas">
           <div class="faixa f1" id="fx1"><div class="fl">Abaixo</div><div class="fp">&lt;70%</div></div>
           <div class="faixa f2" id="fx2"><div class="fl">Básico</div><div class="fp">70–100%</div></div>
@@ -383,7 +402,7 @@ tr.futura td{color:var(--text3);}
 const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzAYDr_pArf5uSPiK0mOQP0K_BMHFEAOJ9xYxMSVBigoCpY_F69GjJlXmE9WOuQZOIn/exec';
 const META = 162000;
 const MIN = 0;
-const MAX = 260000;
+const MAX = 462000;
 const MESES = ['','Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 
 // Senhas — não óbvias, mistura nome+ano+código
@@ -417,16 +436,40 @@ const LOJA_VENDEDOR = {
   'Cesar Rodrigues':'ECOMOV MATRIZ','Luiz Paulo Arouca':'ECOMOV MATRIZ',
 };
 
+// Tabela OTE — válida Abril 2026
+// v = vendas mínimas | a = prêmio acumulado
 const TABELA = [
-  {v:112000,p:0,   a:0},    {v:122000,p:50,  a:50},   {v:132000,p:60,  a:110},
-  {v:142000,p:70,  a:180},  {v:152000,p:80,  a:260},  {v:162000,p:800, a:1060},
-  {v:172000,p:100, a:1160}, {v:182000,p:120, a:1280}, {v:192000,p:140, a:1420},
-  {v:202000,p:160, a:1580}, {v:212000,p:180, a:1760}, {v:222000,p:900, a:2660},
-  {v:232000,p:200, a:2860}, {v:242000,p:210, a:3070}, {v:252000,p:220, a:3290},
-  {v:262000,p:1000,a:4290}, {v:272000,p:240, a:4530}, {v:282000,p:250, a:4780},
-  {v:292000,p:260, a:5040}, {v:302000,p:1200,a:6240}, {v:312000,p:280, a:6520},
-  {v:322000,p:290, a:6810}, {v:332000,p:300, a:7110}, {v:342000,p:310, a:7420},
-  {v:352000,p:1500,a:8920},
+  {v:162000.01, a:1000},
+  {v:172000,    a:1050},
+  {v:182000,    a:1110},
+  {v:192000,    a:1180},
+  {v:202000,    a:1260},
+  {v:212000,    a:2360},
+  {v:222000,    a:2410},
+  {v:232000,    a:2470},
+  {v:242000,    a:2540},
+  {v:252000,    a:2620},
+  {v:262000,    a:3820},
+  {v:272000,    a:3870},
+  {v:282000,    a:3930},
+  {v:292000,    a:4000},
+  {v:302000,    a:4080},
+  {v:312000,    a:5380},
+  {v:322000,    a:5430},
+  {v:332000,    a:5490},
+  {v:342000,    a:5560},
+  {v:352000,    a:5640},
+  {v:362000,    a:7040},
+  {v:372000,    a:7090},
+  {v:382000,    a:7150},
+  {v:392000,    a:7220},
+  {v:402000,    a:7300},
+  {v:412000,    a:8800},
+  {v:422000,    a:8850},
+  {v:432000,    a:8910},
+  {v:442000,    a:8980},
+  {v:452000,    a:9060},
+  {v:462000,    a:10660},
 ];
 
 let currentUser = null;
@@ -587,7 +630,8 @@ async function buscarFaturamento(){
     document.getElementById('vFat').textContent=fmtR(fatReal);
     document.getElementById('vQtd').textContent=qtdVend+' moto(s) no Bling';
     const val=Math.max(0,Math.min(MAX,fatReal||0));
-    atualizar(fatReal||0);
+    document.getElementById('slider').value=val;
+    atualizar(val);
 
   }catch(e){
     const msg=e.name==='AbortError'?'Timeout — tente novamente':e.message;
@@ -627,21 +671,27 @@ function calcular(vendas){
   const comissao = vendas*0.005;
   let idx=-1;
   for(let i=TABELA.length-1;i>=0;i--){if(vendas>=TABELA[i].v){idx=i;break;}}
-  const acum = idx>=0?TABELA[idx].a:0;
-  return {comissao,acum,total:comissao+acum,pct:vendas/META*100,idx};
+  const acum = idx>=0 ? TABELA[idx].a : 0;
+  return {comissao, acum, total:comissao+acum, pct:vendas/META*100, idx};
 }
 
 // ── ATUALIZAR TELA ─────────────────────────────────────────
 function atualizar(vendas){
-  const v = Math.max(MIN, vendas); // sem limite MAX — vendas podem superar 260k
+  const v = Math.max(MIN,Math.min(MAX,vendas));
   const {comissao,acum,total,pct,idx} = calcular(v);
 
   const cor = pctToCor(pct);
   const fxId = pct<70?'fx1':pct<100?'fx2':pct<110?'fx3':pct<120?'fx4':pct<140?'fx5':'fx6';
 
-  // Badge (oculto — elemento removido, mas mantém compatibilidade)
+  // Slider
+  document.getElementById('sliderVal').textContent='R$ '+Math.round(v).toLocaleString('pt-BR');
+  const fillPct=(v-MIN)/(MAX-MIN)*100;
+  document.getElementById('rangeFill').style.width=fillPct+'%';
+
+  // Badge
   const badge=document.getElementById('pctBadge');
-  if(badge){ badge.textContent=pct.toFixed(1).replace('.',',')+'% da meta'; badge.style.background=cor+'18';badge.style.color=cor;badge.style.border='1px solid '+cor+'40'; }
+  badge.textContent=pct.toFixed(1).replace('.',',')+'% da meta';
+  badge.style.background=cor+'18';badge.style.color=cor;badge.style.border='1px solid '+cor+'40';
 
   // Faixas
   // Cores por faixa baseadas no % central de cada faixa
@@ -683,15 +733,12 @@ function atualizar(vendas){
     document.getElementById('proxVal').textContent='';
   }
 
-  // Tabela — linha ativa = faixa do faturamento REAL
-  const {idx: idxReal} = calcular(fatReal||0); // sem limite MAX — fatReal pode superar 260k
+  // Tabela
   document.getElementById('tabBody').innerHTML=TABELA.map((l,i)=>{
     const com=l.v*0.005,tot=com+l.a,pv=tot/l.v*100,pm=l.v/META*100;
-    const isReal = i === idxReal;
-    const isFut  = l.v > (fatReal||0);
-    const badge  = isReal ? `<span style="background:var(--green);color:#fff;font-size:9px;padding:1px 6px;border-radius:4px;margin-left:6px;letter-spacing:1px">ATUAL</span>` : '';
-    return `<tr class="${isReal?'ativa':isFut?'futura':''}">
-      <td style="font-weight:600">${fmtR(l.v)}${badge}</td>
+    const isAt=i===idx,isFut=l.v>v;
+    return `<tr class="${isAt?'ativa':isFut?'futura':''}">
+      <td style="font-weight:600">${fmtR(l.v)}</td>
       <td style="font-size:11px;color:var(--text3)">${pm.toFixed(0)}%</td>
       <td class="tvb" style="color:${l.p>0?'var(--gold)':'var(--text3)'}">${l.p>0?fmtR(l.p):'—'}</td>
       <td class="tvb" style="color:${l.a>0?'var(--blue)':'var(--text3)'}">${l.a>0?fmtR(l.a):'—'}</td>
@@ -710,23 +757,7 @@ function atualizar(vendas){
   }
 }
 
-function onSlider(v){
-  // Sincroniza input manual com slider
-  const inp = document.getElementById('inputSimulado');
-  if(inp) inp.value = v || '';
-  atualizar(v);
-}
-
-function onInputManual(v){
-  if(!v || isNaN(v)) return;
-  const clamped = Math.max(MIN, Math.min(400000, v));
-  // Sincroniza slider
-  const slider = document.getElementById('slider');
-  if(slider) slider.value = Math.min(clamped, MAX);
-  const fill = (Math.min(clamped, MAX) - MIN) / (MAX - MIN) * 100;
-  document.getElementById('rangeFill').style.width = fill + '%';
-  atualizar(clamped);
-}
+function onSlider(v){ atualizar(v); }
 function fmtR(v){ return 'R$ '+Math.round(v).toLocaleString('pt-BR'); }
 function fmtPct(v){ return v.toFixed(2).replace('.',',')+'%'; }
 
@@ -764,6 +795,90 @@ window.addEventListener('load', function() {
   } catch(e) { console.warn('Auto-login erro:', e); }
 });
 </script>
+
+
+<!-- BOTÃO REGULAMENTO -->
+<button onclick="document.getElementById('modalReg').style.display='flex'"
+  style="position:fixed;bottom:24px;right:24px;z-index:900;background:var(--accent);color:#fff;border:none;border-radius:50px;padding:12px 20px;font-family:'Barlow',sans-serif;font-size:13px;font-weight:700;cursor:pointer;box-shadow:0 4px 16px rgba(255,75,0,0.4);display:flex;align-items:center;gap:8px;letter-spacing:.5px">
+  📋 Regulamento
+</button>
+
+<!-- MODAL REGULAMENTO -->
+<div id="modalReg" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,0.7);align-items:center;justify-content:center;padding:20px" onclick="if(event.target===this)this.style.display='none'">
+  <div style="background:var(--card,#1a1a1a);border:1px solid rgba(255,255,255,0.1);border-radius:16px;width:100%;max-width:680px;max-height:90vh;overflow-y:auto;font-family:'Barlow',sans-serif">
+    <!-- Header -->
+    <div style="padding:20px 24px;border-bottom:1px solid rgba(255,255,255,0.08);display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:var(--card,#1a1a1a);border-radius:16px 16px 0 0;z-index:1">
+      <div>
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:2px;color:#ff4b00">REGULAMENTO OTE</div>
+        <div style="font-size:11px;color:#888;margin-top:2px">MotoChefe Sul de Minas · Abril 2026</div>
+      </div>
+      <button onclick="document.getElementById('modalReg').style.display='none'" style="background:rgba(255,255,255,0.08);border:none;border-radius:8px;padding:8px 12px;color:#fff;cursor:pointer;font-size:16px">✕</button>
+    </div>
+
+    <div style="padding:20px 24px">
+
+      <!-- Seção 01 -->
+      <div style="margin-bottom:16px;border:1px solid rgba(255,75,0,0.2);border-radius:10px;overflow:hidden">
+        <div style="background:rgba(255,75,0,0.08);padding:12px 16px;font-weight:700;font-size:13px;letter-spacing:.5px;color:#ff4b00">01 · COMISSÃO MENSAL</div>
+        <div style="padding:12px 16px;font-size:13px;color:#ccc;line-height:1.6">
+          <b style="color:#fff">0,5%</b> sobre o valor total de vendas de motos, apurada mensalmente. Verba de natureza <b style="color:#fff">remuneratória</b> — integra férias, 13º, FGTS e demais verbas trabalhistas.
+        </div>
+      </div>
+
+      <!-- Seção 02 -->
+      <div style="margin-bottom:16px;border:1px solid rgba(255,193,7,0.2);border-radius:10px;overflow:hidden">
+        <div style="background:rgba(255,193,7,0.08);padding:12px 16px;font-weight:700;font-size:13px;letter-spacing:.5px;color:#f59e0b">02 · PREMIAÇÃO OTE — PROGRESSIVA</div>
+        <div style="padding:12px 16px;font-size:13px;color:#ccc;line-height:1.6">
+          Liberada a partir de <b style="color:#fff">R$ 162.000,01</b> em vendas no mês. Caráter <b style="color:#fff">indenizatório</b> — não gera reflexos trabalhistas (Art. 457 §4º CLT). Tabela válida para Abril/2026.
+        </div>
+      </div>
+
+      <!-- Seção 03 -->
+      <div style="margin-bottom:16px;border:1px solid rgba(59,130,246,0.2);border-radius:10px;overflow:hidden">
+        <div style="background:rgba(59,130,246,0.08);padding:12px 16px;font-weight:700;font-size:13px;letter-spacing:.5px;color:#3b82f6">03 · REQUISITOS PARA A PREMIAÇÃO</div>
+        <div style="padding:12px 16px;font-size:12px;color:#ccc;line-height:1.8">
+          <div style="color:#f87171;font-size:11px;margin-bottom:8px;font-weight:700">⚠ O não atendimento de qualquer item desqualifica do ciclo</div>
+          <div><b style="color:#fff">3.1 Ponto:</b> 100% pelo sistema de reconhecimento facial</div>
+          <div><b style="color:#fff">3.2 CRM (Kommo):</b> Script de vendas + lead completo (nome, cidade, modelo, fonte) + dados do lead ganho + manual ao cliente + tarefas agendadas + follow-up em até 3 dias</div>
+          <div><b style="color:#fff">3.3 Google:</b> Avaliações = nº de vendas, todas com ⭐⭐⭐⭐⭐</div>
+          <div><b style="color:#fff">3.4 Digital:</b> Foto de cada venda + 1 Story/dia + 1 Reel/semana</div>
+          <div><b style="color:#fff">3.5 Entrega:</b> 100% das entregas com checklist preenchido</div>
+        </div>
+      </div>
+
+      <!-- Seção 04 -->
+      <div style="margin-bottom:16px;border:1px solid rgba(34,197,94,0.2);border-radius:10px;overflow:hidden">
+        <div style="background:rgba(34,197,94,0.08);padding:12px 16px;font-weight:700;font-size:13px;letter-spacing:.5px;color:#22c55e">04 · ELEGIBILIDADE</div>
+        <div style="padding:12px 16px;font-size:12px;color:#ccc;line-height:1.7">
+          Empregados ativos, adimplentes, sem penalidades disciplinares, com assiduidade e desempenho OK, e que cumpram todos os requisitos da Seção 03. Afastamentos e licenças excluem automaticamente do ciclo.
+        </div>
+      </div>
+
+      <!-- Seção 05 -->
+      <div style="margin-bottom:16px;border:1px solid rgba(239,68,68,0.2);border-radius:10px;overflow:hidden">
+        <div style="background:rgba(239,68,68,0.08);padding:12px 16px;font-weight:700;font-size:13px;letter-spacing:.5px;color:#ef4444">05 · NÃO ELEGIBILIDADE</div>
+        <div style="padding:12px 16px;font-size:12px;color:#ccc;line-height:1.7">
+          Não recebe prêmio quem: não atingir a meta mínima; descumprir indicadores da Seção 03; incorrer em faltas graves, assédio, fraude, conduta antiética ou violação de compliance.
+        </div>
+      </div>
+
+      <!-- Seções 06-09 agrupadas -->
+      <div style="margin-bottom:16px;border:1px solid rgba(255,255,255,0.08);border-radius:10px;overflow:hidden">
+        <div style="background:rgba(255,255,255,0.04);padding:12px 16px;font-weight:700;font-size:13px;letter-spacing:.5px;color:#aaa">06–09 · JURÍDICO, ADMIN & DISPOSIÇÕES</div>
+        <div style="padding:12px 16px;font-size:12px;color:#ccc;line-height:1.8">
+          <div><b style="color:#fff">06 — Natureza:</b> Comissão = remuneratória (reflexos trabalhistas). Prêmio OTE = indenizatório (sem reflexos). Destacado no holerite como "Prêmio por Desempenho".</div>
+          <div style="margin-top:6px"><b style="color:#fff">07 — Fechamento:</b> Quinzenal — dias 14 e 28. Auditoria: Karol Bonfim (MC Brasil). Contestação: 24h por escrito após resultado.</div>
+          <div style="margin-top:6px"><b style="color:#fff">08 — Validade:</b> 12 meses com possibilidade de ajustes mensais mediante comunicação formal.</div>
+          <div style="margin-top:6px"><b style="color:#fff">09 — Discricionariedade:</b> Empresa pode revisar, suspender ou encerrar o programa a qualquer tempo. Participação facultativa. Interpretação conforme CLT Art. 457 §4º.</div>
+        </div>
+      </div>
+
+      <div style="text-align:center;padding:12px;color:#555;font-size:11px">
+        Dúvidas? Fale com seu gestor ou com a auditoria (Karol Bonfim — MC Brasil)
+      </div>
+    </div>
+  </div>
+</div>
 
 </body>
 </html>
