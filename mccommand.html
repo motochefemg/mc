@@ -1911,15 +1911,50 @@ function fazerLogout() {
   document.getElementById('inputSenha').value = '';
   document.getElementById('selUsuario').value = '';
 }
+// ── MAPEAMENTO SSO: nome MC Command → credenciais das ferramentas ──
+const SSO_MAP = {
+  // nome completo → { caixaU: loja_key, caixaP: senha_loja, estoqueU: user_key, estoqueP: senha }
+  'Pablo Albinati':                   { caixaU:'MOTOCHEFE Varginha',        caixaP:'VRG@2k26#pa',  estoqueU:'pablo',    estoqueP:'VRG@2k26#pa'  },
+  'Tiago Souza Gomes':                { caixaU:'ECOMOV LAV',                caixaP:'LAV@2k26#tz',  estoqueU:'tiago',    estoqueP:'LAV@2k26#tz'  },
+  'Pedro Henrique de Carvalho Porto': { caixaU:'ECOMOV Pouso Alegre',       caixaP:'PSA@2k26#ph',  estoqueU:'pedro',    estoqueP:'PSA@2k26#ph'  },
+  'Julia Sampaio':                    { caixaU:'MOTOCHEFE Poços de Caldas', caixaP:'POC@2k26#js',  estoqueU:'julia_s',  estoqueP:'POC@2k26#js'  },
+  'Cesar Rodrigues':                  { caixaU:'__cesar__',                 caixaP:'CR$Mg26!gest', estoqueU:'cesar',    estoqueP:'CR$Mg26!gest' },
+  'Luiz Paulo Arouca':                { caixaU:'__luiz__',                  caixaP:'LP$Mg26!gest', estoqueU:'luiz',     estoqueP:'LP$Mg26!gest' },
+  'Joao Brito':                       { caixaU:'__joao__',                  caixaP:'JB$Mg26!gest', estoqueU:'joao',     estoqueP:'JB$Mg26!gest' },
+  // Vendedores — acessam caixa pela loja do ADM responsável
+  'Karla Souza Chagas':               { caixaU:'MOTOCHEFE Varginha',        caixaP:'VRG@2k26#pa',  estoqueU:'karla',    estoqueP:'KS#Chefe7'    },
+  'Murilo Belo':                      { caixaU:'MOTOCHEFE Varginha',        caixaP:'VRG@2k26#pa',  estoqueU:'murilo',   estoqueP:'MB!Vrg2026'   },
+  'Julia Nascimento':                 { caixaU:'MOTOCHEFE Poços de Caldas', caixaP:'POC@2k26#js',  estoqueU:'julia_n',  estoqueP:'JN*Poc831'    },
+  'Rayssa Dayane Muniz Martins':      { caixaU:'MOTOCHEFE Poços de Caldas', caixaP:'POC@2k26#js',  estoqueU:'rayssa',   estoqueP:'RM@Day526'    },
+  'Fernando Lopes':                   { caixaU:'MOTOCHEFE Poços de Caldas', caixaP:'POC@2k26#js',  estoqueU:'fernando', estoqueP:'FL#Poc77x'    },
+  'Emanuel Paiva':                    { caixaU:'ECOMOV LAV',                caixaP:'LAV@2k26#tz',  estoqueU:'emanuel',  estoqueP:'EP@Lav314'    },
+  'Kawan Manso':                      { caixaU:'ECOMOV Pouso Alegre',       caixaP:'PSA@2k26#ph',  estoqueU:'kawan',    estoqueP:'KM!Pso26m'    },
+  'Charles Carvalho':                 { caixaU:'ECOMOV Pouso Alegre',       caixaP:'PSA@2k26#ph',  estoqueU:'charles',  estoqueP:'CC@Pso5k2'    },
+  'Anne Ester':                       { caixaU:'ECOMOV Pouso Alegre',       caixaP:'PSA@2k26#ph',  estoqueU:'karla',    estoqueP:'AE@Pso26a'    },
+  'Carlos Barbosa':                   { caixaU:'MOTOCHEFE Itajubá',         caixaP:'ITJ@2k26#mc',  estoqueU:'carlos',   estoqueP:'CB@Itj26b'    },
+  'Juscelino Junior':                 { caixaU:'MOTOCHEFE Itajubá',         caixaP:'ITJ@2k26#mc',  estoqueU:'juninho',  estoqueP:'JJ#Itj26k'    },
+  'Luara Alkmin':                     { caixaU:'MOTOCHEFE Itajubá',         caixaP:'ITJ@2k26#mc',  estoqueU:'karla',    estoqueP:'LA!Itj26l'    },
+};
+
 // ── IFRAME ──
 function abrirFerramenta(url, nome) {
-  // Salvar sessão MC Command no localStorage para as ferramentas lerem
-  // e não pedirem senha novamente
-  localStorage.setItem('mc_sso', JSON.stringify({
-    user: currentUser,
-    ts: Date.now()
-  }));
-  // Abrir em nova aba — GitHub Pages bloqueia iframe cross-origin
+  const ts = Date.now();
+  const sso = SSO_MAP[currentUser] || {};
+
+  // SSO para caixa.html — usa loja key + senha da loja
+  if (sso.caixaU) {
+    localStorage.setItem('mc_cx_session', JSON.stringify({ u: sso.caixaU, p: sso.caixaP, ts }));
+  }
+
+  // SSO para estoque.html — usa user key + senha do user
+  if (sso.estoqueU) {
+    localStorage.setItem('mc_est_session', JSON.stringify({ u: sso.estoqueU, p: sso.estoqueP, ts }));
+  }
+
+  // SSO genérico — chaves adicionais por precaução
+  localStorage.setItem('mc_sso',         JSON.stringify({ user: currentUser, nome: dadosColab?.COLABORADOR || currentUser, funcao: dadosColab?.FUNÇÃO || '', ts }));
+  localStorage.setItem('mc_cmd_session', JSON.stringify({ u: currentUser, p: '', ts }));
+
   window.open(url, '_blank');
 }
 
