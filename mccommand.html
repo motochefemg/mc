@@ -1707,11 +1707,13 @@ function renderDocConteudo(doc) {
       <div class="dados-grid">
         <div class="dado-item"><span class="dado-label">Colaborador:</span><span class="dado-value">${dados.COLABORADOR||'—'}</span></div>
         <div class="dado-item"><span class="dado-label">CPF:</span><span class="dado-value">${dados.CPF||'—'}</span></div>
-        <div class="dado-item"><span class="dado-label">Função:</span><span class="dado-value">${dados['FUNÇÃO']||dados.FUNCAO||'—'}</span></div>
+        <div class="dado-item"><span class="dado-label">Data de Nascimento:</span><span class="dado-value">${dados['DATA NASCIMENTO']||'—'}</span></div>
+        <div class="dado-item"><span class="dado-label">Função:</span><span class="dado-value">${dados['FUNÇÃO']||'—'}</span></div>
         <div class="dado-item"><span class="dado-label">Loja:</span><span class="dado-value">${dados.LOJA||'—'}</span></div>
-        <div class="dado-item"><span class="dado-label">Razão Social:</span><span class="dado-value">${dados['RAZAO SOCIAL']||dados.RAZAO_SOCIAL||'—'}</span></div>
+        <div class="dado-item"><span class="dado-label">Razão Social:</span><span class="dado-value">${dados['RAZAO SOCIAL']||'—'}</span></div>
         <div class="dado-item"><span class="dado-label">CNPJ:</span><span class="dado-value">${dados.CNPJ||'—'}</span></div>
-        <div class="dado-item"><span class="dado-label">Data contrato:</span><span class="dado-value">${dados['DATA CONTRATO']||dados.DATA_CONTRATO||'—'}</span></div>
+        <div class="dado-item"><span class="dado-label">Data do Contrato:</span><span class="dado-value">${dados['DATA CONTRATO']||'—'}</span></div>
+        <div class="dado-item"><span class="dado-label">E-mail:</span><span class="dado-value">${dados.EMAIL||'—'}</span></div>
       </div>
     </div>`;
 
@@ -1748,7 +1750,7 @@ function renderDocConteudo(doc) {
         </div>
         <div class="form-field full">
           <label>E-mail (receberá cópia)</label>
-          <input type="email" id="email_${doc.id}" placeholder="seuemail@gmail.com">
+          <input type="email" id="email_${doc.id}" value="${dados.EMAIL||''}" placeholder="seuemail@gmail.com">
         </div>
       </div>
       <div class="check-wrap">
