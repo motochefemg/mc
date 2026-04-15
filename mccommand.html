@@ -1132,21 +1132,21 @@ const AS = 'https://script.google.com/macros/s/AKfycbzAYDr_pArf5uSPiK0mOQP0K_BMH
 // ── MÓDULOS ──
 const MODULOS_CONFIG = {
   'adms': [
-    { nome:'Caixa', desc:'Movimentações financeiras da loja', icon:'🏦', color:'#1a7a4a', iconBg:'#e8f5ee', url:'https://motochefemg.github.io/mc/caixa.html' },
-    { nome:'Estoque', desc:'Controle de motocicletas', icon:'🏍', color:'#7c2d12', iconBg:'#fef3ee', url:'https://motochefemg.github.io/mc/estoque_motochefe.html' },
+    { nome:'Caixa', desc:'Movimentações financeiras da loja', icon:'🏦', color:'#1a7a4a', iconBg:'#e8f5ee', url:'https://motochefemg.github.io/mc/mc-caixa.html' },
+    { nome:'Estoque', desc:'Controle de motocicletas', icon:'🏍', color:'#7c2d12', iconBg:'#fef3ee', url:'https://motochefemg.github.io/mc/mc-estoque.html' },
     { nome:'Simulador de Comissão', desc:'Metas e premiação OTE 2026', icon:'💰', color:'#b45309', iconBg:'#fef9ee', url:'https://motochefemg.github.io/mc/simulador.html' },
   ],
   'rh': [
     { nome:'Dashboard de Vendas', desc:'Relatórios e KPIs de todas as lojas', icon:'📊', color:'#ff4b00', iconBg:'#fff3ee', url:'https://motochefemg.github.io/mc/GESTAO.html' },
     { nome:'Simulador de Comissão', desc:'Metas e premiação OTE 2026', icon:'💰', color:'#1a7a4a', iconBg:'#e8f5ee', url:'https://motochefemg.github.io/mc/simulador.html' },
     { nome:'Aceites & Registros', desc:'Aceites de regulamento e documentos assinados', icon:'✅', color:'#1a4a7a', iconBg:'#eef3f9', url:'https://motochefemg.github.io/mc/simulador.html', rhOnly:true },
-    { nome:'Caixa', desc:'Movimentações financeiras', icon:'🏦', color:'#166534', iconBg:'#e8f5ee', url:'https://motochefemg.github.io/mc/caixa.html' },
-    { nome:'Estoque', desc:'Controle de motocicletas', icon:'🏍', color:'#7c2d12', iconBg:'#fef3ee', url:'https://motochefemg.github.io/mc/estoque_motochefe.html' },
+    { nome:'Caixa', desc:'Movimentações financeiras', icon:'🏦', color:'#166534', iconBg:'#e8f5ee', url:'https://motochefemg.github.io/mc/mc-caixa.html' },
+    { nome:'Estoque', desc:'Controle de motocicletas', icon:'🏍', color:'#7c2d12', iconBg:'#fef3ee', url:'https://motochefemg.github.io/mc/mc-estoque.html' },
   ],
   'gestores': [
     { nome:'Dashboard de Vendas', desc:'Relatórios e KPIs completos', icon:'📊', color:'#ff4b00', iconBg:'#fff3ee', url:'https://motochefemg.github.io/mc/GESTAO.html' },
-    { nome:'Caixa', desc:'Movimentações financeiras da loja', icon:'🏦', color:'#1a7a4a', iconBg:'#e8f5ee', url:'https://motochefemg.github.io/mc/caixa.html' },
-    { nome:'Estoque', desc:'Controle de motocicletas', icon:'🏍', color:'#7c2d12', iconBg:'#fef3ee', url:'https://motochefemg.github.io/mc/estoque_motochefe.html' },
+    { nome:'Caixa', desc:'Movimentações financeiras da loja', icon:'🏦', color:'#1a7a4a', iconBg:'#e8f5ee', url:'https://motochefemg.github.io/mc/mc-caixa.html' },
+    { nome:'Estoque', desc:'Controle de motocicletas', icon:'🏍', color:'#7c2d12', iconBg:'#fef3ee', url:'https://motochefemg.github.io/mc/mc-estoque.html' },
     { nome:'Simulador de Comissão', desc:'Metas e premiação OTE 2026', icon:'💰', color:'#b45309', iconBg:'#fef9ee', url:'https://motochefemg.github.io/mc/simulador.html' },
   ],
   'vendedores': [
@@ -1537,7 +1537,8 @@ async function fazerLogin() {
   err.textContent = '';
 
   try {
-    const r = await fetch(`${AS}?action=dados_colab&login=${encodeURIComponent(usuario)}`);
+    const loginSheets = LOGIN_MAP[usuario] || usuario;
+    const r = await fetch(`${AS}?action=dados_colab&login=${encodeURIComponent(loginSheets)}`);
     const j = await r.json();
     if(!j.success || !j.dados){ err.textContent = 'Usuário não encontrado. Contacte o RH.'; btn.disabled=false; btn.textContent='Entrar na plataforma →'; return; }
     const cpfSheets = (j.dados.CPF||'').replace(/\D/g,'');
@@ -1577,10 +1578,20 @@ async function carregarDadosColab() {
     return;
   }
   try {
-    const r = await fetch(`${AS}?action=dados_colab&login=${encodeURIComponent(currentUser)}`);
+    // Usa o login curto do SSO_MAP se existir, senão tenta o nome completo
+    const sso = SSO_MAP[currentUser] || {};
+    const loginSheets = sso.estoqueU || currentUser;
+    const r = await fetch(`${AS}?action=dados_colab&login=${encodeURIComponent(loginSheets)}`);
     const j = await r.json();
-    if(j.success && j.dados) dadosColab = j.dados;
-    else dadosColab = { COLABORADOR: currentUser, FUNÇÃO: '', LOJA: '' };
+    if(j.success && j.dados) {
+      dadosColab = j.dados;
+      // Garante que o COLABORADOR exibe o nome completo
+      if(!dadosColab.COLABORADOR || dadosColab.COLABORADOR === loginSheets) {
+        dadosColab.COLABORADOR = currentUser;
+      }
+    } else {
+      dadosColab = { COLABORADOR: currentUser, FUNÇÃO: '', LOJA: '' };
+    }
   } catch(e) {
     dadosColab = { COLABORADOR: currentUser, FUNÇÃO: '', LOJA: '' };
   }
@@ -1911,6 +1922,30 @@ function fazerLogout() {
   document.getElementById('inputSenha').value = '';
   document.getElementById('selUsuario').value = '';
 }
+
+// ── MAPA: nome completo → LOGIN no Sheets ──
+const LOGIN_MAP = {
+  'Pablo Albinati':                   'Pablo Albinati',
+  'Tiago Souza Gomes':                'Tiago Souza Gomes',
+  'Pedro Henrique de Carvalho Porto': 'Pedro Henrique de Carvalho Porto',
+  'Julia Sampaio':                    'Julia Sampaio',
+  'Cesar Rodrigues':                  'Cesar Rodrigues',
+  'Luiz Paulo Arouca':                'Luiz Paulo Arouca',
+  'Joao Brito':                       'Joao Brito',
+  'Anne Ester':                       'Anne Ester',
+  'Carlos Barbosa':                   'Carlos Barbosa',
+  'Charles Carvalho':                 'Charles Carvalho',
+  'Emanuel Paiva':                    'Emanuel Paiva',
+  'Fernando Lopes':                   'Fernando Lopes',
+  'Julia Nascimento':                 'Julia Nascimento',
+  'Juscelino Junior':                 'Juscelino Junior',
+  'Karla Souza Chagas':               'Karla Souza Chagas',
+  'Kawan Manso':                      'Kawan Manso',
+  'Luara Alkmin':                     'Luara Alkmin',
+  'Murilo Belo':                      'Murilo Belo',
+  'Rayssa Dayane Muniz Martins':      'Rayssa Dayane Muniz Martins',
+};
+
 // ── MAPEAMENTO SSO: nome MC Command → credenciais das ferramentas ──
 const SSO_MAP = {
   // nome completo → { caixaU: loja_key, caixaP: senha_loja, estoqueU: user_key, estoqueP: senha }
@@ -1951,11 +1986,24 @@ function abrirFerramenta(url, nome) {
     localStorage.setItem('mc_est_session', JSON.stringify({ u: sso.estoqueU, p: sso.estoqueP, ts }));
   }
 
-  // SSO genérico — chaves adicionais por precaução
-  localStorage.setItem('mc_sso',         JSON.stringify({ user: currentUser, nome: dadosColab?.COLABORADOR || currentUser, funcao: dadosColab?.FUNÇÃO || '', ts }));
+  // Token de sessão para módulos filhos (mc-caixa, mc-estoque, mc-simulador)
+  const token = btoa(currentUser + '|' + ts + '|MC2026');
+  const payload = {
+    user:   currentUser,
+    nome:   dadosColab?.COLABORADOR || currentUser,
+    funcao: dadosColab?.FUNÇÃO      || '',
+    loja:   dadosColab?.LOJA        || '',
+    login:  (SSO_MAP[currentUser] || {}).estoqueU || currentUser,
+    token,
+    ts
+  };
+  localStorage.setItem('mc_sso',         JSON.stringify(payload));
   localStorage.setItem('mc_cmd_session', JSON.stringify({ u: currentUser, p: '', ts }));
 
-  window.open(url, '_blank');
+  // Passa token na URL — fallback se localStorage estiver bloqueado
+  const sep = url.includes('?') ? '&' : '?';
+  const urlFinal = url + sep + 'mc_token=' + encodeURIComponent(token) + '&mc_user=' + encodeURIComponent(currentUser);
+  window.open(urlFinal, '_blank');
 }
 
 function fecharIframe() {

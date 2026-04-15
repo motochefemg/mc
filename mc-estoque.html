@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MC Estoque · MotoChefe</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:'Barlow',sans-serif; background:#f2f1ef; min-height:100vh; display:flex; flex-direction:column; }
+#bloqueio {
+  min-height:100vh; display:flex; align-items:center; justify-content:center;
+  background:radial-gradient(ellipse at 50% 0%, rgba(255,75,0,.07) 0%, transparent 60%);
+}
+.bloqueio-box {
+  text-align:center; padding:52px 40px; background:#fff;
+  border:1px solid rgba(0,0,0,.1); border-radius:18px;
+  box-shadow:0 8px 40px rgba(0,0,0,.08); max-width:400px;
+}
+.bloqueio-icon { font-size:52px; margin-bottom:20px; }
+.bloqueio-titulo { font-family:'Bebas Neue'; font-size:28px; letter-spacing:3px; color:#ff4b00; margin-bottom:8px; }
+.bloqueio-sub { font-size:14px; color:#888; line-height:1.6; margin-bottom:28px; }
+.bloqueio-btn {
+  display:inline-block; padding:14px 32px; background:#ff4b00; color:#fff;
+  border-radius:10px; font-family:'Barlow'; font-size:14px; font-weight:700;
+  letter-spacing:2px; text-transform:uppercase; text-decoration:none; transition:.2s;
+}
+.bloqueio-btn:hover { background:#ff6a2a; }
+#carregando {
+  min-height:100vh; display:none; align-items:center; justify-content:center; flex-direction:column; gap:16px;
+}
+.spin { width:28px; height:28px; border:3px solid #e5e5e5; border-top-color:#ff4b00; border-radius:50%; animation:spin .7s linear infinite; }
+@keyframes spin { to { transform:rotate(360deg); } }
+.loading-txt { font-size:13px; color:#999; }
+#frameWrap { display:none; flex:1; flex-direction:column; }
+.mc-header {
+  height:44px; background:#1a1a1a; display:flex; align-items:center; padding:0 16px; gap:12px; flex-shrink:0;
+}
+.mc-header-logo { font-family:'Bebas Neue'; font-size:16px; letter-spacing:3px; color:#ff4b00; }
+.mc-header-sep { width:1px; height:16px; background:rgba(255,255,255,.15); }
+.mc-header-user { font-size:11px; color:rgba(255,255,255,.5); flex:1; }
+.mc-header-back {
+  padding:4px 12px; border:1px solid rgba(255,255,255,.2); border-radius:6px;
+  color:rgba(255,255,255,.6); font-size:11px; cursor:pointer; background:transparent;
+  font-family:'Barlow'; transition:.2s;
+}
+.mc-header-back:hover { border-color:#ff4b00; color:#ff4b00; }
+iframe { flex:1; border:none; width:100%; min-height:calc(100vh - 44px); }
+</style>
+</head>
+<body>
+
+<div id="bloqueio">
+  <div class="bloqueio-box">
+    <div class="bloqueio-icon">🔐</div>
+    <div class="bloqueio-titulo">Acesso Restrito</div>
+    <div class="bloqueio-sub">
+      Esta ferramenta só pode ser acessada através do portal <strong>MC Command</strong>.<br>
+      Faça login no portal para continuar.
+    </div>
+    <a href="https://motochefemg.github.io/mc/mccommand.html" class="bloqueio-btn">
+      → Acessar MC Command
+    </a>
+  </div>
+</div>
+
+<div id="carregando">
+  <div class="spin"></div>
+  <div class="loading-txt">Autenticando sessão...</div>
+</div>
+
+<div id="frameWrap">
+  <div class="mc-header">
+    <div class="mc-header-logo">MC Command</div>
+    <div class="mc-header-sep"></div>
+    <div class="mc-header-user" id="headerUser">—</div>
+    <button class="mc-header-back" onclick="voltarCommand()">← Voltar ao Portal</button>
+  </div>
+  <iframe id="mainFrame" src="" title="MC Estoque"></iframe>
+</div>
+
+<script>
+const ESTOQUE_URL = 'https://motochefemg.github.io/mc/estoque_motochefe.html';
+const COMMAND_URL = 'https://motochefemg.github.io/mc/mccommand.html';
+const TOKEN_EXPIRY = 8 * 60 * 60 * 1000;
+
+const ESTOQUE_MAP = {
+  'Pablo Albinati':                   { u:'pablo',    p:'VRG@2k26#pa'  },
+  'Tiago Souza Gomes':                { u:'tiago',    p:'LAV@2k26#tz'  },
+  'Pedro Henrique de Carvalho Porto': { u:'pedro',    p:'PSA@2k26#ph'  },
+  'Julia Sampaio':                    { u:'julia_s',  p:'POC@2k26#js'  },
+  'Cesar Rodrigues':                  { u:'cesar',    p:'CR$Mg26!gest' },
+  'Luiz Paulo Arouca':                { u:'luiz',     p:'LP$Mg26!gest' },
+  'Joao Brito':                       { u:'joao',     p:'JB$Mg26!gest' },
+  'Karla Souza Chagas':               { u:'karla',    p:'KS#Chefe7'    },
+  'Murilo Belo':                      { u:'murilo',   p:'MB!Vrg2026'   },
+  'Julia Nascimento':                 { u:'julia_n',  p:'JN*Poc831'    },
+  'Rayssa Dayane Muniz Martins':      { u:'rayssa',   p:'RM@Day526'    },
+  'Fernando Lopes':                   { u:'fernando', p:'FL#Poc77x'    },
+  'Emanuel Paiva':                    { u:'emanuel',  p:'EP@Lav314'    },
+  'Kawan Manso':                      { u:'kawan',    p:'KM!Pso26m'    },
+  'Charles Carvalho':                 { u:'charles',  p:'CC@Pso5k2'    },
+  'Anne Ester':                       { u:'karla',    p:'AE@Pso26a'    },
+  'Carlos Barbosa':                   { u:'carlos',   p:'CB@Itj26b'    },
+  'Juscelino Junior':                 { u:'juninho',  p:'JJ#Itj26k'    },
+  'Luara Alkmin':                     { u:'karla',    p:'LA!Itj26l'    },
+};
+
+function getURLParam(name) {
+  return new URLSearchParams(window.location.search).get(name);
+}
+
+function validarToken(token, user, ts) {
+  if (!token || !user || !ts) return false;
+  if (Date.now() - parseInt(ts) > TOKEN_EXPIRY) return false;
+  return token === btoa(user + '|' + ts + '|MC2026');
+}
+
+function iniciar(sso) {
+  document.getElementById('carregando').style.display = 'flex';
+  document.getElementById('bloqueio').style.display = 'none';
+
+  const creds = ESTOQUE_MAP[sso.user];
+  if (!creds) {
+    document.getElementById('bloqueio').style.display = 'flex';
+    document.getElementById('carregando').style.display = 'none';
+    return;
+  }
+
+  localStorage.setItem('mc_est_session', JSON.stringify({
+    u: creds.u, p: creds.p, ts: Date.now()
+  }));
+
+  document.getElementById('headerUser').textContent =
+    (sso.nome || sso.user) + (sso.funcao ? ' · ' + sso.funcao : '');
+
+  const frame = document.getElementById('mainFrame');
+  frame.src = ESTOQUE_URL;
+  frame.onload = () => {
+    document.getElementById('carregando').style.display = 'none';
+    document.getElementById('frameWrap').style.display = 'flex';
+  };
+}
+
+function voltarCommand() {
+  window.location.href = COMMAND_URL;
+}
+
+window.addEventListener('load', () => {
+  const urlToken = getURLParam('mc_token');
+  const urlUser  = getURLParam('mc_user');
+
+  if (urlToken && urlUser) {
+    try {
+      const sso = JSON.parse(localStorage.getItem('mc_sso') || '{}');
+      if (validarToken(urlToken, urlUser, sso.ts || Date.now())) {
+        iniciar({ ...sso, user: urlUser });
+        return;
+      }
+    } catch(e) {}
+  }
+
+  try {
+    const sso = JSON.parse(localStorage.getItem('mc_sso') || '{}');
+    if (sso.user && sso.token && sso.ts && validarToken(sso.token, sso.user, sso.ts)) {
+      iniciar(sso);
+      return;
+    }
+  } catch(e) {}
+
+  document.getElementById('bloqueio').style.display = 'flex';
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MC Caixa · MotoChefe</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:'Barlow',sans-serif; background:#f4f4f2; min-height:100vh; display:flex; flex-direction:column; }
+
+/* BLOQUEIO */
+#bloqueio {
+  min-height:100vh; display:flex; align-items:center; justify-content:center;
+  background:radial-gradient(ellipse at 50% 0%, rgba(255,75,0,.07) 0%, transparent 60%);
+}
+.bloqueio-box {
+  text-align:center; padding:52px 40px; background:#fff;
+  border:1px solid rgba(0,0,0,.1); border-radius:18px;
+  box-shadow:0 8px 40px rgba(0,0,0,.08); max-width:400px;
+}
+.bloqueio-icon { font-size:52px; margin-bottom:20px; }
+.bloqueio-titulo { font-family:'Bebas Neue'; font-size:28px; letter-spacing:3px; color:#ff4b00; margin-bottom:8px; }
+.bloqueio-sub { font-size:14px; color:#888; line-height:1.6; margin-bottom:28px; }
+.bloqueio-btn {
+  display:inline-block; padding:14px 32px; background:#ff4b00; color:#fff;
+  border-radius:10px; font-family:'Barlow'; font-size:14px; font-weight:700;
+  letter-spacing:2px; text-transform:uppercase; text-decoration:none;
+  transition:.2s; cursor:pointer; border:none;
+}
+.bloqueio-btn:hover { background:#ff6a2a; }
+
+/* CARREGANDO */
+#carregando {
+  min-height:100vh; display:none; align-items:center; justify-content:center;
+  flex-direction:column; gap:16px;
+}
+.spin { width:28px; height:28px; border:3px solid #e5e5e5; border-top-color:#ff4b00; border-radius:50%; animation:spin .7s linear infinite; }
+@keyframes spin { to { transform:rotate(360deg); } }
+.loading-txt { font-size:13px; color:#999; }
+
+/* FRAME */
+#frameWrap {
+  display:none; flex:1; flex-direction:column;
+}
+.mc-header {
+  height:44px; background:#1a1a1a; display:flex; align-items:center;
+  padding:0 16px; gap:12px; flex-shrink:0;
+}
+.mc-header-logo { font-family:'Bebas Neue'; font-size:16px; letter-spacing:3px; color:#ff4b00; }
+.mc-header-sep { width:1px; height:16px; background:rgba(255,255,255,.15); }
+.mc-header-user { font-size:11px; color:rgba(255,255,255,.5); flex:1; }
+.mc-header-back {
+  padding:4px 12px; border:1px solid rgba(255,255,255,.2); border-radius:6px;
+  color:rgba(255,255,255,.6); font-size:11px; cursor:pointer; background:transparent;
+  font-family:'Barlow'; transition:.2s;
+}
+.mc-header-back:hover { border-color:#ff4b00; color:#ff4b00; }
+iframe {
+  flex:1; border:none; width:100%; min-height:calc(100vh - 44px);
+}
+</style>
+</head>
+<body>
+
+<!-- BLOQUEIO -->
+<div id="bloqueio">
+  <div class="bloqueio-box">
+    <div class="bloqueio-icon">🔐</div>
+    <div class="bloqueio-titulo">Acesso Restrito</div>
+    <div class="bloqueio-sub">
+      Esta ferramenta só pode ser acessada através do portal <strong>MC Command</strong>.<br>
+      Faça login no portal para continuar.
+    </div>
+    <a href="https://motochefemg.github.io/mc/mccommand.html" class="bloqueio-btn">
+      → Acessar MC Command
+    </a>
+  </div>
+</div>
+
+<!-- CARREGANDO -->
+<div id="carregando">
+  <div class="spin"></div>
+  <div class="loading-txt">Autenticando sessão...</div>
+</div>
+
+<!-- FRAME -->
+<div id="frameWrap">
+  <div class="mc-header">
+    <div class="mc-header-logo">MC Command</div>
+    <div class="mc-header-sep"></div>
+    <div class="mc-header-user" id="headerUser">—</div>
+    <button class="mc-header-back" onclick="voltarCommand()">← Voltar ao Portal</button>
+  </div>
+  <iframe id="mainFrame" src="" title="MC Caixa"></iframe>
+</div>
+
+<script>
+const CAIXA_URL = 'https://motochefemg.github.io/mc/caixa.html';
+const COMMAND_URL = 'https://motochefemg.github.io/mc/mccommand.html';
+const TOKEN_EXPIRY = 8 * 60 * 60 * 1000; // 8 horas
+
+// Mapeamento nome completo → credenciais do caixa
+const CAIXA_MAP = {
+  'Pablo Albinati':                   { u:'MOTOCHEFE Varginha',        p:'VRG@2k26#pa'  },
+  'Tiago Souza Gomes':                { u:'ECOMOV LAV',                p:'LAV@2k26#tz'  },
+  'Pedro Henrique de Carvalho Porto': { u:'ECOMOV Pouso Alegre',       p:'PSA@2k26#ph'  },
+  'Julia Sampaio':                    { u:'MOTOCHEFE Poços de Caldas', p:'POC@2k26#js'  },
+  'Cesar Rodrigues':                  { u:'__cesar__',                 p:'CR$Mg26!gest' },
+  'Luiz Paulo Arouca':                { u:'__luiz__',                  p:'LP$Mg26!gest' },
+  'Joao Brito':                       { u:'__joao__',                  p:'JB$Mg26!gest' },
+  'Karla Souza Chagas':               { u:'MOTOCHEFE Varginha',        p:'VRG@2k26#pa'  },
+  'Murilo Belo':                      { u:'MOTOCHEFE Varginha',        p:'VRG@2k26#pa'  },
+  'Julia Nascimento':                 { u:'MOTOCHEFE Poços de Caldas', p:'POC@2k26#js'  },
+  'Rayssa Dayane Muniz Martins':      { u:'MOTOCHEFE Poços de Caldas', p:'POC@2k26#js'  },
+  'Fernando Lopes':                   { u:'MOTOCHEFE Poços de Caldas', p:'POC@2k26#js'  },
+  'Emanuel Paiva':                    { u:'ECOMOV LAV',                p:'LAV@2k26#tz'  },
+  'Kawan Manso':                      { u:'ECOMOV Pouso Alegre',       p:'PSA@2k26#ph'  },
+  'Charles Carvalho':                 { u:'ECOMOV Pouso Alegre',       p:'PSA@2k26#ph'  },
+  'Anne Ester':                       { u:'ECOMOV Pouso Alegre',       p:'PSA@2k26#ph'  },
+  'Carlos Barbosa':                   { u:'MOTOCHEFE Itajubá',         p:'ITJ@2k26#mc'  },
+  'Juscelino Junior':                 { u:'MOTOCHEFE Itajubá',         p:'ITJ@2k26#mc'  },
+  'Luara Alkmin':                     { u:'MOTOCHEFE Itajubá',         p:'ITJ@2k26#mc'  },
+};
+
+function getURLParam(name) {
+  return new URLSearchParams(window.location.search).get(name);
+}
+
+function validarToken(token, user, ts) {
+  if (!token || !user || !ts) return false;
+  if (Date.now() - parseInt(ts) > TOKEN_EXPIRY) return false;
+  const esperado = btoa(user + '|' + ts + '|MC2026');
+  return token === esperado;
+}
+
+function iniciar(sso) {
+  document.getElementById('carregando').style.display = 'flex';
+  document.getElementById('bloqueio').style.display = 'none';
+
+  const creds = CAIXA_MAP[sso.user];
+  if (!creds) {
+    document.getElementById('bloqueio').style.display = 'flex';
+    document.getElementById('carregando').style.display = 'none';
+    return;
+  }
+
+  // Injeta sessão do caixa
+  localStorage.setItem('mc_cx_session', JSON.stringify({
+    u: creds.u, p: creds.p, ts: Date.now()
+  }));
+
+  document.getElementById('headerUser').textContent =
+    (sso.nome || sso.user) + (sso.funcao ? ' · ' + sso.funcao : '');
+
+  // Carrega o caixa no iframe
+  const frame = document.getElementById('mainFrame');
+  frame.src = CAIXA_URL;
+  frame.onload = () => {
+    document.getElementById('carregando').style.display = 'none';
+    document.getElementById('frameWrap').style.display = 'flex';
+  };
+}
+
+function voltarCommand() {
+  window.location.href = COMMAND_URL;
+}
+
+// Verificação de autenticidade
+window.addEventListener('load', () => {
+  const urlToken = getURLParam('mc_token');
+  const urlUser  = getURLParam('mc_user');
+
+  // 1. Tenta via URL params
+  if (urlToken && urlUser) {
+    try {
+      const sso = JSON.parse(localStorage.getItem('mc_sso') || '{}');
+      const ts  = sso.ts || Date.now();
+      if (validarToken(urlToken, urlUser, ts)) {
+        iniciar({ ...sso, user: urlUser });
+        return;
+      }
+    } catch(e) {}
+  }
+
+  // 2. Tenta via localStorage
+  try {
+    const sso = JSON.parse(localStorage.getItem('mc_sso') || '{}');
+    if (sso.user && sso.token && sso.ts) {
+      if (validarToken(sso.token, sso.user, sso.ts)) {
+        iniciar(sso);
+        return;
+      }
+    }
+  } catch(e) {}
+
+  // 3. Sem sessão válida — mostra bloqueio
+  document.getElementById('bloqueio').style.display = 'flex';
+});
+</script>
+</body>
+</html>
