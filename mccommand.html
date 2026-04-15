@@ -984,14 +984,16 @@ body {
           <optgroup label="── Gestora de RH ──">
             <option value="Marina Paiva">Marina Paiva — Gestora de RH</option>
           </optgroup>
+          <optgroup label="── Administradores ──">
+            <option value="Pablo Albinati">Pablo Albinati</option>
+            <option value="Tiago Souza Gomes">Tiago Souza Gomes</option>
+            <option value="Pedro Henrique de Carvalho Porto">Pedro Henrique de Carvalho Porto</option>
+            <option value="Julia Sampaio">Julia Sampaio</option>
+          </optgroup>
           <optgroup label="── Gestores ──">
             <option value="Cesar Rodrigues">Cesar Rodrigues</option>
             <option value="Joao Brito">João Brito</option>
-            <option value="Julia Sampaio">Julia Sampaio</option>
             <option value="Luiz Paulo Arouca">Luiz Paulo Arouca</option>
-            <option value="Pablo Albinati">Pablo Albinati</option>
-            <option value="Pedro Henrique de Carvalho Porto">Pedro Henrique de Carvalho Porto</option>
-            <option value="Tiago Souza Gomes">Tiago Souza Gomes</option>
           </optgroup>
           <optgroup label="── Colaboradores ──">
             <option value="Anne Ester">Anne Ester</option>
@@ -1602,7 +1604,7 @@ function montarApp() {
   document.getElementById('greetData').textContent = `${saudacao}! Hoje é ${agora.toLocaleDateString('pt-BR', {weekday:'long', day:'numeric', month:'long'})}.`;
 
   // Módulos
-  const tipoUser = isRH ? 'rh' : GESTORES.includes(currentUser) ? 'gestores' : ADMS.includes(currentUser) ? 'adms' : 'vendedores';
+  const tipoUser = isRH ? 'rh' : ADMS.includes(currentUser) ? 'adms' : GESTORES.includes(currentUser) ? 'gestores' : 'vendedores';
   const modulos = MODULOS_CONFIG[tipoUser] || MODULOS_CONFIG['vendedores'];
   const pendentes = docsPendentes();
   const bloqueado = pendentes.length > 0 && !isRH;
