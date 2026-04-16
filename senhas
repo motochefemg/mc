@@ -234,29 +234,27 @@ textarea.fc{resize:vertical;min-height:70px;}
     <label class="lll">Usuário</label>
     <select class="lls" id="selUser">
       <option value="">Selecione...</option>
-      <optgroup label="Gestores">
+     <optgroup label="Gestores">
         <option value="cesar">César Rodrigues</option>
         <option value="luiz">Luiz Paulo Arouca</option>
         <option value="matheus">Matheus</option>
         <option value="joao">João Brito</option>
+        <option value="marina">Marina Paiva</option>
       </optgroup>
       <optgroup label="ADMs de Loja">
         <option value="tiago">Tiago — ECOMOV Lavras</option>
         <option value="carlos">Carlos — MOTOCHEFE Itajubá</option>
-        <option value="juninho">Juninho — MOTOCHEFE Itajubá</option>
-        <option value="marcos">Marcos — Montador Itajubá</option>
         <option value="julia_s">Julia Sampaio — MOTOCHEFE Poços</option>
         <option value="pablo">Pablo — MOTOCHEFE Varginha</option>
         <option value="pedro">Pedro Henrique — ECOMOV Pouso Alegre</option>
       </optgroup>
       <optgroup label="Vendedores — Varginha">
         <option value="karla">Karla Souza Chagas</option>
-        <option value="murilo">Murilo Belo</option>
+        <option value="fernando">Fernando Lopes</option>
       </optgroup>
       <optgroup label="Vendedores — Poços de Caldas">
         <option value="julia_n">Julia Nascimento</option>
         <option value="rayssa">Rayssa Dayane Martins</option>
-        <option value="fernando">Fernando Lopes</option>
       </optgroup>
       <optgroup label="Vendedores — Lavras">
         <option value="emanuel">Emanuel Paiva</option>
@@ -264,11 +262,22 @@ textarea.fc{resize:vertical;min-height:70px;}
       <optgroup label="Vendedores — Pouso Alegre">
         <option value="kawan">Kawan Manso</option>
         <option value="charles">Charles Carvalho</option>
+        <option value="anne">Anne Ester</option>
       </optgroup>
       <optgroup label="Vendedores — Matriz">
         <option value="cesar_v">Cesar Rodrigues (Vendas)</option>
         <option value="luiz_v">Luiz Paulo Arouca (Vendas)</option>
       </optgroup>
+      </optgroup>”Vendedores — Itajuba">
+        <option value="juninho">Juninho — MOTOCHEFE Itajubá</option>
+      </optgroup>
+      </optgroup>”Mecanico — Itajuba">
+        <option value="marcos">Marcos — Mecanico Itajubá</option>
+       </optgroup>
+       </optgroup>”Mecanico — Varginha">
+          <option value="murilo">Murilo Belo</option>
+      </optgroup>
+
     </select>
     <label class="lll">Senha</label>
     <input type="password" class="lli" id="loginSenha" placeholder="••••••" onkeydown="if(event.key==='Enter')doLogin()">
@@ -1040,7 +1049,7 @@ textarea.fc{resize:vertical;min-height:70px;}
 // ══════════════════════════════════════════════
 const SENHAS = {
   // Gestores — mesma senha do caixa
-  cesar:'CR$Mg26!gest', luiz:'LP$Mg26!gest', matheus:'MT$Mg26!gest', joao:'JB$Mg26!gest',
+  cesar:'CR$Mg26!gest', luiz:'LP$Mg26!gest', matheus:'MT$Mg26!gest', joao:'JB$Mg26!gest', marina:'MP@RH26mc'
   // ADMs — mesma senha da loja no caixa
   tiago:'LAV@2k26#tz', carlos:'ITJ@2k26#mc', julia_s:'POC@2k26#js',
   pablo:'VRG@2k26#pa', pedro:'PSA@2k26#ph',
@@ -1050,26 +1059,27 @@ const SENHAS = {
   julia_s2:'JS!Sam26k',
   emanuel:'EP@Lav314',
   kawan:'KM!Pso26m', charles:'CC@Pso5k2',
-  cesar_v:'CR$Mg26!gest', luiz_v:'LP$Mg26!gest',
+  cesar_v:'CR$Mg26!gest', luiz_v:'LP$Mg26!gest',marina:'MP@RH26mc'
   // Itajubá
-  juninho:'JN@Itj26v', marcos:'MK@Itj26m',
+juninho:'JN@Itj26v', marcos:'MK@Itj26m', marina:'MP@RH26mc', anne:'AE@Pso26a', luara:'LA@Itj26l',
 };
+
 const NOMES = {
   cesar:'César Rodrigues', luiz:'Luiz Paulo Arouca', matheus:'Matheus', joao:'João Brito',
   tiago:'Tiago (Lavras)', carlos:'Carlos (Itajubá)', julia_s:'Julia Sampaio (Poços)',
   pablo:'Pablo (Varginha)', pedro:'Pedro Henrique (Pouso Alegre)',
-  karla:'Karla Souza Chagas', murilo:'Murilo Belo',
-  julia_n:'Julia Nascimento', rayssa:'Rayssa Martins', fernando:'Fernando Lopes',
+  karla:'Karla Souza Chagas', murilo:'Murilo Belo (Montador Varginha)', fernando:'Fernando Lopes',
+  julia_n:'Julia Nascimento', rayssa:'Rayssa Martins',
   emanuel:'Emanuel Paiva',
-  kawan:'Kawan Manso', charles:'Charles Carvalho',
+  kawan:'Kawan Manso', charles:'Charles Carvalho', anne: 'Anne Ester',
   cesar_v:'Cesar Rodrigues', luiz_v:'Luiz Paulo Arouca',
-  juninho:'Juninho (Itajubá)', marcos:'Marcos (Montador Itajubá)',
+  juninho:'Juninho (Itajubá)', marcos:'Marcos (Montador Itajubá)', luara:'Luara Alkmim (Itajubá)',
 };
 // PERFIS: gestor > adm > vendedor
-const GESTORES  = ['cesar','luiz','matheus','joao'];
+const GESTORES  = ['cesar','luiz','matheus','joao', 'marina'];
 const ADMS      = ['tiago','carlos','julia_s','pablo','pedro'];
-const MONTADORES_LIST = ['marcos']; // montadores — só montam, não vendem
-const VENDEDORES_LIST = ['karla','murilo','julia_n','rayssa','fernando','emanuel','kawan','charles','cesar_v','luiz_v','juninho'];
+const MONTADORES_LIST = ['marcos','murilo']; // montadores — só montam, não vendem
+const VENDEDORES_LIST = ['karla','julia_n','rayssa','fernando','emanuel','kawan','charles','cesar_v','luiz_v','juninho','anne','luara'];
 
 function getPerfil(){ 
   if(GESTORES.includes(currentUser)) return 'gestor';
