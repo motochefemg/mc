@@ -3717,17 +3717,28 @@ async function setSituacao(id, novaSit, overlay) {
 
 
 <script>
+// Auto-login — SSO mccommand ou sessão própria
 window.addEventListener('load', function() {
+  // SSO mccommand
   try {
-    var s = JSON.parse(localStorage.getItem('mc_est_session') || 'null');
-    if(s && s.u && s.p && (Date.now() - s.ts) < 7*24*60*60*1000) {
-      var sel = document.getElementById('selUser');
-      var inp = document.getElementById('loginSenha');
-      var chk = document.getElementById('lembrar');
-      if(sel && inp) { sel.value=s.u; inp.value=s.p; if(chk) chk.checked=true; doLogin(); }
+    var _s=JSON.parse(localStorage.getItem('mc_sso')||'{}');
+    if(_s.user&&_s.token&&_s.ts&&(Date.now()-parseInt(_s.ts)<28800000)&&_s.token===btoa(_s.user+'|'+_s.ts+'|MC2026')){
+      var _m={'Pablo Albinati':{u:'pablo',p:'VRG@2k26#pa'},'Tiago Souza Gomes':{u:'tiago',p:'LAV@2k26#tz'},'Pedro Henrique de Carvalho Porto':{u:'pedro',p:'PSA@2k26#ph'},'Julia Sampaio':{u:'julia_s',p:'POC@2k26#js'},'Cesar Rodrigues':{u:'cesar',p:'CR$Mg26!gest'},'Luiz Paulo Arouca':{u:'luiz',p:'LP$Mg26!gest'},'Joao Brito':{u:'joao',p:'JB$Mg26!gest'},'Karla Souza Chagas':{u:'karla',p:'KS#Chefe7'},'Murilo Belo':{u:'murilo',p:'MB!Vrg2026'},'Julia Nascimento':{u:'julia_n',p:'JN*Poc831'},'Rayssa Dayane Muniz Martins':{u:'rayssa',p:'RM@Day526'},'Fernando Lopes':{u:'fernando',p:'FL#Poc77x'},'Emanuel Paiva':{u:'emanuel',p:'EP@Lav314'},'Kawan Manso':{u:'kawan',p:'KM!Pso26m'},'Charles Carvalho':{u:'charles',p:'CC@Pso5k2'},'Anne Ester':{u:'karla',p:'AE@Pso26a'},'Carlos Barbosa':{u:'carlos',p:'CB@Itj26b'},'Juscelino Junior':{u:'juninho',p:'JJ#Itj26k'},'Luara Alkmin':{u:'karla',p:'LA!Itj26l'}};
+      var _c=_m[_s.user];
+      if(_c){var _se=document.getElementById('selUser');var _ie=document.getElementById('loginSenha');if(_se&&_ie){_se.value=_c.u;_ie.value=_c.p;doLogin();return;}}
     }
-  } catch(e) {}
-});
+  }catch(e){}
+  // sessão própria
+    try {
+      var s = JSON.parse(localStorage.getItem('mc_est_session') || 'null');
+      if(s && s.u && s.p && (Date.now() - s.ts) < 7*24*60*60*1000) {
+        var sel = document.getElementById('selUser');
+        var inp = document.getElementById('loginSenha');
+        var chk = document.getElementById('lembrar');
+        if(sel && inp) { sel.value=s.u; inp.value=s.p; if(chk) chk.checked=true; doLogin(); }
+      }
+    } catch(e) {}
+  });
 </script>
 
 <script>
@@ -3743,4 +3754,3 @@ window.addEventListener('load', () => {
 </script>
 </body>
 </html>
-
