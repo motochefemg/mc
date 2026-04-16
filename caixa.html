@@ -2121,45 +2121,6 @@ function imprimirRecibo() {
   </head><body>${el.outerHTML}<scr"+"ipt>window.onload=()=>{window.print();window.close();}<\/scr"+"ipt>
 
 
-<script>
-// SSO MC COMMAND
-window.addEventListener('load', function() {
-  setTimeout(function() {
-    try {
-      var sso = JSON.parse(localStorage.getItem('mc_sso') || 'null');
-      if(sso && sso.user && (Date.now() - sso.ts) < 28800000) {
-        var mapa = {
-          'Cesar Rodrigues':                  {u:'__cesar__',                p:'CR$Mg26!gest'},
-          'Luiz Paulo Arouca':                {u:'__luiz__',                 p:'LP$Mg26!gest'},
-          'João Brito':                       {u:'__joao__',                 p:'JB$Mg26!gest'},
-          'Marina Paiva':                     {u:'__cesar__',                p:'CR$Mg26!gest'},
-          'Pablo Albinati':                   {u:'MOTOCHEFE Varginha',       p:'VRG@2k26#pa'},
-          'Tiago Souza Gomes':                {u:'ECOMOV LAV',               p:'LAV@2k26#tz'},
-          'Pedro Henrique de Carvalho Porto': {u:'ECOMOV Pouso Alegre',      p:'PSA@2k26#ph'},
-          'Julia Sampaio':                    {u:'MOTOCHEFE Poços de Caldas',p:'POC@2k26#js'},
-          'Carlos Barbosa':                   {u:'MOTOCHEFE Itajubá',        p:'ITJ@2k26#mc'},
-          'Karla Chagas':                     {u:'MOTOCHEFE Varginha',       p:'VRG@2k26#pa'},
-          'Murilo Belo':                      {u:'MOTOCHEFE Varginha',       p:'VRG@2k26#pa'},
-          'Julia Nascimento':                 {u:'MOTOCHEFE Poços de Caldas',p:'POC@2k26#js'},
-          'Rayssa Martins':                   {u:'MOTOCHEFE Poços de Caldas',p:'POC@2k26#js'},
-          'Fernando Lopes':                   {u:'MOTOCHEFE Poços de Caldas',p:'POC@2k26#js'},
-          'Emanuel Paiva':                    {u:'ECOMOV LAV',               p:'LAV@2k26#tz'},
-          'Kawan Manso':                      {u:'ECOMOV Pouso Alegre',      p:'PSA@2k26#ph'},
-          'Charles Carvalho':                 {u:'ECOMOV Pouso Alegre',      p:'PSA@2k26#ph'},
-          'Marcos Vinicius':                  {u:'MOTOCHEFE Itajubá',        p:'ITJ@2k26#mc'}
-        };
-        var cred = mapa[sso.user];
-        if(cred) {
-          var sel = document.getElementById('selLoja');
-          var inp = document.getElementById('inputSenha');
-          if(sel && inp) { sel.value = cred.u; inp.value = cred.p; doLogin(); }
-          return;
-        }
-      }
-    } catch(e) {}
-  }, 2000);
-});
-</script>
 </body></html>`);
   w.document.close();
 }
@@ -2185,90 +2146,12 @@ function verComprovante(mov) {
       const w = window.open('', '_blank', 'width=700,height=800');
       if (c.base64.startsWith('data:application/pdf')) {
         w.document.write(`<html><body style="margin:0"><embed src="${c.base64}" width="100%" height="100%" type="application/pdf">
-<script>
-// SSO MC COMMAND
-window.addEventListener('load', function() {
-  setTimeout(function() {
-    try {
-      var sso = JSON.parse(localStorage.getItem('mc_sso') || 'null');
-      if(sso && sso.user && (Date.now() - sso.ts) < 28800000) {
-        var mapa = {
-          'Cesar Rodrigues':                  {u:'__cesar__',                p:'CR$Mg26!gest'},
-          'Luiz Paulo Arouca':                {u:'__luiz__',                 p:'LP$Mg26!gest'},
-          'João Brito':                       {u:'__joao__',                 p:'JB$Mg26!gest'},
-          'Marina Paiva':                     {u:'__cesar__',                p:'CR$Mg26!gest'},
-          'Pablo Albinati':                   {u:'MOTOCHEFE Varginha',       p:'VRG@2k26#pa'},
-          'Tiago Souza Gomes':                {u:'ECOMOV LAV',               p:'LAV@2k26#tz'},
-          'Pedro Henrique de Carvalho Porto': {u:'ECOMOV Pouso Alegre',      p:'PSA@2k26#ph'},
-          'Julia Sampaio':                    {u:'MOTOCHEFE Poços de Caldas',p:'POC@2k26#js'},
-          'Carlos Barbosa':                   {u:'MOTOCHEFE Itajubá',        p:'ITJ@2k26#mc'},
-          'Karla Chagas':                     {u:'MOTOCHEFE Varginha',       p:'VRG@2k26#pa'},
-          'Murilo Belo':                      {u:'MOTOCHEFE Varginha',       p:'VRG@2k26#pa'},
-          'Julia Nascimento':                 {u:'MOTOCHEFE Poços de Caldas',p:'POC@2k26#js'},
-          'Rayssa Martins':                   {u:'MOTOCHEFE Poços de Caldas',p:'POC@2k26#js'},
-          'Fernando Lopes':                   {u:'MOTOCHEFE Poços de Caldas',p:'POC@2k26#js'},
-          'Emanuel Paiva':                    {u:'ECOMOV LAV',               p:'LAV@2k26#tz'},
-          'Kawan Manso':                      {u:'ECOMOV Pouso Alegre',      p:'PSA@2k26#ph'},
-          'Charles Carvalho':                 {u:'ECOMOV Pouso Alegre',      p:'PSA@2k26#ph'},
-          'Marcos Vinicius':                  {u:'MOTOCHEFE Itajubá',        p:'ITJ@2k26#mc'}
-        };
-        var cred = mapa[sso.user];
-        if(cred) {
-          var sel = document.getElementById('selLoja');
-          var inp = document.getElementById('inputSenha');
-          if(sel && inp) { sel.value = cred.u; inp.value = cred.p; doLogin(); }
-          return;
-        }
-      }
-    } catch(e) {}
-  }, 2000);
-});
-</script>
 </body></html>`);
       } else {
         w.document.write(`<html><body style="margin:10px;background:#111;text-align:center">
           <p style="color:#aaa;font-size:12px;margin-bottom:10px">${c.nome||'Comprovante'}</p>
           <img src="${c.base64}" style="max-width:100%;border-radius:8px">
         
-<script>
-// SSO MC COMMAND
-window.addEventListener('load', function() {
-  setTimeout(function() {
-    try {
-      var sso = JSON.parse(localStorage.getItem('mc_sso') || 'null');
-      if(sso && sso.user && (Date.now() - sso.ts) < 28800000) {
-        var mapa = {
-          'Cesar Rodrigues':                  {u:'__cesar__',                p:'CR$Mg26!gest'},
-          'Luiz Paulo Arouca':                {u:'__luiz__',                 p:'LP$Mg26!gest'},
-          'João Brito':                       {u:'__joao__',                 p:'JB$Mg26!gest'},
-          'Marina Paiva':                     {u:'__cesar__',                p:'CR$Mg26!gest'},
-          'Pablo Albinati':                   {u:'MOTOCHEFE Varginha',       p:'VRG@2k26#pa'},
-          'Tiago Souza Gomes':                {u:'ECOMOV LAV',               p:'LAV@2k26#tz'},
-          'Pedro Henrique de Carvalho Porto': {u:'ECOMOV Pouso Alegre',      p:'PSA@2k26#ph'},
-          'Julia Sampaio':                    {u:'MOTOCHEFE Poços de Caldas',p:'POC@2k26#js'},
-          'Carlos Barbosa':                   {u:'MOTOCHEFE Itajubá',        p:'ITJ@2k26#mc'},
-          'Karla Chagas':                     {u:'MOTOCHEFE Varginha',       p:'VRG@2k26#pa'},
-          'Murilo Belo':                      {u:'MOTOCHEFE Varginha',       p:'VRG@2k26#pa'},
-          'Julia Nascimento':                 {u:'MOTOCHEFE Poços de Caldas',p:'POC@2k26#js'},
-          'Rayssa Martins':                   {u:'MOTOCHEFE Poços de Caldas',p:'POC@2k26#js'},
-          'Fernando Lopes':                   {u:'MOTOCHEFE Poços de Caldas',p:'POC@2k26#js'},
-          'Emanuel Paiva':                    {u:'ECOMOV LAV',               p:'LAV@2k26#tz'},
-          'Kawan Manso':                      {u:'ECOMOV Pouso Alegre',      p:'PSA@2k26#ph'},
-          'Charles Carvalho':                 {u:'ECOMOV Pouso Alegre',      p:'PSA@2k26#ph'},
-          'Marcos Vinicius':                  {u:'MOTOCHEFE Itajubá',        p:'ITJ@2k26#mc'}
-        };
-        var cred = mapa[sso.user];
-        if(cred) {
-          var sel = document.getElementById('selLoja');
-          var inp = document.getElementById('inputSenha');
-          if(sel && inp) { sel.value = cred.u; inp.value = cred.p; doLogin(); }
-          return;
-        }
-      }
-    } catch(e) {}
-  }, 2000);
-});
-</script>
 </body></html>`);
       }
       w.document.close();
@@ -2568,35 +2451,35 @@ window.addEventListener('load', function() {
   setTimeout(function() {
     try {
       var sso = JSON.parse(localStorage.getItem('mc_sso') || 'null');
-      if(sso && sso.user && (Date.now() - sso.ts) < 28800000) {
-        var mapa = {
-          'Cesar Rodrigues':                  {u:'__cesar__',                p:'CR$Mg26!gest'},
-          'Luiz Paulo Arouca':                {u:'__luiz__',                 p:'LP$Mg26!gest'},
-          'João Brito':                       {u:'__joao__',                 p:'JB$Mg26!gest'},
-          'Marina Paiva':                     {u:'__cesar__',                p:'CR$Mg26!gest'},
-          'Pablo Albinati':                   {u:'MOTOCHEFE Varginha',       p:'VRG@2k26#pa'},
-          'Tiago Souza Gomes':                {u:'ECOMOV LAV',               p:'LAV@2k26#tz'},
-          'Pedro Henrique de Carvalho Porto': {u:'ECOMOV Pouso Alegre',      p:'PSA@2k26#ph'},
-          'Julia Sampaio':                    {u:'MOTOCHEFE Poços de Caldas',p:'POC@2k26#js'},
-          'Carlos Barbosa':                   {u:'MOTOCHEFE Itajubá',        p:'ITJ@2k26#mc'},
-          'Karla Chagas':                     {u:'MOTOCHEFE Varginha',       p:'VRG@2k26#pa'},
-          'Murilo Belo':                      {u:'MOTOCHEFE Varginha',       p:'VRG@2k26#pa'},
-          'Julia Nascimento':                 {u:'MOTOCHEFE Poços de Caldas',p:'POC@2k26#js'},
-          'Rayssa Martins':                   {u:'MOTOCHEFE Poços de Caldas',p:'POC@2k26#js'},
-          'Fernando Lopes':                   {u:'MOTOCHEFE Poços de Caldas',p:'POC@2k26#js'},
-          'Emanuel Paiva':                    {u:'ECOMOV LAV',               p:'LAV@2k26#tz'},
-          'Kawan Manso':                      {u:'ECOMOV Pouso Alegre',      p:'PSA@2k26#ph'},
-          'Charles Carvalho':                 {u:'ECOMOV Pouso Alegre',      p:'PSA@2k26#ph'},
-          'Marcos Vinicius':                  {u:'MOTOCHEFE Itajubá',        p:'ITJ@2k26#mc'}
-        };
-        var cred = mapa[sso.user];
-        if(cred) {
-          var sel = document.getElementById('selLoja');
-          var inp = document.getElementById('inputSenha');
-          if(sel && inp) { sel.value = cred.u; inp.value = cred.p; doLogin(); }
-          return;
-        }
-      }
+      if(!sso || !sso.user || (Date.now() - sso.ts) > 28800000) return;
+      var mapa = {
+        'Cesar Rodrigues':                  {u:'__cesar__',                 p:'CR$Mg26!gest'},
+        'Luiz Paulo Arouca':                {u:'__luiz__',                  p:'LP$Mg26!gest'},
+        'Joao Brito':                       {u:'__joao__',                  p:'JB$Mg26!gest'},
+        'Marina Paiva':                     {u:'__marina__',                p:'MP@RH26mc'},
+        'Pablo Albinati':                   {u:'MOTOCHEFE Varginha',        p:'VRG@2k26#pa'},
+        'Tiago Souza Gomes':                {u:'ECOMOV LAV',                p:'LAV@2k26#tz'},
+        'Pedro Henrique de Carvalho Porto': {u:'ECOMOV Pouso Alegre',       p:'PSA@2k26#ph'},
+        'Julia Sampaio':                    {u:'MOTOCHEFE Pocos de Caldas', p:'POC@2k26#js'},
+        'Carlos Barbosa':                   {u:'MOTOCHEFE Itajuba',         p:'ITJ@2k26#mc'},
+        'Karla Chagas':                     {u:'MOTOCHEFE Varginha',        p:'VRG@2k26#pa'},
+        'Murilo Belo':                      {u:'MOTOCHEFE Varginha',        p:'VRG@2k26#pa'},
+        'Julia Nascimento':                 {u:'MOTOCHEFE Pocos de Caldas', p:'POC@2k26#js'},
+        'Rayssa Martins':                   {u:'MOTOCHEFE Pocos de Caldas', p:'POC@2k26#js'},
+        'Fernando Lopes':                   {u:'MOTOCHEFE Pocos de Caldas', p:'POC@2k26#js'},
+        'Emanuel Paiva':                    {u:'ECOMOV LAV',                p:'LAV@2k26#tz'},
+        'Kawan Manso':                      {u:'ECOMOV Pouso Alegre',       p:'PSA@2k26#ph'},
+        'Charles Carvalho':                 {u:'ECOMOV Pouso Alegre',       p:'PSA@2k26#ph'},
+        'Marcos Vinicius':                  {u:'MOTOCHEFE Itajuba',         p:'ITJ@2k26#mc'},
+        'Juscelino Junior':                 {u:'MOTOCHEFE Itajuba',         p:'ITJ@2k26#mc'},
+        'Anne Ester':                       {u:'MOTOCHEFE Pouso Alegre',    p:'MPA@2k26#mc'},
+        'Luara Alkmim':                     {u:'MOTOCHEFE Itajuba',         p:'ITJ@2k26#mc'}
+      };
+      var cred = mapa[sso.user];
+      if(!cred) return;
+      var sel = document.getElementById('selLoja');
+      var inp = document.getElementById('inputSenha');
+      if(sel && inp) { sel.value = cred.u; inp.value = cred.p; doLogin(); }
     } catch(e) {}
   }, 2000);
 });

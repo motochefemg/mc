@@ -1173,45 +1173,6 @@ function imprimirAceites() {
   janela.document.write('<p style="color:#666;font-size:12px;margin-bottom:16px">MotoChefe Sul de Minas · Emitido em: '+new Date().toLocaleString('pt-BR')+'</p>');
   janela.document.write(conteudo);
   janela.document.write('
-<script>
-// SSO MC COMMAND
-window.addEventListener('load', function() {
-  setTimeout(function() {
-    try {
-      var sso = JSON.parse(localStorage.getItem('mc_sso') || 'null');
-      if(sso && sso.user && (Date.now() - sso.ts) < 28800000) {
-        var mapa = {
-          'Cesar Rodrigues':                  {u:'Cesar Rodrigues',                  p:'CR$Mg26!gest'},
-          'Luiz Paulo Arouca':                {u:'Luiz Paulo Arouca',                p:'LP$Mg26!gest'},
-          'João Brito':                       {u:'João Brito',                       p:'JB$Mg26!gest'},
-          'Pablo Albinati':                   {u:'Pablo Albinati',                   p:'VRG@2k26#pa'},
-          'Tiago Souza Gomes':                {u:'Tiago Souza Gomes',                p:'LAV@2k26#tz'},
-          'Pedro Henrique de Carvalho Porto': {u:'Pedro Henrique de Carvalho Porto', p:'PSA@2k26#ph'},
-          'Julia Sampaio':                    {u:'Julia Sampaio',                    p:'JS#Poc26s'},
-          'Carlos Barbosa':                   {u:'Carlos Barbosa',                   p:'CB@Itj26b'},
-          'Karla Chagas':                     {u:'Karla Souza Chagas',               p:'KS#Chefe7'},
-          'Murilo Belo':                      {u:'Murilo Belo',                      p:'MB!Vrg2026'},
-          'Julia Nascimento':                 {u:'Julia Nascimento',                 p:'JN*Poc831'},
-          'Rayssa Martins':                   {u:'Rayssa Dayane Muniz Martins',      p:'RM@Day526'},
-          'Fernando Lopes':                   {u:'Fernando Lopes',                   p:'FL#Poc77x'},
-          'Emanuel Paiva':                    {u:'Emanuel Paiva',                    p:'EP@Lav314'},
-          'Kawan Manso':                      {u:'Kawan Manso',                      p:'KM!Pso26m'},
-          'Charles Carvalho':                 {u:'Charles Carvalho',                 p:'CC@Pso5k2'},
-          'Marcos Vinicius':                  {u:'Marcos Vinicius',                  p:'MK@Itj26m'},
-          'Marina Paiva':                     {u:'Cesar Rodrigues',                  p:'CR$Mg26!gest'}
-        };
-        var cred = mapa[sso.user];
-        if(cred) {
-          var sel = document.getElementById('selUsuario');
-          var inp = document.getElementById('inputSenha');
-          if(sel && inp) { sel.value = cred.u; inp.value = cred.p; doLogin(); }
-          return;
-        }
-      }
-    } catch(e) {}
-  }, 2000);
-});
-</script>
 </body></html>');
   janela.document.close();
   janela.print();
@@ -1385,35 +1346,35 @@ window.addEventListener('load', function() {
   setTimeout(function() {
     try {
       var sso = JSON.parse(localStorage.getItem('mc_sso') || 'null');
-      if(sso && sso.user && (Date.now() - sso.ts) < 28800000) {
-        var mapa = {
-          'Cesar Rodrigues':                  {u:'Cesar Rodrigues',                  p:'CR$Mg26!gest'},
-          'Luiz Paulo Arouca':                {u:'Luiz Paulo Arouca',                p:'LP$Mg26!gest'},
-          'João Brito':                       {u:'João Brito',                       p:'JB$Mg26!gest'},
-          'Pablo Albinati':                   {u:'Pablo Albinati',                   p:'VRG@2k26#pa'},
-          'Tiago Souza Gomes':                {u:'Tiago Souza Gomes',                p:'LAV@2k26#tz'},
-          'Pedro Henrique de Carvalho Porto': {u:'Pedro Henrique de Carvalho Porto', p:'PSA@2k26#ph'},
-          'Julia Sampaio':                    {u:'Julia Sampaio',                    p:'JS#Poc26s'},
-          'Carlos Barbosa':                   {u:'Carlos Barbosa',                   p:'CB@Itj26b'},
-          'Karla Chagas':                     {u:'Karla Souza Chagas',               p:'KS#Chefe7'},
-          'Murilo Belo':                      {u:'Murilo Belo',                      p:'MB!Vrg2026'},
-          'Julia Nascimento':                 {u:'Julia Nascimento',                 p:'JN*Poc831'},
-          'Rayssa Martins':                   {u:'Rayssa Dayane Muniz Martins',      p:'RM@Day526'},
-          'Fernando Lopes':                   {u:'Fernando Lopes',                   p:'FL#Poc77x'},
-          'Emanuel Paiva':                    {u:'Emanuel Paiva',                    p:'EP@Lav314'},
-          'Kawan Manso':                      {u:'Kawan Manso',                      p:'KM!Pso26m'},
-          'Charles Carvalho':                 {u:'Charles Carvalho',                 p:'CC@Pso5k2'},
-          'Marcos Vinicius':                  {u:'Marcos Vinicius',                  p:'MK@Itj26m'},
-          'Marina Paiva':                     {u:'Cesar Rodrigues',                  p:'CR$Mg26!gest'}
-        };
-        var cred = mapa[sso.user];
-        if(cred) {
-          var sel = document.getElementById('selUsuario');
-          var inp = document.getElementById('inputSenha');
-          if(sel && inp) { sel.value = cred.u; inp.value = cred.p; doLogin(); }
-          return;
-        }
-      }
+      if(!sso || !sso.user || (Date.now() - sso.ts) > 28800000) return;
+      var mapa = {
+        'Cesar Rodrigues':                  {u:'Cesar Rodrigues',                  p:'CR$Mg26!gest'},
+        'Luiz Paulo Arouca':                {u:'Luiz Paulo Arouca',                p:'LP$Mg26!gest'},
+        'Joao Brito':                       {u:'Joao Brito',                       p:'JB$Mg26!gest'},
+        'Pablo Albinati':                   {u:'Pablo Albinati',                   p:'VRG@2k26#pa'},
+        'Tiago Souza Gomes':                {u:'Tiago Souza Gomes',                p:'LAV@2k26#tz'},
+        'Pedro Henrique de Carvalho Porto': {u:'Pedro Henrique de Carvalho Porto', p:'PSA@2k26#ph'},
+        'Julia Sampaio':                    {u:'Julia Sampaio',                    p:'JS#Poc26s'},
+        'Carlos Barbosa':                   {u:'Carlos Barbosa',                   p:'CB@Itj26b'},
+        'Karla Chagas':                     {u:'Karla Souza Chagas',               p:'KS#Chefe7'},
+        'Murilo Belo':                      {u:'Murilo Belo',                      p:'MB!Vrg2026'},
+        'Julia Nascimento':                 {u:'Julia Nascimento',                 p:'JN*Poc831'},
+        'Rayssa Martins':                   {u:'Rayssa Dayane Muniz Martins',      p:'RM@Day526'},
+        'Fernando Lopes':                   {u:'Fernando Lopes',                   p:'FL#Poc77x'},
+        'Emanuel Paiva':                    {u:'Emanuel Paiva',                    p:'EP@Lav314'},
+        'Kawan Manso':                      {u:'Kawan Manso',                      p:'KM!Pso26m'},
+        'Charles Carvalho':                 {u:'Charles Carvalho',                 p:'CC@Pso5k2'},
+        'Marcos Vinicius':                  {u:'Marcos Vinicius',                  p:'MK@Itj26m'},
+        'Juscelino Junior':                 {u:'Juscelino Junior',                 p:'JJ@Itj26v'},
+        'Anne Ester':                       {u:'Anne Ester',                       p:'AE@Pso26a'},
+        'Luara Alkmim':                     {u:'Luara Alkmim',                     p:'LA@Itj26l'},
+        'Marina Paiva':                     {u:'Marina Paiva',                     p:'MP@RH26mc'}
+      };
+      var cred = mapa[sso.user];
+      if(!cred) return;
+      var sel = document.getElementById('selUsuario');
+      var inp = document.getElementById('inputSenha');
+      if(sel && inp) { sel.value = cred.u; inp.value = cred.p; doLogin(); }
     } catch(e) {}
   }, 2000);
 });
