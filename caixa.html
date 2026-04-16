@@ -930,19 +930,29 @@ function saveData(){
     trocoInicial: trocoInicialVal
   };
 
-  // Envia via GET para evitar bloqueio CORS do browser
-  const params = new URLSearchParams({
-    action: 'caixa_save_all',
-    data: encodeURIComponent(JSON.stringify(payload))
-  });
-  fetch(APPS_SCRIPT_URL + '?' + params.toString(), {
-    method: 'GET',
-    mode: 'no-cors'
+  // Tenta POST primeiro (mais confiável para payloads grandes)
+  // mode: no-cors significa que não lemos a resposta, mas o servidor recebe
+  fetch(APPS_SCRIPT_URL, {
+    method: 'POST',
+    mode: 'no-cors',
+    headers: { 'Content-Type': 'text/plain' },
+    body: JSON.stringify(payload)
   }).then(() => {
     if(statusEl) statusEl.textContent = '✓ Salvo na nuvem · ' + new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+    console.log('saveData POST enviado OK');
   }).catch(e => {
-    if(statusEl) statusEl.textContent = '⚠ Sem conexão — salvo localmente';
-    console.warn('saveData erro:', e);
+    // Fallback GET para payloads pequenos
+    console.warn('POST falhou, tentando GET:', e.message);
+    const params = new URLSearchParams({ action: 'caixa_save_all', data: JSON.stringify(payload) });
+    fetch(APPS_SCRIPT_URL + '?' + params.toString())
+      .then(r => r.json())
+      .then(j => {
+        if(statusEl) statusEl.textContent = j.success
+          ? '✓ Salvo na nuvem · ' + new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})
+          : '⚠ Erro: ' + (j.error||'');
+      }).catch(e2 => {
+        if(statusEl) statusEl.textContent = '⚠ Sem conexão — salvo localmente';
+      });
   });
 }
 
@@ -958,17 +968,27 @@ async function loadData(){
       {signal: AbortSignal.timeout(6000)});
     const json = await r.json();
     if(json.success && json.movimentacoes?.length > 0){
-      movimentacoes = json.movimentacoes.map(m=>({
+      const sheetsMovs = json.movimentacoes.map(m=>({
         ...m,
         valor: parseFloat(m.valor)||0,
         formasPgto: typeof m.formasPgto==='string' ? JSON.parse(m.formasPgto||'null') : m.formasPgto,
         comprovante: m.comprovante && typeof m.comprovante==='string' ? JSON.parse(m.comprovante) : m.comprovante
       }));
-      caixaAberto = json.caixaAberto === true || json.caixaAberto === 'true';
-      caixaAbertoEm = json.caixaAbertoEm||null;
-      trocoInicialVal = parseFloat(json.trocoInicial)||0;
-      // Atualiza localStorage com dados do Sheets
-      try { localStorage.setItem(key, JSON.stringify({movimentacoes, caixaAberto, caixaAbertoEm, trocoInicialVal})); } catch(e){}
+      // Só substitui se Sheets tiver MAIS dados que o local (nunca apaga)
+      const localRaw = localStorage.getItem(key);
+      const localMovs = localRaw ? (JSON.parse(localRaw).movimentacoes||[]) : [];
+      if(sheetsMovs.length >= localMovs.length) {
+        movimentacoes = sheetsMovs;
+        caixaAberto = json.caixaAberto === true || json.caixaAberto === 'true';
+        caixaAbertoEm = json.caixaAbertoEm||null;
+        trocoInicialVal = parseFloat(json.trocoInicial)||0;
+        try { localStorage.setItem(key, JSON.stringify({movimentacoes, caixaAberto, caixaAbertoEm, trocoInicialVal})); } catch(e){}
+      } else {
+        // Local tem mais dados — envia o local para o Sheets e usa o local
+        console.log('Local tem mais dados ('+localMovs.length+') que Sheets ('+sheetsMovs.length+') — preservando local');
+        movimentacoes = localMovs;
+        saveData();
+      }
       return;
     }
   } catch(e) { console.warn('Sheets indisponível, usando localStorage'); }
@@ -2100,6 +2120,46 @@ function imprimirRecibo() {
     </style>
   </head><body>${el.outerHTML}<scr"+"ipt>window.onload=()=>{window.print();window.close();}<\/scr"+"ipt>
 
+
+<script>
+// SSO MC COMMAND
+window.addEventListener('load', function() {
+  setTimeout(function() {
+    try {
+      var sso = JSON.parse(localStorage.getItem('mc_sso') || 'null');
+      if(sso && sso.user && (Date.now() - sso.ts) < 28800000) {
+        var mapa = {
+          'Cesar Rodrigues':                  {u:'__cesar__',                p:'CR$Mg26!gest'},
+          'Luiz Paulo Arouca':                {u:'__luiz__',                 p:'LP$Mg26!gest'},
+          'João Brito':                       {u:'__joao__',                 p:'JB$Mg26!gest'},
+          'Marina Paiva':                     {u:'__cesar__',                p:'CR$Mg26!gest'},
+          'Pablo Albinati':                   {u:'MOTOCHEFE Varginha',       p:'VRG@2k26#pa'},
+          'Tiago Souza Gomes':                {u:'ECOMOV LAV',               p:'LAV@2k26#tz'},
+          'Pedro Henrique de Carvalho Porto': {u:'ECOMOV Pouso Alegre',      p:'PSA@2k26#ph'},
+          'Julia Sampaio':                    {u:'MOTOCHEFE Poços de Caldas',p:'POC@2k26#js'},
+          'Carlos Barbosa':                   {u:'MOTOCHEFE Itajubá',        p:'ITJ@2k26#mc'},
+          'Karla Chagas':                     {u:'MOTOCHEFE Varginha',       p:'VRG@2k26#pa'},
+          'Murilo Belo':                      {u:'MOTOCHEFE Varginha',       p:'VRG@2k26#pa'},
+          'Julia Nascimento':                 {u:'MOTOCHEFE Poços de Caldas',p:'POC@2k26#js'},
+          'Rayssa Martins':                   {u:'MOTOCHEFE Poços de Caldas',p:'POC@2k26#js'},
+          'Fernando Lopes':                   {u:'MOTOCHEFE Poços de Caldas',p:'POC@2k26#js'},
+          'Emanuel Paiva':                    {u:'ECOMOV LAV',               p:'LAV@2k26#tz'},
+          'Kawan Manso':                      {u:'ECOMOV Pouso Alegre',      p:'PSA@2k26#ph'},
+          'Charles Carvalho':                 {u:'ECOMOV Pouso Alegre',      p:'PSA@2k26#ph'},
+          'Marcos Vinicius':                  {u:'MOTOCHEFE Itajubá',        p:'ITJ@2k26#mc'}
+        };
+        var cred = mapa[sso.user];
+        if(cred) {
+          var sel = document.getElementById('selLoja');
+          var inp = document.getElementById('inputSenha');
+          if(sel && inp) { sel.value = cred.u; inp.value = cred.p; doLogin(); }
+          return;
+        }
+      }
+    } catch(e) {}
+  }, 2000);
+});
+</script>
 </body></html>`);
   w.document.close();
 }
@@ -2124,12 +2184,92 @@ function verComprovante(mov) {
     if (c.base64.startsWith('data:image') || c.base64.startsWith('data:application/pdf')) {
       const w = window.open('', '_blank', 'width=700,height=800');
       if (c.base64.startsWith('data:application/pdf')) {
-        w.document.write(`<html><body style="margin:0"><embed src="${c.base64}" width="100%" height="100%" type="application/pdf"></body></html>`);
+        w.document.write(`<html><body style="margin:0"><embed src="${c.base64}" width="100%" height="100%" type="application/pdf">
+<script>
+// SSO MC COMMAND
+window.addEventListener('load', function() {
+  setTimeout(function() {
+    try {
+      var sso = JSON.parse(localStorage.getItem('mc_sso') || 'null');
+      if(sso && sso.user && (Date.now() - sso.ts) < 28800000) {
+        var mapa = {
+          'Cesar Rodrigues':                  {u:'__cesar__',                p:'CR$Mg26!gest'},
+          'Luiz Paulo Arouca':                {u:'__luiz__',                 p:'LP$Mg26!gest'},
+          'João Brito':                       {u:'__joao__',                 p:'JB$Mg26!gest'},
+          'Marina Paiva':                     {u:'__cesar__',                p:'CR$Mg26!gest'},
+          'Pablo Albinati':                   {u:'MOTOCHEFE Varginha',       p:'VRG@2k26#pa'},
+          'Tiago Souza Gomes':                {u:'ECOMOV LAV',               p:'LAV@2k26#tz'},
+          'Pedro Henrique de Carvalho Porto': {u:'ECOMOV Pouso Alegre',      p:'PSA@2k26#ph'},
+          'Julia Sampaio':                    {u:'MOTOCHEFE Poços de Caldas',p:'POC@2k26#js'},
+          'Carlos Barbosa':                   {u:'MOTOCHEFE Itajubá',        p:'ITJ@2k26#mc'},
+          'Karla Chagas':                     {u:'MOTOCHEFE Varginha',       p:'VRG@2k26#pa'},
+          'Murilo Belo':                      {u:'MOTOCHEFE Varginha',       p:'VRG@2k26#pa'},
+          'Julia Nascimento':                 {u:'MOTOCHEFE Poços de Caldas',p:'POC@2k26#js'},
+          'Rayssa Martins':                   {u:'MOTOCHEFE Poços de Caldas',p:'POC@2k26#js'},
+          'Fernando Lopes':                   {u:'MOTOCHEFE Poços de Caldas',p:'POC@2k26#js'},
+          'Emanuel Paiva':                    {u:'ECOMOV LAV',               p:'LAV@2k26#tz'},
+          'Kawan Manso':                      {u:'ECOMOV Pouso Alegre',      p:'PSA@2k26#ph'},
+          'Charles Carvalho':                 {u:'ECOMOV Pouso Alegre',      p:'PSA@2k26#ph'},
+          'Marcos Vinicius':                  {u:'MOTOCHEFE Itajubá',        p:'ITJ@2k26#mc'}
+        };
+        var cred = mapa[sso.user];
+        if(cred) {
+          var sel = document.getElementById('selLoja');
+          var inp = document.getElementById('inputSenha');
+          if(sel && inp) { sel.value = cred.u; inp.value = cred.p; doLogin(); }
+          return;
+        }
+      }
+    } catch(e) {}
+  }, 2000);
+});
+</script>
+</body></html>`);
       } else {
         w.document.write(`<html><body style="margin:10px;background:#111;text-align:center">
           <p style="color:#aaa;font-size:12px;margin-bottom:10px">${c.nome||'Comprovante'}</p>
           <img src="${c.base64}" style="max-width:100%;border-radius:8px">
-        </body></html>`);
+        
+<script>
+// SSO MC COMMAND
+window.addEventListener('load', function() {
+  setTimeout(function() {
+    try {
+      var sso = JSON.parse(localStorage.getItem('mc_sso') || 'null');
+      if(sso && sso.user && (Date.now() - sso.ts) < 28800000) {
+        var mapa = {
+          'Cesar Rodrigues':                  {u:'__cesar__',                p:'CR$Mg26!gest'},
+          'Luiz Paulo Arouca':                {u:'__luiz__',                 p:'LP$Mg26!gest'},
+          'João Brito':                       {u:'__joao__',                 p:'JB$Mg26!gest'},
+          'Marina Paiva':                     {u:'__cesar__',                p:'CR$Mg26!gest'},
+          'Pablo Albinati':                   {u:'MOTOCHEFE Varginha',       p:'VRG@2k26#pa'},
+          'Tiago Souza Gomes':                {u:'ECOMOV LAV',               p:'LAV@2k26#tz'},
+          'Pedro Henrique de Carvalho Porto': {u:'ECOMOV Pouso Alegre',      p:'PSA@2k26#ph'},
+          'Julia Sampaio':                    {u:'MOTOCHEFE Poços de Caldas',p:'POC@2k26#js'},
+          'Carlos Barbosa':                   {u:'MOTOCHEFE Itajubá',        p:'ITJ@2k26#mc'},
+          'Karla Chagas':                     {u:'MOTOCHEFE Varginha',       p:'VRG@2k26#pa'},
+          'Murilo Belo':                      {u:'MOTOCHEFE Varginha',       p:'VRG@2k26#pa'},
+          'Julia Nascimento':                 {u:'MOTOCHEFE Poços de Caldas',p:'POC@2k26#js'},
+          'Rayssa Martins':                   {u:'MOTOCHEFE Poços de Caldas',p:'POC@2k26#js'},
+          'Fernando Lopes':                   {u:'MOTOCHEFE Poços de Caldas',p:'POC@2k26#js'},
+          'Emanuel Paiva':                    {u:'ECOMOV LAV',               p:'LAV@2k26#tz'},
+          'Kawan Manso':                      {u:'ECOMOV Pouso Alegre',      p:'PSA@2k26#ph'},
+          'Charles Carvalho':                 {u:'ECOMOV Pouso Alegre',      p:'PSA@2k26#ph'},
+          'Marcos Vinicius':                  {u:'MOTOCHEFE Itajubá',        p:'ITJ@2k26#mc'}
+        };
+        var cred = mapa[sso.user];
+        if(cred) {
+          var sel = document.getElementById('selLoja');
+          var inp = document.getElementById('inputSenha');
+          if(sel && inp) { sel.value = cred.u; inp.value = cred.p; doLogin(); }
+          return;
+        }
+      }
+    } catch(e) {}
+  }, 2000);
+});
+</script>
+</body></html>`);
       }
       w.document.close();
     } else {
@@ -2421,5 +2561,45 @@ window.addEventListener('load', () => {
   </div>
 </div>
 
+
+<script>
+// SSO MC COMMAND
+window.addEventListener('load', function() {
+  setTimeout(function() {
+    try {
+      var sso = JSON.parse(localStorage.getItem('mc_sso') || 'null');
+      if(sso && sso.user && (Date.now() - sso.ts) < 28800000) {
+        var mapa = {
+          'Cesar Rodrigues':                  {u:'__cesar__',                p:'CR$Mg26!gest'},
+          'Luiz Paulo Arouca':                {u:'__luiz__',                 p:'LP$Mg26!gest'},
+          'João Brito':                       {u:'__joao__',                 p:'JB$Mg26!gest'},
+          'Marina Paiva':                     {u:'__cesar__',                p:'CR$Mg26!gest'},
+          'Pablo Albinati':                   {u:'MOTOCHEFE Varginha',       p:'VRG@2k26#pa'},
+          'Tiago Souza Gomes':                {u:'ECOMOV LAV',               p:'LAV@2k26#tz'},
+          'Pedro Henrique de Carvalho Porto': {u:'ECOMOV Pouso Alegre',      p:'PSA@2k26#ph'},
+          'Julia Sampaio':                    {u:'MOTOCHEFE Poços de Caldas',p:'POC@2k26#js'},
+          'Carlos Barbosa':                   {u:'MOTOCHEFE Itajubá',        p:'ITJ@2k26#mc'},
+          'Karla Chagas':                     {u:'MOTOCHEFE Varginha',       p:'VRG@2k26#pa'},
+          'Murilo Belo':                      {u:'MOTOCHEFE Varginha',       p:'VRG@2k26#pa'},
+          'Julia Nascimento':                 {u:'MOTOCHEFE Poços de Caldas',p:'POC@2k26#js'},
+          'Rayssa Martins':                   {u:'MOTOCHEFE Poços de Caldas',p:'POC@2k26#js'},
+          'Fernando Lopes':                   {u:'MOTOCHEFE Poços de Caldas',p:'POC@2k26#js'},
+          'Emanuel Paiva':                    {u:'ECOMOV LAV',               p:'LAV@2k26#tz'},
+          'Kawan Manso':                      {u:'ECOMOV Pouso Alegre',      p:'PSA@2k26#ph'},
+          'Charles Carvalho':                 {u:'ECOMOV Pouso Alegre',      p:'PSA@2k26#ph'},
+          'Marcos Vinicius':                  {u:'MOTOCHEFE Itajubá',        p:'ITJ@2k26#mc'}
+        };
+        var cred = mapa[sso.user];
+        if(cred) {
+          var sel = document.getElementById('selLoja');
+          var inp = document.getElementById('inputSenha');
+          if(sel && inp) { sel.value = cred.u; inp.value = cred.p; doLogin(); }
+          return;
+        }
+      }
+    } catch(e) {}
+  }, 2000);
+});
+</script>
 </body>
 </html>
