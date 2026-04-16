@@ -1474,7 +1474,7 @@ let aceitesDocs = {};
 // ── LOGIN ──
 async function fazerLogin() {
   const usuario = document.getElementById('selUsuario').value;
-  const cpf = document.getElementById('inputSenha').value.replace(/\D/g,'');
+  const cpf = document.getElementById('inputSenha').value.replace(/\D/g,'').padStart(11,'0');
   const err = document.getElementById('loginErr');
   const btn = document.querySelector('.btn-primary');
   if(!usuario){ err.textContent = 'Selecione seu usuário.'; return; }
