@@ -984,8 +984,8 @@ body {
         </select>
       </div>
       <div class="field">
-        <label>Senha</label>
-        <input type="password" id="inputSenha" placeholder="••••••••••" onkeydown="if(event.key==='Enter')fazerLogin()">
+        <label>CPF</label>
+        <input type="text" id="inputSenha" placeholder="000.000.000-00" maxlength="14" oninput="fmtCPFLogin(this)" onkeydown="if(event.key==='Enter')fazerLogin()">
       </div>
       <div class="login-err" id="loginErr"></div>
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
@@ -1100,31 +1100,7 @@ body {
 const AS = 'https://script.google.com/macros/s/AKfycbzAYDr_pArf5uSPiK0mOQP0K_BMHFEAOJ9xYxMSVBigoCpY_F69GjJlXmE9WOuQZOIn/exec';
 
 // ── SENHAS ──
-const SENHAS = {
-  // Gestores
-  'Cesar Rodrigues':                  'CR$Mg26!gest',
-  'Luiz Paulo Arouca':                'LP$Mg26!gest',
-  'Joao Brito':                       'JB$Mg26!gest',
-  'Pablo Albinati':                   'VRG@2k26#pa',
-  'Tiago Souza Gomes':                'LAV@2k26#tz',
-  'Pedro Henrique de Carvalho Porto': 'PSA@2k26#ph',
-  'Julia Sampaio':                    'JS#Poc26s',
-  // RH
-  'Marina Paiva':                     'MP@RH26!mc',
-  // Vendedores
-  'Karla Souza Chagas':               'KS#Chefe7',
-  'Murilo Belo':                      'MB!Vrg2026',
-  'Julia Nascimento':                 'JN*Poc831',
-  'Rayssa Dayane Muniz Martins':      'RM@Day526',
-  'Fernando Lopes':                   'FL#Poc77x',
-  'Emanuel Paiva':                    'EP@Lav314',
-  'Kawan Manso':                      'KM!Pso26m',
-  'Charles Carvalho':                 'CC@Pso5k2',
-  'Anne Ester':                       'AE@Pso26a',
-  'Juscelino Junior':                 'JJ#Itj26k',
-  'Carlos Barbosa':                   'CB@Itj26b',
-  'Luara Alkmin':                     'LA!Itj26l',
-};
+const SENHAS = {}; // autenticação via CPF no Sheets
 
 // ── MÓDULOS ──
 const MODULOS_CONFIG = {
@@ -1154,10 +1130,10 @@ const MODULOS_CONFIG = {
   ],
 };
 
-const GESTORES = ['Cesar Rodrigues','Luiz Paulo Arouca','Joao Brito'];
+const GESTORES = ['Cesar Rodrigues','João Brito','Luiz Paulo Arouca'];
 const RH_USERS = ['Marina Paiva'];
-const ADMS = ['Pablo Albinati','Tiago Souza Gomes','Pedro Henrique de Carvalho Porto','Julia Sampaio'];
-const MECANICOS = []; // preencha com os nomes dos mecânicos quando cadastrados
+const ADMS = ['Pablo Albinati','Julia Sampaio','Carlos Barbosa','Pedro Henrique de Carvalho Porto'];
+const MECANICOS = ['Marcos Vinicius','Murilo Belo'];
 
 // ── DOCUMENTOS ──
 const DOCUMENTOS = [
@@ -1496,23 +1472,41 @@ let dadosColab = null;
 let aceitesDocs = {};
 
 // ── LOGIN ──
-function fazerLogin() {
+async function fazerLogin() {
   const usuario = document.getElementById('selUsuario').value;
-  const senha = document.getElementById('inputSenha').value;
+  const cpf = document.getElementById('inputSenha').value.replace(/\D/g,'');
   const err = document.getElementById('loginErr');
+  const btn = document.querySelector('.btn-primary');
   if(!usuario){ err.textContent = 'Selecione seu usuário.'; return; }
-  if(!senha){ err.textContent = 'Digite sua senha.'; return; }
-  if(SENHAS[usuario] !== senha){ err.textContent = 'Senha incorreta.'; return; }
+  if(!cpf || cpf.length < 11){ err.textContent = 'Digite seu CPF completo.'; return; }
   err.textContent = '';
-  currentUser = usuario;
-  isRH = RH_USERS.includes(usuario);
-  // Salvar sessão se lembrar marcado
-  if(document.getElementById('lembrar')?.checked){
-    localStorage.setItem('mc_cmd_session', JSON.stringify({u: usuario, p: senha, ts: Date.now()}));
-  } else {
-    localStorage.removeItem('mc_cmd_session');
+  btn.disabled = true;
+  btn.textContent = '⟳ Verificando...';
+  try {
+    const r = await fetch(AS + '?action=autenticar_colab&login=' + encodeURIComponent(usuario) + '&cpf=' + cpf);
+    const j = await r.json();
+    if(!j.success || !j.autenticado){
+      err.textContent = 'CPF incorreto. Tente novamente.';
+      btn.disabled = false;
+      btn.textContent = 'Entrar na plataforma →';
+      return;
+    }
+    err.textContent = '';
+    currentUser = usuario;
+    isRH = RH_USERS.includes(usuario);
+    if(document.getElementById('lembrar')?.checked){
+      localStorage.setItem('mc_cmd_session', JSON.stringify({u: usuario, p: cpf, ts: Date.now()}));
+    } else {
+      localStorage.removeItem('mc_cmd_session');
+    }
+    btn.disabled = false;
+    btn.textContent = 'Entrar na plataforma →';
+    iniciarApp();
+  } catch(e) {
+    err.textContent = 'Erro de conexão. Tente novamente.';
+    btn.disabled = false;
+    btn.textContent = 'Entrar na plataforma →';
   }
-  iniciarApp();
 }
 
 async function iniciarApp() {
@@ -1892,6 +1886,14 @@ function abrirFerramenta(url, nome) {
 function fecharIframe() {
   document.getElementById('iframeModal').style.display = 'none';
   document.getElementById('iframeContent').src = '';
+}
+
+function fmtCPFLogin(el) {
+  let v = el.value.replace(/\D/g,'').substring(0,11);
+  if(v.length>9) v=v.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/,'$1.$2.$3-$4');
+  else if(v.length>6) v=v.replace(/(\d{3})(\d{3})(\d{1,3})/,'$1.$2.$3');
+  else if(v.length>3) v=v.replace(/(\d{3})(\d{1,3})/,'$1.$2');
+  el.value=v;
 }
 
 // Carregar colaboradores do Sheets
