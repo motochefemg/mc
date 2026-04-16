@@ -984,16 +984,14 @@ body {
           <optgroup label="── Gestora de RH ──">
             <option value="Marina Paiva">Marina Paiva — Gestora de RH</option>
           </optgroup>
-          <optgroup label="── Administradores ──">
-            <option value="Pablo Albinati">Pablo Albinati</option>
-            <option value="Tiago Souza Gomes">Tiago Souza Gomes</option>
-            <option value="Pedro Henrique de Carvalho Porto">Pedro Henrique de Carvalho Porto</option>
-            <option value="Julia Sampaio">Julia Sampaio</option>
-          </optgroup>
           <optgroup label="── Gestores ──">
             <option value="Cesar Rodrigues">Cesar Rodrigues</option>
             <option value="Joao Brito">João Brito</option>
+            <option value="Julia Sampaio">Julia Sampaio</option>
             <option value="Luiz Paulo Arouca">Luiz Paulo Arouca</option>
+            <option value="Pablo Albinati">Pablo Albinati</option>
+            <option value="Pedro Henrique de Carvalho Porto">Pedro Henrique de Carvalho Porto</option>
+            <option value="Tiago Souza Gomes">Tiago Souza Gomes</option>
           </optgroup>
           <optgroup label="── Colaboradores ──">
             <option value="Anne Ester">Anne Ester</option>
@@ -1012,8 +1010,8 @@ body {
         </select>
       </div>
       <div class="field">
-        <label>Senha — CPF (somente números)</label>
-        <input type="password" id="inputSenha" placeholder="Digite seu CPF (somente números)" onkeydown="if(event.key==='Enter')fazerLogin()">
+        <label>Senha</label>
+        <input type="password" id="inputSenha" placeholder="••••••••••" onkeydown="if(event.key==='Enter')fazerLogin()">
       </div>
       <div class="login-err" id="loginErr"></div>
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
@@ -1127,30 +1125,55 @@ body {
 <script>
 const AS = 'https://script.google.com/macros/s/AKfycbzAYDr_pArf5uSPiK0mOQP0K_BMHFEAOJ9xYxMSVBigoCpY_F69GjJlXmE9WOuQZOIn/exec';
 
-// Senhas removidas — autenticação via CPF no Sheets
+// ── SENHAS ──
+const SENHAS = {
+  // Gestores
+  'Cesar Rodrigues':                  'CR$Mg26!gest',
+  'Luiz Paulo Arouca':                'LP$Mg26!gest',
+  'Joao Brito':                       'JB$Mg26!gest',
+  'Pablo Albinati':                   'VRG@2k26#pa',
+  'Tiago Souza Gomes':                'LAV@2k26#tz',
+  'Pedro Henrique de Carvalho Porto': 'PSA@2k26#ph',
+  'Julia Sampaio':                    'JS#Poc26s',
+  // RH
+  'Marina Paiva':                     'MP@RH26!mc',
+  // Vendedores
+  'Karla Souza Chagas':               'KS#Chefe7',
+  'Murilo Belo':                      'MB!Vrg2026',
+  'Julia Nascimento':                 'JN*Poc831',
+  'Rayssa Dayane Muniz Martins':      'RM@Day526',
+  'Fernando Lopes':                   'FL#Poc77x',
+  'Emanuel Paiva':                    'EP@Lav314',
+  'Kawan Manso':                      'KM!Pso26m',
+  'Charles Carvalho':                 'CC@Pso5k2',
+  'Anne Ester':                       'AE@Pso26a',
+  'Juscelino Junior':                 'JJ#Itj26k',
+  'Carlos Barbosa':                   'CB@Itj26b',
+  'Luara Alkmin':                     'LA!Itj26l',
+};
 
 // ── MÓDULOS ──
 const MODULOS_CONFIG = {
   'adms': [
-    { nome:'Caixa', desc:'Movimentações financeiras da loja', icon:'🏦', color:'#1a7a4a', iconBg:'#e8f5ee', url:'https://motochefemg.github.io/mc/mc-caixa.html' },
-    { nome:'Estoque', desc:'Controle de motocicletas', icon:'🏍', color:'#7c2d12', iconBg:'#fef3ee', url:'https://motochefemg.github.io/mc/mc-estoque.html' },
-    { nome:'Simulador de Comissão', desc:'Metas e premiação OTE 2026', icon:'💰', color:'#b45309', iconBg:'#fef9ee', url:'https://motochefemg.github.io/mc/mc-simulador.html' },
+    { nome:'Caixa', desc:'Movimentações financeiras da loja', icon:'🏦', color:'#1a7a4a', iconBg:'#e8f5ee', url:'https://motochefemg.github.io/mc/caixa.html' },
+    { nome:'Estoque', desc:'Controle de motocicletas', icon:'🏍', color:'#7c2d12', iconBg:'#fef3ee', url:'https://motochefemg.github.io/mc/estoque.html' },
+    { nome:'Simulador de Comissão', desc:'Metas e premiação OTE 2026', icon:'💰', color:'#b45309', iconBg:'#fef9ee', url:'https://motochefemg.github.io/mc/simulador.html' },
   ],
   'rh': [
     { nome:'Dashboard de Vendas', desc:'Relatórios e KPIs de todas as lojas', icon:'📊', color:'#ff4b00', iconBg:'#fff3ee', url:'https://motochefemg.github.io/mc/GESTAO.html' },
-    { nome:'Simulador de Comissão', desc:'Metas e premiação OTE 2026', icon:'💰', color:'#1a7a4a', iconBg:'#e8f5ee', url:'https://motochefemg.github.io/mc/mc-simulador.html' },
-    { nome:'Aceites & Registros', desc:'Aceites de regulamento e documentos assinados', icon:'✅', color:'#1a4a7a', iconBg:'#eef3f9', url:'https://motochefemg.github.io/mc/mc-simulador.html', rhOnly:true },
-    { nome:'Caixa', desc:'Movimentações financeiras', icon:'🏦', color:'#166534', iconBg:'#e8f5ee', url:'https://motochefemg.github.io/mc/mc-caixa.html' },
-    { nome:'Estoque', desc:'Controle de motocicletas', icon:'🏍', color:'#7c2d12', iconBg:'#fef3ee', url:'https://motochefemg.github.io/mc/mc-estoque.html' },
+    { nome:'Simulador de Comissão', desc:'Metas e premiação OTE 2026', icon:'💰', color:'#1a7a4a', iconBg:'#e8f5ee', url:'https://motochefemg.github.io/mc/simulador.html' },
+    { nome:'Aceites & Registros', desc:'Aceites de regulamento e documentos assinados', icon:'✅', color:'#1a4a7a', iconBg:'#eef3f9', url:'https://motochefemg.github.io/mc/simulador.html', rhOnly:true },
+    { nome:'Caixa', desc:'Movimentações financeiras', icon:'🏦', color:'#166534', iconBg:'#e8f5ee', url:'https://motochefemg.github.io/mc/caixa.html' },
+    { nome:'Estoque', desc:'Controle de motocicletas', icon:'🏍', color:'#7c2d12', iconBg:'#fef3ee', url:'https://motochefemg.github.io/mc/estoque.html' },
   ],
   'gestores': [
     { nome:'Dashboard de Vendas', desc:'Relatórios e KPIs completos', icon:'📊', color:'#ff4b00', iconBg:'#fff3ee', url:'https://motochefemg.github.io/mc/GESTAO.html' },
-    { nome:'Caixa', desc:'Movimentações financeiras da loja', icon:'🏦', color:'#1a7a4a', iconBg:'#e8f5ee', url:'https://motochefemg.github.io/mc/mc-caixa.html' },
-    { nome:'Estoque', desc:'Controle de motocicletas', icon:'🏍', color:'#7c2d12', iconBg:'#fef3ee', url:'https://motochefemg.github.io/mc/mc-estoque.html' },
-    { nome:'Simulador de Comissão', desc:'Metas e premiação OTE 2026', icon:'💰', color:'#b45309', iconBg:'#fef9ee', url:'https://motochefemg.github.io/mc/mc-simulador.html' },
+    { nome:'Caixa', desc:'Movimentações financeiras da loja', icon:'🏦', color:'#1a7a4a', iconBg:'#e8f5ee', url:'https://motochefemg.github.io/mc/caixa.html' },
+    { nome:'Estoque', desc:'Controle de motocicletas', icon:'🏍', color:'#7c2d12', iconBg:'#fef3ee', url:'https://motochefemg.github.io/mc/estoque.html' },
+    { nome:'Simulador de Comissão', desc:'Metas e premiação OTE 2026', icon:'💰', color:'#b45309', iconBg:'#fef9ee', url:'https://motochefemg.github.io/mc/simulador.html' },
   ],
   'vendedores': [
-    { nome:'Simulador de Comissão', desc:'Simule sua comissão e premiação', icon:'💰', color:'#ff4b00', iconBg:'#fff3ee', url:'https://motochefemg.github.io/mc/mc-simulador.html' },
+    { nome:'Simulador de Comissão', desc:'Simule sua comissão e premiação', icon:'💰', color:'#ff4b00', iconBg:'#fff3ee', url:'https://motochefemg.github.io/mc/simulador.html' },
   ],
 };
 
@@ -1304,7 +1327,7 @@ const DOCUMENTOS = [
       <h3>NÃO UTILIZA NOTEBOOK PESSOAL?</h3>
       <p>Se você não utiliza notebook pessoal no trabalho, selecione a opção "Não se aplica" abaixo. Ao fazê-lo, você declara estar ciente de que caso passe a utilizar, deverá informar imediatamente o RH para assinar este termo.</p>
     `
-  },
+  },,
   {
     id: 'ASSEDIO_V1',
     nome: 'Política de Prevenção e Combate ao Assédio',
@@ -1439,48 +1462,6 @@ const DOCUMENTOS = [
       <p>O descumprimento deste Termo acarreta responsabilidade civil e criminal, incluindo indenização por danos materiais e morais à Empresa.</p>
     `
   },
-  {
-    id: 'ADITIVO_MECANICA_V1',
-    nome: 'Termo Aditivo — Procedimentos Técnicos e Responsabilidade da Oficina',
-    sub: 'Ordem de Serviço obrigatória · Uso de veículos · Tabela de infrações específicas',
-    paraQuem: 'mecanico',
-    byod: false,
-    conteudo: `
-      <h3>TERMO ADITIVO: PROCEDIMENTOS TÉCNICOS E RESPONSABILIDADE DA OFICINA</h3>
-
-      <h3>CLÁUSULA PRIMEIRA: DA OBRIGATORIEDADE DA ORDEM DE SERVIÇO (OS)</h3>
-      <p><strong>1.1 Início do Serviço:</strong> É terminantemente proibido iniciar qualquer manutenção, montagem ou reparo em veículos (seja de estoque ou de clientes) sem a abertura imediata da <strong>Ordem de Serviço (OS)</strong> no sistema (<strong>Bling/Linx</strong>).</p>
-      <p><strong>1.2 Registro de Peças:</strong> Todo e qualquer item (peças, lubrificantes ou acessórios) utilizado deve ser lançado na OS no exato momento da retirada do estoque.</p>
-      <p><strong>1.3 Punição por Descumprimento:</strong> A realização de serviços "por fora" do sistema ou a omissão na abertura de OS é considerada falta <strong>Grave</strong>, sujeita a suspensão imediata, visto que impede o controle de faturamento e a segurança jurídica da empresa.</p>
-
-      <h3>CLÁUSULA SEGUNDA: ÉTICA E USO DE VEÍCULOS</h3>
-      <p><strong>2.1 Moto do Cliente:</strong> É terminantemente proibido o uso de motocicletas de clientes para fins não técnicos. Utilizar o veículo para deslocamentos pessoais ou lazer é falta <strong>Gravíssima (Justa Causa)</strong>.</p>
-      <p><strong>2.2 Tabela de Preços:</strong> É proibido vender peças ou serviços com valores diferentes dos estabelecidos no sistema sem autorização prévia. Alterar preços sem permissão é falta <strong>Grave</strong>.</p>
-
-      <h3>TABELA DE INFRAÇÕES ESPECÍFICAS — OFICINA</h3>
-      <table style="width:100%;border-collapse:collapse;font-size:13px;margin:12px 0;">
-        <thead>
-          <tr style="background:#1a3a5c;color:#fff;">
-            <th style="padding:8px 10px;text-align:left;border:1px solid #2d4e7a;">INFRAÇÃO</th>
-            <th style="padding:8px 10px;text-align:center;border:1px solid #2d4e7a;white-space:nowrap;">GRAVIDADE</th>
-            <th style="padding:8px 10px;text-align:left;border:1px solid #2d4e7a;">PENALIDADE</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr><td style="padding:7px 10px;border:1px solid #e5e7eb;">Realizar serviço sem abertura de OS no sistema</td><td style="padding:7px 10px;border:1px solid #e5e7eb;text-align:center;font-weight:bold;color:#b45309;">GRAVE</td><td style="padding:7px 10px;border:1px solid #e5e7eb;">Suspensão / Justa Causa</td></tr>
-          <tr style="background:#fafafa;"><td style="padding:7px 10px;border:1px solid #e5e7eb;">Vender peças/serviços com preço diferente sem autorização</td><td style="padding:7px 10px;border:1px solid #e5e7eb;text-align:center;font-weight:bold;color:#b45309;">GRAVE</td><td style="padding:7px 10px;border:1px solid #e5e7eb;">Suspensão / Justa Causa</td></tr>
-          <tr><td style="padding:7px 10px;border:1px solid #e5e7eb;">Utilizar motocicleta de cliente para fins não técnicos</td><td style="padding:7px 10px;border:1px solid #e5e7eb;text-align:center;font-weight:bold;color:#b91c1c;">GRAVÍSSIMA</td><td style="padding:7px 10px;border:1px solid #e5e7eb;">Demissão por Justa Causa</td></tr>
-          <tr style="background:#fafafa;"><td style="padding:7px 10px;border:1px solid #e5e7eb;">Retirar peça do estoque sem lançar na OS/Sistema</td><td style="padding:7px 10px;border:1px solid #e5e7eb;text-align:center;font-weight:bold;color:#b91c1c;">GRAVÍSSIMA</td><td style="padding:7px 10px;border:1px solid #e5e7eb;">Demissão por Justa Causa</td></tr>
-          <tr><td style="padding:7px 10px;border:1px solid #e5e7eb;">Entregar veículo sem realizar o checklist de segurança</td><td style="padding:7px 10px;border:1px solid #e5e7eb;text-align:center;font-weight:bold;color:#1d4ed8;">MODERADA</td><td style="padding:7px 10px;border:1px solid #e5e7eb;">Advertência</td></tr>
-          <tr style="background:#fafafa;"><td style="padding:7px 10px;border:1px solid #e5e7eb;">Danos à bateria por negligência (falta de carga na oficina)</td><td style="padding:7px 10px;border:1px solid #e5e7eb;text-align:center;font-weight:bold;color:#1d4ed8;">MODERADA</td><td style="padding:7px 10px;border:1px solid #e5e7eb;">Advertência + Ressarcimento</td></tr>
-          <tr><td style="padding:7px 10px;border:1px solid #e5e7eb;">Manobras perigosas com veículos de estoque ou cliente</td><td style="padding:7px 10px;border:1px solid #e5e7eb;text-align:center;font-weight:bold;color:#b91c1c;">GRAVÍSSIMA</td><td style="padding:7px 10px;border:1px solid #e5e7eb;">Demissão por Justa Causa</td></tr>
-        </tbody>
-      </table>
-
-      <h3>CLÁUSULA TERCEIRA: DA VALIDADE DIGITAL</h3>
-      <p>Este aditivo complementa a Política Interna da <strong>MotoChefe</strong> e possui plena validade jurídica mediante aceite na plataforma <strong>MC Command</strong>.</p>
-    `
-  },
 ];
 
 // ── ESTADO ──
@@ -1489,81 +1470,29 @@ let isRH = false;
 let dadosColab = null;
 let aceitesDocs = {};
 
-// ── HELPER: detecta se o colaborador é mecânico ──
-function isMecanico() {
-  const funcao = (dadosColab?.FUNÇÃO || dadosColab?.FUNCAO || '').toLowerCase();
-  return funcao.includes('mecânico') || funcao.includes('mecanico') || funcao.includes('mecanic');
-}
-
-// ── HELPER: retorna os documentos aplicáveis ao cargo atual ──
-function docsParaCargo() {
-  return DOCUMENTOS.filter(doc => {
-    if (doc.paraQuem === 'mecanico') return isMecanico();
-    if (doc.paraQuem === 'todos') {
-      // Mecânicos NÃO recebem BYOD nem ECOSSISTEMA
-      if (isMecanico() && (doc.id === 'BYOD_V1' || doc.id === 'ECOSSISTEMA_V1')) return false;
-      return true;
-    }
-    return true;
-  });
-}
-
 // ── LOGIN ──
-async function fazerLogin() {
+function fazerLogin() {
   const usuario = document.getElementById('selUsuario').value;
-  const senha   = document.getElementById('inputSenha').value.replace(/\D/g,'');
-  const err     = document.getElementById('loginErr');
-  const btn     = document.querySelector('#loginScreen .btn-primary');
-
+  const senha = document.getElementById('inputSenha').value;
+  const err = document.getElementById('loginErr');
   if(!usuario){ err.textContent = 'Selecione seu usuário.'; return; }
-  if(!senha)  { err.textContent = 'Digite seu CPF como senha.'; return; }
-
-  // RH tem senha própria fixa
-  if(RH_USERS.includes(usuario)){
-    if(senha !== '00000000000'){ err.textContent = 'CPF incorreto.'; return; }
-    err.textContent = '';
-    currentUser = usuario;
-    isRH = true;
-    if(document.getElementById('lembrar')?.checked){
-      localStorage.setItem('mc_cmd_session', JSON.stringify({u: usuario, p: senha, ts: Date.now()}));
-    } else { localStorage.removeItem('mc_cmd_session'); }
-    iniciarApp();
-    return;
-  }
-
-  // Validar CPF contra o Sheets
-  btn.disabled = true;
-  btn.textContent = 'Verificando...';
+  if(!senha){ err.textContent = 'Digite sua senha.'; return; }
+  if(SENHAS[usuario] !== senha){ err.textContent = 'Senha incorreta.'; return; }
   err.textContent = '';
-
-  try {
-    const loginSheets = LOGIN_MAP[usuario] || usuario;
-    const r = await fetch(`${AS}?action=dados_colab&login=${encodeURIComponent(loginSheets)}`);
-    const j = await r.json();
-    if(!j.success || !j.dados){ err.textContent = 'Usuário não encontrado. Contacte o RH.'; btn.disabled=false; btn.textContent='Entrar na plataforma →'; return; }
-    const cpfSheets = (j.dados.CPF||'').replace(/\D/g,'');
-    if(cpfSheets !== senha){ err.textContent = 'CPF incorreto. Use apenas os números.'; btn.disabled=false; btn.textContent='Entrar na plataforma →'; return; }
-    // Login válido
-    dadosColab = j.dados;
-    currentUser = usuario;
-    isRH = false;
-    if(document.getElementById('lembrar')?.checked){
-      localStorage.setItem('mc_cmd_session', JSON.stringify({u: usuario, p: senha, ts: Date.now()}));
-    } else { localStorage.removeItem('mc_cmd_session'); }
-    await verificarAceites();
-    montarApp();
-    document.getElementById('loginScreen').style.display = 'none';
-    document.getElementById('app').style.display = 'block';
-  } catch(e){
-    err.textContent = 'Sem conexão. Tente novamente.';
-    btn.disabled=false;
-    btn.textContent='Entrar na plataforma →';
+  currentUser = usuario;
+  isRH = RH_USERS.includes(usuario);
+  // Salvar sessão se lembrar marcado
+  if(document.getElementById('lembrar')?.checked){
+    localStorage.setItem('mc_cmd_session', JSON.stringify({u: usuario, p: senha, ts: Date.now()}));
+  } else {
+    localStorage.removeItem('mc_cmd_session');
   }
+  iniciarApp();
 }
 
 async function iniciarApp() {
-  // Buscar dados do colaborador (só se ainda não carregado — ex: fluxo RH)
-  if(!dadosColab) await carregarDadosColab();
+  // Buscar dados do colaborador
+  await carregarDadosColab();
   // Verificar aceites
   await verificarAceites();
   // Montar UI
@@ -1578,20 +1507,10 @@ async function carregarDadosColab() {
     return;
   }
   try {
-    // Usa o login curto do SSO_MAP se existir, senão tenta o nome completo
-    const sso = SSO_MAP[currentUser] || {};
-    const loginSheets = sso.estoqueU || currentUser;
-    const r = await fetch(`${AS}?action=dados_colab&login=${encodeURIComponent(loginSheets)}`);
+    const r = await fetch(`${AS}?action=dados_colab&login=${encodeURIComponent(currentUser)}`);
     const j = await r.json();
-    if(j.success && j.dados) {
-      dadosColab = j.dados;
-      // Garante que o COLABORADOR exibe o nome completo
-      if(!dadosColab.COLABORADOR || dadosColab.COLABORADOR === loginSheets) {
-        dadosColab.COLABORADOR = currentUser;
-      }
-    } else {
-      dadosColab = { COLABORADOR: currentUser, FUNÇÃO: '', LOJA: '' };
-    }
+    if(j.success && j.dados) dadosColab = j.dados;
+    else dadosColab = { COLABORADOR: currentUser, FUNÇÃO: '', LOJA: '' };
   } catch(e) {
     dadosColab = { COLABORADOR: currentUser, FUNÇÃO: '', LOJA: '' };
   }
@@ -1622,7 +1541,7 @@ function montarApp() {
   document.getElementById('greetData').textContent = `${saudacao}! Hoje é ${agora.toLocaleDateString('pt-BR', {weekday:'long', day:'numeric', month:'long'})}.`;
 
   // Módulos
-  const tipoUser = isRH ? 'rh' : ADMS.includes(currentUser) ? 'adms' : GESTORES.includes(currentUser) ? 'gestores' : 'vendedores';
+  const tipoUser = isRH ? 'rh' : GESTORES.includes(currentUser) ? 'gestores' : ADMS.includes(currentUser) ? 'adms' : 'vendedores';
   const modulos = MODULOS_CONFIG[tipoUser] || MODULOS_CONFIG['vendedores'];
   const pendentes = docsPendentes();
   const bloqueado = pendentes.length > 0 && !isRH;
@@ -1665,7 +1584,7 @@ function montarApp() {
 }
 
 function docsPendentes() {
-  return docsParaCargo().filter(d => !aceitesDocs[d.id]);
+  return DOCUMENTOS.filter(d => !aceitesDocs[d.id]);
 }
 
 function mostrarBloqueio() {
@@ -1688,8 +1607,8 @@ function voltarApp() {
 }
 
 function renderizarDocs() {
-  const total = docsParaCargo().length;
-  const assinados = docsParaCargo().filter(d => aceitesDocs[d.id]).length;
+  const total = DOCUMENTOS.length;
+  const assinados = DOCUMENTOS.filter(d => aceitesDocs[d.id]).length;
   document.getElementById('progressBar').style.width = (assinados/total*100) + '%';
   document.getElementById('progressText').textContent = `${assinados} / ${total}`;
   document.getElementById('docsSubtitle').textContent =
@@ -1697,7 +1616,7 @@ function renderizarDocs() {
     `${total - assinados} documento${total-assinados>1?'s':''} aguardando sua assinatura`;
 
   const lista = document.getElementById('docsList');
-  lista.innerHTML = docsParaCargo().map(doc => {
+  lista.innerHTML = DOCUMENTOS.map(doc => {
     const assinado = !!aceitesDocs[doc.id];
     return `
     <div class="doc-item ${assinado?'signed':''}" id="docItem_${doc.id}">
@@ -1727,13 +1646,11 @@ function renderDocConteudo(doc) {
       <div class="dados-grid">
         <div class="dado-item"><span class="dado-label">Colaborador:</span><span class="dado-value">${dados.COLABORADOR||'—'}</span></div>
         <div class="dado-item"><span class="dado-label">CPF:</span><span class="dado-value">${dados.CPF||'—'}</span></div>
-        <div class="dado-item"><span class="dado-label">Data de Nascimento:</span><span class="dado-value">${dados['DATA NASCIMENTO']||'—'}</span></div>
-        <div class="dado-item"><span class="dado-label">Função:</span><span class="dado-value">${dados['FUNÇÃO']||'—'}</span></div>
+        <div class="dado-item"><span class="dado-label">Função:</span><span class="dado-value">${dados['FUNÇÃO']||dados.FUNCAO||'—'}</span></div>
         <div class="dado-item"><span class="dado-label">Loja:</span><span class="dado-value">${dados.LOJA||'—'}</span></div>
-        <div class="dado-item"><span class="dado-label">Razão Social:</span><span class="dado-value">${dados['RAZAO SOCIAL']||'—'}</span></div>
+        <div class="dado-item"><span class="dado-label">Razão Social:</span><span class="dado-value">${dados['RAZAO SOCIAL']||dados.RAZAO_SOCIAL||'—'}</span></div>
         <div class="dado-item"><span class="dado-label">CNPJ:</span><span class="dado-value">${dados.CNPJ||'—'}</span></div>
-        <div class="dado-item"><span class="dado-label">Data do Contrato:</span><span class="dado-value">${dados['DATA CONTRATO']||'—'}</span></div>
-        <div class="dado-item"><span class="dado-label">E-mail:</span><span class="dado-value">${dados.EMAIL||'—'}</span></div>
+        <div class="dado-item"><span class="dado-label">Data contrato:</span><span class="dado-value">${dados['DATA CONTRATO']||dados.DATA_CONTRATO||'—'}</span></div>
       </div>
     </div>`;
 
@@ -1770,7 +1687,7 @@ function renderDocConteudo(doc) {
         </div>
         <div class="form-field full">
           <label>E-mail (receberá cópia)</label>
-          <input type="email" id="email_${doc.id}" value="${dados.EMAIL||''}" placeholder="seuemail@gmail.com">
+          <input type="email" id="email_${doc.id}" placeholder="seuemail@gmail.com">
         </div>
       </div>
       <div class="check-wrap">
@@ -1922,88 +1839,52 @@ function fazerLogout() {
   document.getElementById('inputSenha').value = '';
   document.getElementById('selUsuario').value = '';
 }
-
-// ── MAPA: nome completo → LOGIN no Sheets ──
-const LOGIN_MAP = {
-  'Pablo Albinati':                   'Pablo Albinati',
-  'Tiago Souza Gomes':                'Tiago Souza Gomes',
-  'Pedro Henrique de Carvalho Porto': 'Pedro Henrique de Carvalho Porto',
-  'Julia Sampaio':                    'Julia Sampaio',
-  'Cesar Rodrigues':                  'Cesar Rodrigues',
-  'Luiz Paulo Arouca':                'Luiz Paulo Arouca',
-  'Joao Brito':                       'Joao Brito',
-  'Anne Ester':                       'Anne Ester',
-  'Carlos Barbosa':                   'Carlos Barbosa',
-  'Charles Carvalho':                 'Charles Carvalho',
-  'Emanuel Paiva':                    'Emanuel Paiva',
-  'Fernando Lopes':                   'Fernando Lopes',
-  'Julia Nascimento':                 'Julia Nascimento',
-  'Juscelino Junior':                 'Juscelino Junior',
-  'Karla Souza Chagas':               'Karla Souza Chagas',
-  'Kawan Manso':                      'Kawan Manso',
-  'Luara Alkmin':                     'Luara Alkmin',
-  'Murilo Belo':                      'Murilo Belo',
-  'Rayssa Dayane Muniz Martins':      'Rayssa Dayane Muniz Martins',
-};
-
-// ── MAPEAMENTO SSO: nome MC Command → credenciais das ferramentas ──
+// ── MAPEAMENTO SSO ──────────────────────────────────────────────────────
 const SSO_MAP = {
-  // nome completo → { caixaU: loja_key, caixaP: senha_loja, estoqueU: user_key, estoqueP: senha }
-  'Pablo Albinati':                   { caixaU:'MOTOCHEFE Varginha',        caixaP:'VRG@2k26#pa',  estoqueU:'pablo',    estoqueP:'VRG@2k26#pa'  },
-  'Tiago Souza Gomes':                { caixaU:'ECOMOV LAV',                caixaP:'LAV@2k26#tz',  estoqueU:'tiago',    estoqueP:'LAV@2k26#tz'  },
-  'Pedro Henrique de Carvalho Porto': { caixaU:'ECOMOV Pouso Alegre',       caixaP:'PSA@2k26#ph',  estoqueU:'pedro',    estoqueP:'PSA@2k26#ph'  },
-  'Julia Sampaio':                    { caixaU:'MOTOCHEFE Poços de Caldas', caixaP:'POC@2k26#js',  estoqueU:'julia_s',  estoqueP:'POC@2k26#js'  },
-  'Cesar Rodrigues':                  { caixaU:'__cesar__',                 caixaP:'CR$Mg26!gest', estoqueU:'cesar',    estoqueP:'CR$Mg26!gest' },
-  'Luiz Paulo Arouca':                { caixaU:'__luiz__',                  caixaP:'LP$Mg26!gest', estoqueU:'luiz',     estoqueP:'LP$Mg26!gest' },
-  'Joao Brito':                       { caixaU:'__joao__',                  caixaP:'JB$Mg26!gest', estoqueU:'joao',     estoqueP:'JB$Mg26!gest' },
-  // Vendedores — acessam caixa pela loja do ADM responsável
-  'Karla Souza Chagas':               { caixaU:'MOTOCHEFE Varginha',        caixaP:'VRG@2k26#pa',  estoqueU:'karla',    estoqueP:'KS#Chefe7'    },
-  'Murilo Belo':                      { caixaU:'MOTOCHEFE Varginha',        caixaP:'VRG@2k26#pa',  estoqueU:'murilo',   estoqueP:'MB!Vrg2026'   },
-  'Julia Nascimento':                 { caixaU:'MOTOCHEFE Poços de Caldas', caixaP:'POC@2k26#js',  estoqueU:'julia_n',  estoqueP:'JN*Poc831'    },
-  'Rayssa Dayane Muniz Martins':      { caixaU:'MOTOCHEFE Poços de Caldas', caixaP:'POC@2k26#js',  estoqueU:'rayssa',   estoqueP:'RM@Day526'    },
-  'Fernando Lopes':                   { caixaU:'MOTOCHEFE Poços de Caldas', caixaP:'POC@2k26#js',  estoqueU:'fernando', estoqueP:'FL#Poc77x'    },
-  'Emanuel Paiva':                    { caixaU:'ECOMOV LAV',                caixaP:'LAV@2k26#tz',  estoqueU:'emanuel',  estoqueP:'EP@Lav314'    },
-  'Kawan Manso':                      { caixaU:'ECOMOV Pouso Alegre',       caixaP:'PSA@2k26#ph',  estoqueU:'kawan',    estoqueP:'KM!Pso26m'    },
-  'Charles Carvalho':                 { caixaU:'ECOMOV Pouso Alegre',       caixaP:'PSA@2k26#ph',  estoqueU:'charles',  estoqueP:'CC@Pso5k2'    },
-  'Anne Ester':                       { caixaU:'ECOMOV Pouso Alegre',       caixaP:'PSA@2k26#ph',  estoqueU:'karla',    estoqueP:'AE@Pso26a'    },
-  'Carlos Barbosa':                   { caixaU:'MOTOCHEFE Itajubá',         caixaP:'ITJ@2k26#mc',  estoqueU:'carlos',   estoqueP:'CB@Itj26b'    },
-  'Juscelino Junior':                 { caixaU:'MOTOCHEFE Itajubá',         caixaP:'ITJ@2k26#mc',  estoqueU:'juninho',  estoqueP:'JJ#Itj26k'    },
-  'Luara Alkmin':                     { caixaU:'MOTOCHEFE Itajubá',         caixaP:'ITJ@2k26#mc',  estoqueU:'karla',    estoqueP:'LA!Itj26l'    },
+  'Pablo Albinati':                   {cx:'MOTOCHEFE Varginha',        cp:'VRG@2k26#pa',  eu:'pablo',    ep:'VRG@2k26#pa'  },
+  'Tiago Souza Gomes':                {cx:'ECOMOV LAV',                cp:'LAV@2k26#tz',  eu:'tiago',    ep:'LAV@2k26#tz'  },
+  'Pedro Henrique de Carvalho Porto': {cx:'ECOMOV Pouso Alegre',       cp:'PSA@2k26#ph',  eu:'pedro',    ep:'PSA@2k26#ph'  },
+  'Julia Sampaio':                    {cx:'MOTOCHEFE Poços de Caldas', cp:'POC@2k26#js',  eu:'julia_s',  ep:'POC@2k26#js'  },
+  'Cesar Rodrigues':                  {cx:'__cesar__',                 cp:'CR$Mg26!gest', eu:'cesar',    ep:'CR$Mg26!gest' },
+  'Luiz Paulo Arouca':                {cx:'__luiz__',                  cp:'LP$Mg26!gest', eu:'luiz',     ep:'LP$Mg26!gest' },
+  'Joao Brito':                       {cx:'__joao__',                  cp:'JB$Mg26!gest', eu:'joao',     ep:'JB$Mg26!gest' },
+  'Karla Souza Chagas':               {cx:'MOTOCHEFE Varginha',        cp:'VRG@2k26#pa',  eu:'karla',    ep:'KS#Chefe7'    },
+  'Murilo Belo':                      {cx:'MOTOCHEFE Varginha',        cp:'VRG@2k26#pa',  eu:'murilo',   ep:'MB!Vrg2026'   },
+  'Julia Nascimento':                 {cx:'MOTOCHEFE Poços de Caldas', cp:'POC@2k26#js',  eu:'julia_n',  ep:'JN*Poc831'    },
+  'Rayssa Dayane Muniz Martins':      {cx:'MOTOCHEFE Poços de Caldas', cp:'POC@2k26#js',  eu:'rayssa',   ep:'RM@Day526'    },
+  'Fernando Lopes':                   {cx:'MOTOCHEFE Poços de Caldas', cp:'POC@2k26#js',  eu:'fernando', ep:'FL#Poc77x'    },
+  'Emanuel Paiva':                    {cx:'ECOMOV LAV',                cp:'LAV@2k26#tz',  eu:'emanuel',  ep:'EP@Lav314'    },
+  'Kawan Manso':                      {cx:'ECOMOV Pouso Alegre',       cp:'PSA@2k26#ph',  eu:'kawan',    ep:'KM!Pso26m'    },
+  'Charles Carvalho':                 {cx:'ECOMOV Pouso Alegre',       cp:'PSA@2k26#ph',  eu:'charles',  ep:'CC@Pso5k2'    },
+  'Anne Ester':                       {cx:'ECOMOV Pouso Alegre',       cp:'PSA@2k26#ph',  eu:'karla',    ep:'AE@Pso26a'    },
+  'Carlos Barbosa':                   {cx:'MOTOCHEFE Itajubá',         cp:'ITJ@2k26#mc',  eu:'carlos',   ep:'CB@Itj26b'    },
+  'Juscelino Junior':                 {cx:'MOTOCHEFE Itajubá',         cp:'ITJ@2k26#mc',  eu:'juninho',  ep:'JJ#Itj26k'    },
+  'Luara Alkmin':                     {cx:'MOTOCHEFE Itajubá',         cp:'ITJ@2k26#mc',  eu:'karla',    ep:'LA!Itj26l'    },
+  'Marina Paiva':                     {cx:'__gestor__',                cp:'Gest0r@MC26',   eu:'cesar',    ep:'CR$Mg26!gest' },
 };
 
-// ── IFRAME ──
+// ── ABRIR FERRAMENTA COM SSO ─────────────────────────────────────────────
 function abrirFerramenta(url, nome) {
-  const ts = Date.now();
+  const ts  = Date.now();
   const sso = SSO_MAP[currentUser] || {};
-
-  // SSO para caixa.html — usa loja key + senha da loja
-  if (sso.caixaU) {
-    localStorage.setItem('mc_cx_session', JSON.stringify({ u: sso.caixaU, p: sso.caixaP, ts }));
-  }
-
-  // SSO para estoque.html — usa user key + senha do user
-  if (sso.estoqueU) {
-    localStorage.setItem('mc_est_session', JSON.stringify({ u: sso.estoqueU, p: sso.estoqueP, ts }));
-  }
-
-  // Token de sessão para módulos filhos (mc-caixa, mc-estoque, mc-simulador)
+  // Gera token que as ferramentas vão validar
   const token = btoa(currentUser + '|' + ts + '|MC2026');
-  const payload = {
-    user:   currentUser,
-    nome:   dadosColab?.COLABORADOR || currentUser,
-    funcao: dadosColab?.FUNÇÃO      || '',
-    loja:   dadosColab?.LOJA        || '',
-    login:  (SSO_MAP[currentUser] || {}).estoqueU || currentUser,
-    token,
-    ts
-  };
-  localStorage.setItem('mc_sso',         JSON.stringify(payload));
-  localStorage.setItem('mc_cmd_session', JSON.stringify({ u: currentUser, p: '', ts }));
-
-  // Passa token na URL — fallback se localStorage estiver bloqueado
-  const sep = url.includes('?') ? '&' : '?';
-  const urlFinal = url + sep + 'mc_token=' + encodeURIComponent(token) + '&mc_user=' + encodeURIComponent(currentUser);
-  window.open(urlFinal, '_blank');
+  // Grava mc_sso com token
+  localStorage.setItem('mc_sso', JSON.stringify({
+    user: currentUser, token, ts,
+    nome: dadosColab?.COLABORADOR || currentUser,
+    funcao: dadosColab?.FUNÇÃO || ''
+  }));
+  // Grava sessões próprias de cada ferramenta
+  if(sso.cx) localStorage.setItem('mc_cx_session',  JSON.stringify({u:sso.cx, p:sso.cp,  ts}));
+  if(sso.eu) localStorage.setItem('mc_est_session', JSON.stringify({u:sso.eu, p:sso.ep,  ts}));
+  // Simulador usa o próprio nome como usuário
+  if(currentUser !== 'Marina Paiva') {
+    localStorage.setItem('mc_sim_session', JSON.stringify({u:currentUser, p:(sso.cp||sso.ep||''), ts}));
+  } else {
+    localStorage.setItem('mc_sim_session', JSON.stringify({u:'__gestor__', p:'Gest0r@MC26', ts}));
+  }
+  window.open(url, '_blank');
 }
 
 function fecharIframe() {
