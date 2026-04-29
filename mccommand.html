@@ -162,6 +162,33 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cream); color: var(
 .stagger-4 { animation-delay: .2s; }
 .stagger-5 { animation-delay: .25s; }
 .stagger-6 { animation-delay: .3s; }
+
+/* EM CONSTRUÇÃO */
+.module-card.em-construcao {
+  opacity: .7;
+  cursor: default;
+}
+.module-card.em-construcao:hover {
+  transform: none;
+  box-shadow: none;
+  border-color: var(--light);
+}
+.module-card.em-construcao:hover::before {
+  transform: scaleX(0);
+}
+.mod-construcao {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #fef9c3;
+  color: #854d0e;
+  border: 1px solid #fde047;
+  border-radius: 20px;
+  padding: 3px 10px;
+  font-size: 10px;
+  font-weight: 700;
+  margin-top: 12px;
+}
 @media (max-width: 600px) {
   .main, .docs-main { padding: 24px 16px; }
   .topbar { padding: 0 16px; }
@@ -747,6 +774,18 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cream); color: var(
   <iframe id="iframeContent" src="" style="flex:1;border:none;width:100%;height:calc(100vh - 57px)"></iframe>
 </div>
 
+<!-- MODAL EM CONSTRUÇÃO -->
+<div class="modal-overlay" id="modalConstrucao">
+  <div class="modal-box">
+    <div class="modal-icon">🚧</div>
+    <h3>Em construção</h3>
+    <p>Esta ferramenta está passando por atualizações e será liberada em breve. Fique atento às novidades!</p>
+    <div class="modal-actions">
+      <button class="btn-primary" style="width:auto;margin-top:0" onclick="document.getElementById('modalConstrucao').classList.remove('show')">Entendido</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="modalBloqueio">
   <div class="modal-box">
     <div class="modal-icon">🔐</div>
@@ -898,19 +937,25 @@ function montarApp() {
   const bloqueado = pendentes.length > 0 && !isRH;
 
   const grid = document.getElementById('modulesGrid');
+  // Marina (RH) vê tudo — demais colaboradores veem ferramentas bloqueadas
+  const emConstrucao = !isRH;
+
   grid.innerHTML = modulos.map((m, i) => {
     let click;
-    if(bloqueado) click = 'mostrarBloqueio();return false;';
+    if(emConstrucao && !m.isRH) click = 'mostrarConstrucao();return false;';
+    else if(bloqueado) click = 'mostrarBloqueio();return false;';
     else if(m.isRH) click = 'abrirPainelRH();return false;';
-    else click = `abrirFerramenta('${m.url}','${m.nome.replace(/'/g,"\\'")}');return false;`;
-    return `<a class="module-card fade-up stagger-${i+1} ${bloqueado&&!m.isRH?'locked':''}"
+    else click = `abrirFerramenta('${m.url}','${m.nome.replace(/'/g,"\'")}');return false;`;
+    const cardClass = (emConstrucao && !m.isRH) ? 'em-construcao' : (bloqueado && !m.isRH ? 'locked' : '');
+    return `<a class="module-card fade-up stagger-${i+1} ${cardClass}"
        style="--card-color:${m.color};--icon-bg:${m.iconBg}"
        href="#" onclick="${click}">
       <div class="mod-icon">${m.icon}</div>
       <div class="mod-name">${m.nome}</div>
       <div class="mod-desc">${m.desc}</div>
+      ${emConstrucao && !m.isRH ? '<div class="mod-construcao">🚧 Em construção</div>' : ''}
     </a>`;
-  }).join('');
+  }).join('');;
 
   const badge = document.getElementById('badgeDocs');
   if(isRH) { badge.textContent = '👔 Gestão de aceites'; badge.style.background = 'var(--blue-light)'; badge.style.color = 'var(--blue)'; }
@@ -925,6 +970,7 @@ function montarApp() {
 
 function docsPendentes() { return DOCUMENTOS.filter(d => !aceitesDocs[d.id]); }
 function mostrarBloqueio() { document.getElementById('modalBloqueio').classList.add('show'); }
+function mostrarConstrucao() { document.getElementById('modalConstrucao').classList.add('show'); }
 
 function abrirDocumentos() {
   document.getElementById('app').style.display = 'none';
