@@ -1661,37 +1661,53 @@ async function salvarDocEditado() {
     DOCUMENTOS.push(docData);
   }
 
-  // Salvar no Sheets via POST no-cors — sem limite de tamanho, sem CORS error
+  // Salvar no Sheets em 2 etapas via GET (único método confiável com GAS)
   const btnSalvar = document.querySelector('#modalEditDoc .btn-rh.primary');
   if(btnSalvar) { btnSalvar.disabled = true; btnSalvar.textContent = '⟳ Salvando...'; }
 
   try {
-    const body = new URLSearchParams({
-      action:       'rh_salvar_documento',
-      isNew:        rhDocEditando ? 'false' : 'true',
-      doc_id:       docData.id,
-      doc_nome:     docData.nome,
-      doc_sub:      docData.sub || '',
-      doc_para:     docData.paraQuem || 'todos',
-      doc_byod:     docData.byod ? 'SIM' : 'NAO',
-      doc_conteudo: docData.conteudo || ''
-    });
+    // Etapa 1: salvar metadados (sem conteúdo)
+    const urlMeta = AS + '?' + new URLSearchParams({
+      action:   'rh_salvar_documento',
+      isNew:    rhDocEditando ? 'false' : 'true',
+      doc_id:   docData.id,
+      doc_nome: docData.nome,
+      doc_sub:  docData.sub || '',
+      doc_para: docData.paraQuem || 'todos',
+      doc_byod: docData.byod ? 'SIM' : 'NAO',
+      doc_conteudo: '__AGUARDANDO__'
+    }).toString();
 
-    await fetch(AS, {
-      method: 'POST',
-      mode:   'no-cors',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body:   body.toString()
-    });
+    const r1 = await fetch(urlMeta);
+    const j1 = await r1.json();
+    if(!j1.success) throw new Error(j1.error || 'Erro ao salvar metadados');
 
-    // POST no-cors não retorna resposta legível — mas o GAS salva
+    // Etapa 2: salvar conteúdo em chunks de 3000 chars
+    const conteudo = docData.conteudo || '';
+    const CHUNK = 3000;
+    const total = Math.ceil(conteudo.length / CHUNK) || 1;
+
+    for(let i = 0; i < total; i++) {
+      const chunk = conteudo.substring(i * CHUNK, (i + 1) * CHUNK);
+      const urlChunk = AS + '?' + new URLSearchParams({
+        action:   'rh_salvar_conteudo',
+        doc_id:   docData.id,
+        chunk:    chunk,
+        offset:   i,
+        total:    total
+      }).toString();
+      const rc = await fetch(urlChunk);
+      const jc = await rc.json();
+      if(!jc.success) throw new Error(jc.error || 'Erro no chunk ' + i);
+    }
+
     fecharRHModal('modalEditDoc');
     renderDocEditList();
     renderColaboradores();
-    toast('✓ Documento salvo!');
+    toast('✓ Documento salvo com sucesso!');
   } catch(e) {
     console.error('salvarDocEditado:', e);
-    toast('⚠ Erro ao salvar. Tente novamente.');
+    toast('⚠ Erro: ' + e.message);
   } finally {
     if(btnSalvar) { btnSalvar.disabled = false; btnSalvar.textContent = '✓ Salvar Documento'; }
   }
