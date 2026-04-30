@@ -896,7 +896,20 @@ async function iniciarApp() {
 
 async function carregarDadosColab() {
   if(isRH) {
-    dadosColab = { COLABORADOR:'Marina Paiva', 'FUNÇÃO':'Gestora de RH', LOJA:'Matriz' };
+    // Buscar dados reais de Marina no Sheets (precisa do CPF para assinar documentos)
+    try {
+      const r = await fetch(`${AS}?action=dados_colab&login=${encodeURIComponent(currentUser)}`);
+      const j = await r.json();
+      if(j.success && j.dados) {
+        dadosColab = j.dados;
+        // Garantir que FUNÇÃO está preenchida
+        if(!dadosColab['FUNÇÃO']) dadosColab['FUNÇÃO'] = 'Gestora de RH';
+      } else {
+        dadosColab = { COLABORADOR:'Marina Paiva', 'FUNÇÃO':'Gestora de RH', LOJA:'Matriz' };
+      }
+    } catch(e) {
+      dadosColab = { COLABORADOR:'Marina Paiva', 'FUNÇÃO':'Gestora de RH', LOJA:'Matriz' };
+    }
     return;
   }
   try {
@@ -962,9 +975,14 @@ function montarApp() {
   else if(pendentes.length === 0) { badge.textContent = '✅ Tudo assinado'; badge.style.background = 'var(--green-light)'; badge.style.color = 'var(--green)'; }
   else badge.textContent = `⏳ ${pendentes.length} pendente${pendentes.length>1?'s':''}`;
 
-  if(pendentes.length > 0 && !isRH) {
-    document.getElementById('alertDocs').style.display = 'flex';
-    document.getElementById('alertDocsText').textContent = `Você tem ${pendentes.length} documento${pendentes.length>1?'s':''} pendente${pendentes.length>1?'s':''} de assinatura.`;
+  // Alerta de docs pendentes — para todos incluindo Marina
+  const alertEl = document.getElementById('alertDocs');
+  if(pendentes.length > 0) {
+    alertEl.style.display = 'flex';
+    document.getElementById('alertDocsText').textContent =
+      `Você tem ${pendentes.length} documento${pendentes.length>1?'s':''} pendente${pendentes.length>1?'s':''} de assinatura.`;
+  } else {
+    alertEl.style.display = 'none';
   }
 }
 
@@ -1445,7 +1463,7 @@ async function salvarDocsColab() {
       adicionar: JSON.stringify(adicionar),
       excluir: JSON.stringify(excluir)
     });
-    const r = await fetch(AS + '?' + params.toString());
+    const r = await fetch(AS + '?' + params.toString(), { redirect: 'follow' });
     const j = await r.json();
     if(j.success) {
       rhDocsConfig[rhColabEditando] = { adicionar, excluir };
@@ -1491,14 +1509,24 @@ function verAceitesColab(login, nome) {
 }
 
 async function revogarAceite(login, docId, nomeColab, nomeDoc) {
-  if(!confirm(`Revogar assinatura de "${nomeDoc}" de ${nomeColab}?\n\nO colaborador precisará re-assinar esse documento.`)) return;
+  if(!confirm(`Revogar assinatura de "${nomeDoc}" de ${nomeColab}?\n\nO status vai para "Revogado" e será enviado um e-mail solicitando nova assinatura.`)) return;
   try {
-    const r = await fetch(`${AS}?action=rh_revogar_aceite&login=${encodeURIComponent(login)}&docId=${encodeURIComponent(docId)}`);
+    // Buscar email do colaborador
+    const colab = rhColaboradores.find(c => c.login === login);
+    const emailColab = colab?.email || '';
+    const r = await fetch(`${AS}?action=rh_revogar_aceite&login=${encodeURIComponent(login)}&docId=${encodeURIComponent(docId)}&nomeDoc=${encodeURIComponent(nomeDoc)}&nomeColab=${encodeURIComponent(nomeColab)}&emailColab=${encodeURIComponent(emailColab)}`);
     const j = await r.json();
     if(j.success) {
-      if(rhAceites[login]) delete rhAceites[login][docId];
-      toast(`↩ Aceite revogado — ${nomeColab} precisará re-assinar`);
-      verAceitesColab(login, nomeColab);
+      // Marcar como revogado localmente (não deletar)
+      if(rhAceites[login]?.[docId]) {
+        rhAceites[login][docId].revogado = true;
+        rhAceites[login][docId].status = 'REVOGADO';
+      }
+      toast(`↩ Revogado! ${emailColab ? 'E-mail enviado para '+nomeColab.split(' ')[0] : 'Sem e-mail cadastrado'}`);
+      renderAceites();
+      if(document.getElementById('modalAceitesColab').classList.contains('show')) {
+        verAceitesColab(login, nomeColab);
+      }
       renderColaboradores();
       renderStats();
     } else {
@@ -1615,35 +1643,39 @@ async function salvarDocEditado() {
     DOCUMENTOS.push(docData);
   }
 
-  // Salvar no Sheets via POST (conteúdo pode ser grande)
+  // Salvar no Sheets — mesmo padrão do assinarDoc que já funciona
+  const btnSalvar = document.querySelector('#modalEditDoc .btn-rh.primary');
+  if(btnSalvar) { btnSalvar.disabled = true; btnSalvar.textContent = '⟳ Salvando...'; }
   try {
-    const body = new URLSearchParams({
+    const params = new URLSearchParams({
       action: 'rh_salvar_documento',
-      docData: JSON.stringify(docData),
-      isNew: rhDocEditando ? 'false' : 'true'
+      isNew: rhDocEditando ? 'false' : 'true',
+      doc_id:      docData.id,
+      doc_nome:    docData.nome,
+      doc_sub:     docData.sub,
+      doc_para:    docData.paraQuem,
+      doc_byod:    docData.byod ? 'SIM' : 'NAO',
+      doc_conteudo: docData.conteudo
     });
-    const r = await fetch(AS, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: body.toString()
-    });
-    const txt = await r.text();
-    const j = JSON.parse(txt);
+    const r = await fetch(AS + '?' + params.toString());
+    const j = await r.json();
     if(j.success) {
       fecharRHModal('modalEditDoc');
       renderDocEditList();
       renderColaboradores();
-      toast('✓ Documento salvo com sucesso!');
+      toast('✓ Documento salvo!');
     } else {
-      toast('⚠ Erro ao salvar: ' + (j.error||'tente novamente'));
+      toast('⚠ Erro: ' + (j.error||'tente novamente'));
       fecharRHModal('modalEditDoc');
       renderDocEditList();
     }
   } catch(e) {
-    console.error('salvarDocEditado erro:', e);
-    toast('⚠ Erro de conexão ao salvar. Verifique e tente novamente.');
+    console.error('salvarDocEditado:', e);
+    toast('⚠ Erro de conexão. Tente novamente.');
     fecharRHModal('modalEditDoc');
     renderDocEditList();
+  } finally {
+    if(btnSalvar) { btnSalvar.disabled = false; btnSalvar.textContent = '✓ Salvar Documento'; }
   }
 }
 
@@ -1742,18 +1774,10 @@ async function confirmarUploadPDF() {
 
   try {
     const docParaSalvar = {...docData};
-    delete docParaSalvar.pdfBase64;
-    const body = new URLSearchParams({
-      action: 'rh_salvar_documento',
-      docData: JSON.stringify(docParaSalvar),
-      isNew: 'true'
-    });
-    await fetch(AS, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: body.toString()
-    });
-  } catch(e) {}
+    delete docParaSalvar.pdfBase64; // não salva base64 no Sheets
+    const url = `${AS}?action=rh_salvar_documento&isNew=true&docData=${encodeURIComponent(JSON.stringify(docParaSalvar))}`;
+    await fetch(url, { redirect: 'follow' });
+  } catch(e) { console.warn('Upload PDF GAS:', e); }
 
   fecharRHModal('modalUploadPDF');
   renderDocEditList();
@@ -1804,17 +1828,49 @@ function renderAceites() {
   // Ordenar por data mais recente
   rows.sort((a,b) => (b.aceite?.data||'').localeCompare(a.aceite?.data||''));
 
-  tbody.innerHTML = rows.map(row => `<tr>
-    <td style="font-weight:600">${row.nome}</td>
-    <td style="font-size:12px">${row.nomeDoc}</td>
-    <td style="font-size:12px">${row.aceite?.data || '—'}</td>
-    <td style="font-size:12px">${row.aceite?.hora || '—'}</td>
-    <td style="font-size:12px;font-family:monospace">${row.aceite?.cpf || '—'}</td>
-    <td>${row.aceite?.naoAplica ? '<span class="badge-excl">Não se aplica</span>' : '<span class="badge-ok">✓ Assinado</span>'}</td>
-    <td>
-      <button class="btn-rh danger" style="font-size:11px;padding:4px 10px" onclick="revogarAceite('${row.login}','${row.docId}','${row.nome.replace(/'/g,"\\'")}','${row.nomeDoc.replace(/'/g,"\\'")}')">↩ Revogar</button>
-    </td>
-  </tr>`).join('');
+  // Helpers de formatação
+  const fmtDA = (v) => {
+    if(!v||v==='—') return '—';
+    const s = String(v);
+    if(/^\d{2}\/\d{2}\/\d{4}$/.test(s)) return s;
+    try { const d=new Date(s); if(!isNaN(d.getTime())) return d.toLocaleDateString('pt-BR'); } catch(e){}
+    return s.substring(0,10);
+  };
+  const fmtHA = (v) => {
+    if(!v||v==='—') return '—';
+    const s = String(v);
+    if(/^\d{2}:\d{2}/.test(s)) return s.substring(0,5);
+    try { const d=new Date(s); if(!isNaN(d.getTime())) return d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}); } catch(e){}
+    return s;
+  };
+  const fmtCPFA = (v) => {
+    if(!v) return '—';
+    const s = String(v).replace(/\D/g,'').padStart(11,'0');
+    return s.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/,'$1.$2.$3-$4');
+  };
+
+  tbody.innerHTML = rows.map(row => {
+    const a = row.aceite || {};
+    const isRevogado = a.revogado || a.status === 'REVOGADO';
+    const statusBadge = isRevogado
+      ? '<span class="badge-excl" style="background:#fef2f2;color:#b91c1c;border:1px solid #fca5a5">↩ Revogado</span>'
+      : a.naoAplica
+      ? '<span class="badge-excl">Não se aplica</span>'
+      : '<span class="badge-ok">✓ Assinado</span>';
+    return `<tr style="${isRevogado?'opacity:.55':''}">
+      <td style="font-weight:600">${row.nome}</td>
+      <td style="font-size:12px">${row.nomeDoc}</td>
+      <td style="font-size:12px">${fmtDA(a.data||a.timestamp)}</td>
+      <td style="font-size:12px">${fmtHA(a.hora)}</td>
+      <td style="font-size:12px;font-family:monospace">${fmtCPFA(a.cpf)}</td>
+      <td>${statusBadge}</td>
+      <td>
+        ${!isRevogado
+          ? `<button class="btn-rh danger" style="font-size:11px;padding:4px 10px" onclick="revogarAceite('${row.login}','${row.docId}','${row.nome.replace(/'/g,"\'")}','${row.nomeDoc.replace(/'/g,"\'")}')">↩ Revogar</button>`
+          : '<span style="font-size:11px;color:var(--mid)">Revogado</span>'}
+      </td>
+    </tr>`;
+  }).join('');;
 }
 
 function exportarAceites() {
