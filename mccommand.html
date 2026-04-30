@@ -893,9 +893,25 @@ async function fazerLogin() {
 async function iniciarApp() {
   await carregarDadosColab();
   await verificarAceites();
+  await carregarDocumentosColab(); // carrega docs do Sheets para o colaborador
   montarApp();
   document.getElementById('loginScreen').style.display = 'none';
   document.getElementById('app').style.display = 'block';
+}
+
+async function carregarDocumentosColab() {
+  // Substitui o array hardcoded pelos documentos reais do Sheets
+  try {
+    const r = await fetch(AS + '?action=rh_listar_documentos');
+    const j = await r.json();
+    if(j.success && j.documentos && j.documentos.length > 0) {
+      DOCUMENTOS.length = 0;
+      j.documentos.forEach(d => DOCUMENTOS.push(d));
+    }
+    // Se Sheets vazio, mantém o hardcoded como fallback
+  } catch(e) {
+    console.warn('Usando documentos padrão (Sheets indisponível)');
+  }
 }
 
 async function carregarDadosColab() {
@@ -1289,19 +1305,18 @@ async function carregarDadosRH() {
     const [j1, j2, j3, j4] = await Promise.all([r1.json(), r2.json(), r3.json(), r4.json()]);
 
     if(j1.success) rhColaboradores = j1.colaboradores || [];
-    if(j2.success) rhAceites = j2.aceites || {};
+    if(j2.success) {
+      // Manter revogados no rhAceites para mostrar na tabela da Marina
+      // mas marcar como revogado para não contar como assinado
+      rhAceites = j2.aceites || {};
+    }
     if(j3.success) rhDocsConfig = j3.config || {};
 
-    // Mesclar documentos do Sheets com os hardcoded (Sheets tem prioridade)
+    // Sheets é a fonte de verdade — substituir COMPLETAMENTE o array hardcoded
     if(j4.success && j4.documentos && j4.documentos.length > 0) {
-      j4.documentos.forEach(docSheets => {
-        const idx = DOCUMENTOS.findIndex(d => d.id === docSheets.id);
-        if(idx >= 0) {
-          DOCUMENTOS[idx] = docSheets; // atualizar existente
-        } else {
-          DOCUMENTOS.push(docSheets);  // adicionar novo
-        }
-      });
+      // Limpar e substituir — documentos excluídos no Sheets desaparecem aqui
+      DOCUMENTOS.length = 0;
+      j4.documentos.forEach(d => DOCUMENTOS.push(d));
     }
 
     renderColaboradores();
