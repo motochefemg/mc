@@ -1535,22 +1535,30 @@ async function salvarDocsColab() {
   const adicionar = [];
   const excluir = [];
 
+  // Docs padrão para este perfil (usando getDocsParaColab sem config individual)
+  const docsPadrao = DOCUMENTOS.filter(doc => {
+    const pq = (doc.paraQuem || 'todos').toLowerCase().trim();
+    const isMec  = colab.perfil === 'mecanico';
+    const isAdm  = colab.perfil === 'adm';
+    const isGest = colab.perfil === 'gestor' || colab.perfil === 'rh';
+    const isVend = !isMec && !isAdm && !isGest;
+    if(pq.startsWith('colab:')) return pq.replace('colab:','').trim() === colab.login;
+    if(pq === 'mecanicos')  return isMec;
+    if(pq === 'gestores')   return isGest;
+    if(pq === 'adms')       return isAdm || isGest;
+    if(pq === 'vendedores') return isVend || isGest;
+    if(isMec && (doc.id === 'BYOD_V1' || doc.id === 'ECOSSISTEMA_V1')) return false;
+    return true;
+  });
+  const idsPadrao = docsPadrao.map(d => d.id);
+
   DOCUMENTOS.forEach(doc => {
     const checkbox = document.getElementById('docCheck_' + doc.id);
     if(!checkbox) return;
     const checked = checkbox.checked;
-
-    // Docs padrão para este perfil (sem config individual)
-    const ehPadrao = !!DOCUMENTOS.find(d => {
-      if(d.id !== doc.id) return false;
-      const isMec = colab.perfil === 'mecanico';
-      if(d.paraQuem === 'mecanicos' && !isMec) return false;
-      if(isMec && (d.id === 'BYOD_V1' || d.id === 'ECOSSISTEMA_V1')) return false;
-      return true;
-    });
-
-    if(checked && !ehPadrao) adicionar.push(doc.id);
-    if(!checked && ehPadrao) excluir.push(doc.id);
+    const ehPadrao = idsPadrao.includes(doc.id);
+    if(checked && !ehPadrao) adicionar.push(doc.id);  // extra adicionado
+    if(!checked && ehPadrao) excluir.push(doc.id);    // padrão removido
   });
 
   try {
