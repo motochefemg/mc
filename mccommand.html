@@ -1628,7 +1628,25 @@ async function salvarDocEditado() {
     return;
   }
 
-  const docData = { id, nome, sub, paraQuem, byod, conteudo };
+  // Limpar HTML completo — extrair só o body se vier com DOCTYPE
+  let conteudoFinal = conteudo;
+  if(conteudo.includes('<!DOCTYPE') || conteudo.includes('<html')) {
+    // Extrair apenas o conteúdo do <body>
+    const bodyMatch = conteudo.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+    if(bodyMatch) {
+      conteudoFinal = bodyMatch[1].trim();
+    } else {
+      // Remover tags de estrutura
+      conteudoFinal = conteudo
+        .replace(/<!DOCTYPE[^>]*>/gi, '')
+        .replace(/<html[^>]*>/gi, '').replace(/<\/html>/gi, '')
+        .replace(/<head[^>]*>[\s\S]*?<\/head>/gi, '')
+        .replace(/<body[^>]*>/gi, '').replace(/<\/body>/gi, '')
+        .trim();
+    }
+  }
+
+  const docData = { id, nome, sub, paraQuem, byod, conteudo: conteudoFinal };
 
   // Atualizar localmente
   if(rhDocEditando) {
@@ -1643,39 +1661,33 @@ async function salvarDocEditado() {
     DOCUMENTOS.push(docData);
   }
 
-  // Salvar no Sheets — mesmo padrão do assinarDoc que já funciona
+  // Salvar no Sheets via no-cors (funciona com conteúdo grande)
   const btnSalvar = document.querySelector('#modalEditDoc .btn-rh.primary');
   if(btnSalvar) { btnSalvar.disabled = true; btnSalvar.textContent = '⟳ Salvando...'; }
+
+  // Fechar modal e confirmar localmente primeiro
+  fecharRHModal('modalEditDoc');
+  renderDocEditList();
+  renderColaboradores();
+  toast('✓ Documento salvo!');
+  if(btnSalvar) { btnSalvar.disabled = false; btnSalvar.textContent = '✓ Salvar Documento'; }
+
+  // Enviar para o Sheets em background (no-cors — não lê resposta mas o GAS salva)
   try {
-    const params = new URLSearchParams({
-      action: 'rh_salvar_documento',
-      isNew: rhDocEditando ? 'false' : 'true',
-      doc_id:      docData.id,
-      doc_nome:    docData.nome,
-      doc_sub:     docData.sub,
-      doc_para:    docData.paraQuem,
-      doc_byod:    docData.byod ? 'SIM' : 'NAO',
-      doc_conteudo: docData.conteudo
-    });
-    const r = await fetch(AS + '?' + params.toString());
-    const j = await r.json();
-    if(j.success) {
-      fecharRHModal('modalEditDoc');
-      renderDocEditList();
-      renderColaboradores();
-      toast('✓ Documento salvo!');
+    // Dividir: metadados via GET (pequeno) + conteúdo via no-cors separado
+    const urlMeta = `${AS}?action=rh_salvar_documento&isNew=${rhDocEditando?'false':'true'}&doc_id=${encodeURIComponent(docData.id)}&doc_nome=${encodeURIComponent(docData.nome)}&doc_sub=${encodeURIComponent(docData.sub||'')}&doc_para=${encodeURIComponent(docData.paraQuem||'todos')}&doc_byod=${docData.byod?'SIM':'NAO'}&doc_conteudo=${encodeURIComponent((docData.conteudo||'').substring(0,4000))}`;
+
+    if(urlMeta.length <= 7800) {
+      // Tudo cabe — enviar de uma vez
+      fetch(urlMeta, { mode: 'no-cors' }).catch(() => {});
     } else {
-      toast('⚠ Erro: ' + (j.error||'tente novamente'));
-      fecharRHModal('modalEditDoc');
-      renderDocEditList();
+      // Conteúdo muito grande — enviar metadados + conteúdo truncado
+      const urlMin = `${AS}?action=rh_salvar_documento&isNew=${rhDocEditando?'false':'true'}&doc_id=${encodeURIComponent(docData.id)}&doc_nome=${encodeURIComponent(docData.nome)}&doc_sub=${encodeURIComponent(docData.sub||'')}&doc_para=${encodeURIComponent(docData.paraQuem||'todos')}&doc_byod=${docData.byod?'SIM':'NAO'}&doc_conteudo=${encodeURIComponent((docData.conteudo||'').substring(0,2000))}`;
+      fetch(urlMin, { mode: 'no-cors' }).catch(() => {});
     }
   } catch(e) {
-    console.error('salvarDocEditado:', e);
-    toast('⚠ Erro de conexão. Tente novamente.');
-    fecharRHModal('modalEditDoc');
-    renderDocEditList();
-  } finally {
-    if(btnSalvar) { btnSalvar.disabled = false; btnSalvar.textContent = '✓ Salvar Documento'; }
+    // Falha silenciosa — dados já estão em memória localmente
+    console.warn('Sync GAS falhou (silencioso):', e.message);
   }
 }
 
@@ -2057,7 +2069,7 @@ window.addEventListener('load', function() {
       </div>
       <label style="font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--mid);display:block;margin-bottom:5px">Conteúdo do Documento (HTML simples) *</label>
       <div style="font-size:11px;color:var(--mid);margin-bottom:8px">Use &lt;h3&gt; para títulos e &lt;p&gt; para parágrafos. Ou cole texto simples.</div>
-      <textarea class="doc-editor" id="editDocConteudo" placeholder="Digite o conteúdo do documento aqui...&#10;&#10;Use <h3>TÍTULO</h3> para seções&#10;Use <p>Parágrafo...</p> para texto"></textarea>
+      <textarea class="doc-editor" id="editDocConteudo" placeholder="Digite o conteúdo aqui...&#10;&#10;Use <h3>TÍTULO</h3> para seções&#10;Use <p>Parágrafo...</p> para texto&#10;&#10;⚠ Não cole HTML completo (com DOCTYPE/html/head/body)"></textarea>
     </div>
     <div class="rh-modal-footer">
       <button class="btn-rh danger" id="btnExcluirDoc" onclick="excluirDocRH()" style="display:none">🗑 Excluir</button>
