@@ -1118,15 +1118,17 @@ function renderizarDocs() {
 function renderDocConteudo(doc) {
   const assinado = !!aceitesDocs[doc.id];
   const dados = dadosColab || {};
-  const _cnpj   = dados.CNPJ || dados['CNPJ'] || '';
-  const _razao  = dados['RAZÃO SOCIAL'] || dados['RAZAO SOCIAL'] || dados['RAZAO_SOCIAL'] || dados['EMPRESA'] || '';
+  const _cnpj   = dados['CNPJ'] || '';
+  const _razao  = dados['RAZAO SOCIAL'] || dados['RAZÃO SOCIAL'] || dados['EMPRESA'] || '';
   const _funcao = dados['FUNÇÃO'] || dados['FUNCAO'] || dados['CARGO'] || '';
-  const _cpf    = fmtCPFDados(dados.CPF || dados['CPF'] || '');
+  const _cpf    = fmtCPFDados(dados['CPF'] || '');
+  const _email  = dados['EMAIL'] || '';
+  const _adm    = dados['DATA ADMISSAO'] || dados['DATA ADMISSÃO'] || dados['DATA CONTRATO'] || '';
   dadosHtml = `<div class="doc-dados"><h4>📋 Dados das Partes</h4><div class="dados-grid">
     <div class="dado-item"><span class="dado-label">Colaborador:</span><span class="dado-value">${dados.COLABORADOR||'—'}</span></div>
     <div class="dado-item"><span class="dado-label">CPF:</span><span class="dado-value">${_cpf||'—'}</span></div>
     <div class="dado-item"><span class="dado-label">Função:</span><span class="dado-value">${_funcao||'—'}</span></div>
-    <div class="dado-item"><span class="dado-label">Loja:</span><span class="dado-value">${dados.LOJA||'—'}</span></div>
+    <div class="dado-item"><span class="dado-label">Loja:</span><span class="dado-value">${dados['LOJA']||'—'}</span></div>
     <div class="dado-item"><span class="dado-label">Razão Social:</span><span class="dado-value">${_razao||'—'}</span></div>
     <div class="dado-item"><span class="dado-label">CNPJ:</span><span class="dado-value">${_cnpj||'—'}</span></div>
   </div></div>`;
