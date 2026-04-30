@@ -1688,7 +1688,13 @@ async function forcarReAssinatura(login, nome) {
 function renderDocEditList() {
   const lista = document.getElementById('docEditList');
   if(!lista) return;
-  lista.innerHTML = DOCUMENTOS.map(doc => `
+  // Contratos individuais (colab:) aparecem primeiro
+  const docsOrdenados = [...DOCUMENTOS].sort((a, b) => {
+    const aInd = (a.paraQuem||'').startsWith('colab:') ? 0 : 1;
+    const bInd = (b.paraQuem||'').startsWith('colab:') ? 0 : 1;
+    return aInd - bInd;
+  });
+  lista.innerHTML = docsOrdenados.map(doc => `
     <div class="doc-edit-card" id="docEditCard_${doc.id}">
       <div class="doc-edit-header" onclick="toggleDocEdit('${doc.id}')">
         <div style="width:40px;height:40px;border-radius:10px;background:var(--orange-light);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">📄</div>
@@ -1718,17 +1724,37 @@ function toggleDocEdit(id) {
   if(!isOpen) card.classList.add('open');
 }
 
-function popularSelectColabs() {
-  // Adicionar colaboradores individuais no select "Para Quem" (sem gestores)
+async function popularSelectColabs() {
   const grp = document.getElementById('editDocParaQuemIndividual');
   if(!grp) return;
   grp.innerHTML = '';
-  // Apenas vendedores, adms e mecânicos — sem gestores
-  const semGestores = rhColaboradores.filter(c => c.perfil !== 'gestor' && c.perfil !== 'rh');
-  semGestores.forEach(c => {
+
+  // Se rhColaboradores estiver vazio, buscar do GAS
+  if(!rhColaboradores || rhColaboradores.length === 0) {
+    try {
+      const r = await fetch(AS + '?action=listar_colaboradores');
+      const j = await r.json();
+      if(j.success && j.colaboradores) rhColaboradores = j.colaboradores;
+    } catch(e) {}
+  }
+
+  // Todos exceto gestores e RH, ordenados por nome
+  const lista = rhColaboradores
+    .filter(c => c.perfil !== 'gestor' && c.perfil !== 'rh')
+    .sort((a,b) => a.nome.localeCompare(b.nome, 'pt-BR'));
+
+  if(lista.length === 0) {
+    const opt = document.createElement('option');
+    opt.value = '';
+    opt.textContent = '⚠ Nenhum colaborador carregado';
+    grp.appendChild(opt);
+    return;
+  }
+
+  lista.forEach(c => {
     const opt = document.createElement('option');
     opt.value = 'colab:' + c.login;
-    opt.textContent = c.nome + ' (' + (c.perfil||'') + ')';
+    opt.textContent = c.nome + ' (' + (c.perfil || 'vendedor') + ')';
     grp.appendChild(opt);
   });
 }
