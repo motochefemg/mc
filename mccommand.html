@@ -1615,27 +1615,33 @@ async function salvarDocEditado() {
     DOCUMENTOS.push(docData);
   }
 
-  // Salvar no Sheets
+  // Salvar no Sheets via POST (conteúdo pode ser grande)
   try {
-    const params = new URLSearchParams({
+    const body = new URLSearchParams({
       action: 'rh_salvar_documento',
       docData: JSON.stringify(docData),
       isNew: rhDocEditando ? 'false' : 'true'
     });
-    const r = await fetch(AS + '?' + params.toString());
-    const j = await r.json();
+    const r = await fetch(AS, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: body.toString()
+    });
+    const txt = await r.text();
+    const j = JSON.parse(txt);
     if(j.success) {
       fecharRHModal('modalEditDoc');
       renderDocEditList();
       renderColaboradores();
       toast('✓ Documento salvo com sucesso!');
     } else {
-      toast('⚠ Salvo localmente. Erro no servidor: ' + (j.error||''));
+      toast('⚠ Erro ao salvar: ' + (j.error||'tente novamente'));
       fecharRHModal('modalEditDoc');
       renderDocEditList();
     }
   } catch(e) {
-    toast('✓ Salvo localmente (sem conexão).');
+    console.error('salvarDocEditado erro:', e);
+    toast('⚠ Erro de conexão ao salvar. Verifique e tente novamente.');
     fecharRHModal('modalEditDoc');
     renderDocEditList();
   }
@@ -1735,15 +1741,18 @@ async function confirmarUploadPDF() {
   DOCUMENTOS.push(docData);
 
   try {
-    // Salvar sem o base64 na URL (muito grande) — só metadados
     const docParaSalvar = {...docData};
     delete docParaSalvar.pdfBase64;
-    const params = new URLSearchParams({
+    const body = new URLSearchParams({
       action: 'rh_salvar_documento',
       docData: JSON.stringify(docParaSalvar),
       isNew: 'true'
     });
-    await fetch(AS + '?' + params.toString());
+    await fetch(AS, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: body.toString()
+    });
   } catch(e) {}
 
   fecharRHModal('modalUploadPDF');
