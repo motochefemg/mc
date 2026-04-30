@@ -906,7 +906,11 @@ async function carregarDocumentosColab() {
     const j = await r.json();
     if(j.success && j.documentos && j.documentos.length > 0) {
       DOCUMENTOS.length = 0;
-      j.documentos.forEach(d => DOCUMENTOS.push(d));
+      j.documentos.forEach(d => {
+        const pq = (d.paraQuem || 'todos').toLowerCase().trim();
+        d.paraQuem = ['todos','gestores','adms','vendedores','mecanicos'].includes(pq) || pq.startsWith('colab:') ? pq : 'todos';
+        DOCUMENTOS.push(d);
+      });
     }
     // Se Sheets vazio, mantém o hardcoded como fallback
   } catch(e) {
@@ -1314,9 +1318,17 @@ async function carregarDadosRH() {
 
     // Sheets é a fonte de verdade — substituir COMPLETAMENTE o array hardcoded
     if(j4.success && j4.documentos && j4.documentos.length > 0) {
-      // Limpar e substituir — documentos excluídos no Sheets desaparecem aqui
       DOCUMENTOS.length = 0;
-      j4.documentos.forEach(d => DOCUMENTOS.push(d));
+      j4.documentos.forEach(d => {
+        // Normalizar paraQuem — garantir valores válidos
+        const pq = (d.paraQuem || 'todos').toLowerCase().trim();
+        if(!['todos','gestores','adms','vendedores','mecanicos'].includes(pq) && !pq.startsWith('colab:')) {
+          d.paraQuem = 'todos';
+        } else {
+          d.paraQuem = pq;
+        }
+        DOCUMENTOS.push(d);
+      });
     }
 
     renderColaboradores();
@@ -1358,12 +1370,25 @@ function renderStats() {
 }
 
 function getDocsParaColab(login, perfil) {
-  // Docs padrão por perfil
-  const isMecanico = perfil === 'mecanico';
+  const isMec  = perfil === 'mecanico';
+  const isAdm  = perfil === 'adm';
+  const isGest = perfil === 'gestor' || perfil === 'rh';
+  const isVend = !isMec && !isAdm && !isGest;
+
   let docs = DOCUMENTOS.filter(doc => {
-    if(doc.paraQuem === 'mecanicos' && !isMecanico) return false;
-    if(isMecanico && (doc.id === 'BYOD_V1' || doc.id === 'ECOSSISTEMA_V1')) return false;
-    return true;
+    const pq = (doc.paraQuem || 'todos').toLowerCase().trim();
+    // Doc individual — só para esse login
+    if(pq.startsWith('colab:')) {
+      return pq.replace('colab:','').trim() === login;
+    }
+    // Por perfil
+    if(pq === 'mecanicos') return isMec;
+    if(pq === 'gestores')  return isGest;
+    if(pq === 'adms')      return isAdm || isGest;
+    if(pq === 'vendedores') return isVend || isGest; // gestores também veem
+    // 'todos' — exceto mecânicos não recebem BYOD e ECOSSISTEMA
+    if(isMec && (doc.id === 'BYOD_V1' || doc.id === 'ECOSSISTEMA_V1')) return false;
+    return true; // 'todos'
   });
 
   // Aplicar configuração individual (adições e exclusões)
@@ -1407,12 +1432,13 @@ function renderColaboradores(busca = '') {
     const docs = getDocsParaColab(c.login, c.perfil);
     const aceites = rhAceites[c.login] || {};
     const ini = c.nome.trim().split(' ').map(p=>p[0]).filter(Boolean).slice(0,2).join('').toUpperCase();
-    const assinados = docs.filter(d => aceites[d.id]).length;
+    const assinados = docs.filter(d => aceites[d.id] && !aceites[d.id].revogado && aceites[d.id].status !== 'REVOGADO').length;
     const total = docs.length;
     const pct = total > 0 ? Math.round(assinados/total*100) : 0;
 
     const chips = docs.map(d => {
-      const signed = !!aceites[d.id];
+      const aceiteD = aceites[d.id];
+      const signed = !!aceiteD && !aceiteD.revogado && aceiteD.status !== 'REVOGADO';
       const nomeAbrev = d.nome.length > 22 ? d.nome.substring(0,22)+'…' : d.nome;
       return `<span class="doc-chip ${signed?'signed':'pending'}" title="${d.nome}${signed?' — Assinado em '+(aceites[d.id]?.data||''):'— Pendente'}">
         ${signed?'✓':''} ${nomeAbrev}
