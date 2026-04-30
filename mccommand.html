@@ -117,6 +117,10 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cream); color: var(
 .doc-text { font-size: 13px; line-height: 1.85; color: var(--dark); max-height: 360px; overflow-y: auto; background: var(--white); border: 1px solid var(--light); border-radius: var(--radius-sm); padding: 24px; margin-bottom: 24px; }
 .doc-text h3 { font-size: 13px; font-weight: 700; color: var(--orange); margin: 16px 0 6px; text-transform: uppercase; letter-spacing: .5px; }
 .doc-text h3:first-child { margin-top: 0; }
+.doc-text th { color: var(--dark) !important; background: var(--light2) !important; padding: 8px 12px; }
+.doc-text td { padding: 8px 12px; border: 1px solid var(--light); }
+.doc-text table { border-collapse: collapse; width: 100%; margin-bottom: 12px; }
+.doc-text tr:nth-child(even) { background: var(--cream); }
 .doc-text p { margin-bottom: 10px; }
 .doc-text ul { padding-left: 20px; margin-bottom: 10px; }
 .doc-text li { margin-bottom: 4px; }
@@ -1005,10 +1009,25 @@ function voltarApp() {
 
 function renderizarDocs() {
   const isMec = MECANICOS.includes(currentUser);
+  const isAdm = ADMS.includes(currentUser);
+  const isGest = GESTORES.includes(currentUser) || isRH;
+  const nomeColab = dadosColab?.COLABORADOR || currentUser;
+
   const docsFiltrados = DOCUMENTOS.filter(doc => {
-    if(doc.paraQuem === 'mecanicos' && !isMec) return false;
+    const pq = doc.paraQuem || 'todos';
+    // Documento individual por colaborador (ex: "colab:Cesar Rodrigues")
+    if(pq.startsWith('colab:')) {
+      const login = pq.replace('colab:', '').trim();
+      return login === currentUser || login === nomeColab;
+    }
+    // Por perfil
+    if(pq === 'mecanicos') return isMec;
+    if(pq === 'gestores') return isGest;
+    if(pq === 'adms') return isAdm || isGest;
+    if(pq === 'vendedores') return !isMec && !isAdm && !isGest;
+    // 'todos' — mas mecânicos não recebem BYOD e ECOSSISTEMA
     if(isMec && (doc.id === 'BYOD_V1' || doc.id === 'ECOSSISTEMA_V1')) return false;
-    return true;
+    return true; // 'todos'
   });
   const total = docsFiltrados.length;
   const assinados = docsFiltrados.filter(d => aceitesDocs[d.id]).length;
