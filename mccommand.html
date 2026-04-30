@@ -808,17 +808,19 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cream); color: var(
 const AS = 'https://script.google.com/macros/s/AKfycbzAYDr_pArf5uSPiK0mOQP0K_BMHFEAOJ9xYxMSVBigoCpY_F69GjJlXmE9WOuQZOIn/exec';
 
 const MODULOS_CONFIG = {
-  // Mecânicos: sem módulos extras (só documentos)
-  'mecanicos': [],
-
-  // ADMs: caixa e estoque em construção
-  'adms': [
-    { nome:'Caixa',    desc:'Movimentações financeiras da loja', icon:'🏦', color:'#1a7a4a', iconBg:'#e8f5ee', url:'https://motochefemg.github.io/mc/caixa.html',    emConstrucao:true },
-    { nome:'Estoque',  desc:'Controle de motocicletas',          icon:'🏍', color:'#7c2d12', iconBg:'#fef3ee', url:'https://motochefemg.github.io/mc/estoque.html',  emConstrucao:true },
-    { nome:'Simulador de Comissão', desc:'Metas e premiação OTE 2026', icon:'💰', color:'#b45309', iconBg:'#fef9ee', url:'https://motochefemg.github.io/mc/simulador.html', emConstrucao:true },
+  // Mecânicos: só estoque em construção
+  'mecanicos': [
+    { nome:'Estoque', desc:'Controle de motocicletas', icon:'🏍', color:'#7c2d12', iconBg:'#fef3ee', url:'https://motochefemg.github.io/mc/estoque.html', emConstrucao:true },
   ],
 
-  // RH: Marina vê tudo sem construção
+  // ADMs (Pablo, Carlos, Thiago) — são vendedores+adm — veem tudo em construção menos dashboard
+  'adms': [
+    { nome:'Simulador de Comissão', desc:'Metas e premiação OTE 2026',        icon:'💰', color:'#ff4b00', iconBg:'#fff3ee', url:'https://motochefemg.github.io/mc/simulador.html', emConstrucao:true },
+    { nome:'Caixa',                 desc:'Movimentações financeiras da loja', icon:'🏦', color:'#1a7a4a', iconBg:'#e8f5ee', url:'https://motochefemg.github.io/mc/caixa.html',    emConstrucao:true },
+    { nome:'Estoque',               desc:'Controle de motocicletas',          icon:'🏍', color:'#7c2d12', iconBg:'#fef3ee', url:'https://motochefemg.github.io/mc/estoque.html',  emConstrucao:true },
+  ],
+
+  // RH: Marina vê tudo funcionando
   'rh': [
     { nome:'Painel RH',             desc:'Gerenciar documentos, aceites e colaboradores', icon:'👔', color:'#1a4a7a', iconBg:'#eef3f9', isRH:true },
     { nome:'Dashboard de Vendas',   desc:'Relatórios e KPIs de todas as lojas',           icon:'📊', color:'#ff4b00', iconBg:'#fff3ee', url:'https://motochefemg.github.io/mc/GESTAO.html' },
@@ -827,16 +829,18 @@ const MODULOS_CONFIG = {
     { nome:'Estoque',               desc:'Controle de motocicletas',                      icon:'🏍', color:'#7c2d12', iconBg:'#fef3ee', url:'https://motochefemg.github.io/mc/estoque.html' },
   ],
 
-  // Gestores: tudo em construção (sem dashboard na lista)
+  // Gestores: dashboard ativo + tudo mais em construção
   'gestores': [
-    { nome:'Caixa',    desc:'Movimentações financeiras da loja', icon:'🏦', color:'#1a7a4a', iconBg:'#e8f5ee', url:'https://motochefemg.github.io/mc/caixa.html',    emConstrucao:true },
-    { nome:'Estoque',  desc:'Controle de motocicletas',          icon:'🏍', color:'#7c2d12', iconBg:'#fef3ee', url:'https://motochefemg.github.io/mc/estoque.html',  emConstrucao:true },
-    { nome:'Simulador de Comissão', desc:'Metas e premiação OTE 2026', icon:'💰', color:'#b45309', iconBg:'#fef9ee', url:'https://motochefemg.github.io/mc/simulador.html', emConstrucao:true },
+    { nome:'Dashboard de Vendas',   desc:'Relatórios e KPIs completos',       icon:'📊', color:'#ff4b00', iconBg:'#fff3ee', url:'https://motochefemg.github.io/mc/GESTAO.html' },
+    { nome:'Simulador de Comissão', desc:'Metas e premiação OTE 2026',        icon:'💰', color:'#b45309', iconBg:'#fef9ee', url:'https://motochefemg.github.io/mc/simulador.html', emConstrucao:true },
+    { nome:'Caixa',                 desc:'Movimentações financeiras da loja', icon:'🏦', color:'#1a7a4a', iconBg:'#e8f5ee', url:'https://motochefemg.github.io/mc/caixa.html',    emConstrucao:true },
+    { nome:'Estoque',               desc:'Controle de motocicletas',          icon:'🏍', color:'#7c2d12', iconBg:'#fef3ee', url:'https://motochefemg.github.io/mc/estoque.html',  emConstrucao:true },
   ],
 
-  // Vendedores: tudo em construção
+  // Vendedores: estoque e simulador em construção
   'vendedores': [
     { nome:'Simulador de Comissão', desc:'Simule sua comissão e premiação', icon:'💰', color:'#ff4b00', iconBg:'#fff3ee', url:'https://motochefemg.github.io/mc/simulador.html', emConstrucao:true },
+    { nome:'Estoque',               desc:'Controle de motocicletas',        icon:'🏍', color:'#7c2d12', iconBg:'#fef3ee', url:'https://motochefemg.github.io/mc/estoque.html',  emConstrucao:true },
   ],
 };
 
@@ -934,31 +938,42 @@ async function carregarDocumentosColab() {
   }
 }
 
+// Perfil do colaborador logado (baseado no Sheets, não nos arrays hardcoded)
+let perfilAtual = 'vendedor'; // default
+
 async function carregarDadosColab() {
-  if(isRH) {
-    // Buscar dados reais de Marina no Sheets (precisa do CPF para assinar documentos)
-    try {
-      const r = await fetch(`${AS}?action=dados_colab&login=${encodeURIComponent(currentUser)}`);
-      const j = await r.json();
-      if(j.success && j.dados) {
-        dadosColab = j.dados;
-        // Garantir que FUNÇÃO está preenchida
-        if(!dadosColab['FUNÇÃO']) dadosColab['FUNÇÃO'] = 'Gestora de RH';
-      } else {
-        dadosColab = { COLABORADOR:'Marina Paiva', 'FUNÇÃO':'Gestora de RH', LOJA:'Matriz' };
-      }
-    } catch(e) {
-      dadosColab = { COLABORADOR:'Marina Paiva', 'FUNÇÃO':'Gestora de RH', LOJA:'Matriz' };
-    }
-    return;
-  }
   try {
     const r = await fetch(`${AS}?action=dados_colab&login=${encodeURIComponent(currentUser)}`);
     const j = await r.json();
-    if(j.success && j.dados) dadosColab = j.dados;
-    else dadosColab = { COLABORADOR: currentUser, 'FUNÇÃO': '', LOJA: '' };
+    if(j.success && j.dados) {
+      dadosColab = j.dados;
+      if(!dadosColab['FUNÇÃO'] && isRH) dadosColab['FUNÇÃO'] = 'Gestora de RH';
+    } else {
+      dadosColab = { COLABORADOR: isRH ? 'Marina Paiva' : currentUser, 'FUNÇÃO': isRH ? 'Gestora de RH' : '', LOJA: '' };
+    }
   } catch(e) {
-    dadosColab = { COLABORADOR: currentUser, 'FUNÇÃO': '', LOJA: '' };
+    dadosColab = { COLABORADOR: isRH ? 'Marina Paiva' : currentUser, 'FUNÇÃO': isRH ? 'Gestora de RH' : '', LOJA: '' };
+  }
+
+  // Determinar perfil via listarColaboradores (fonte única de verdade)
+  try {
+    if(!isRH) {
+      const rc = await fetch(`${AS}?action=listar_colaboradores`);
+      const jc = await rc.json();
+      if(jc.success && jc.colaboradores) {
+        const eu = jc.colaboradores.find(c => c.login === currentUser);
+        if(eu) perfilAtual = eu.perfil; // 'vendedor','mecanico','adm','gestor','rh'
+      }
+    } else {
+      perfilAtual = 'rh';
+    }
+  } catch(e) {
+    // fallback: usar arrays hardcoded
+    if(isRH) perfilAtual = 'rh';
+    else if(GESTORES.includes(currentUser)) perfilAtual = 'gestor';
+    else if(ADMS.includes(currentUser)) perfilAtual = 'adm';
+    else if(MECANICOS.includes(currentUser)) perfilAtual = 'mecanico';
+    else perfilAtual = 'vendedor';
   }
 }
 
@@ -984,7 +999,7 @@ function montarApp() {
   const saudacao = hora < 12 ? 'Bom dia' : hora < 18 ? 'Boa tarde' : 'Boa noite';
   document.getElementById('greetData').textContent = `${saudacao}! Hoje é ${agora.toLocaleDateString('pt-BR', {weekday:'long', day:'numeric', month:'long'})}.`;
 
-  const tipoUser = isRH ? 'rh' : GESTORES.includes(currentUser) ? 'gestores' : ADMS.includes(currentUser) ? 'adms' : MECANICOS.includes(currentUser) ? 'mecanicos' : 'vendedores';
+  const tipoUser = perfilAtual === 'rh' ? 'rh' : perfilAtual === 'gestor' ? 'gestores' : perfilAtual === 'adm' ? 'adms' : perfilAtual === 'mecanico' ? 'mecanicos' : 'vendedores';
   const modulos = MODULOS_CONFIG[tipoUser] || MODULOS_CONFIG['vendedores'];
   const pendentes = docsPendentes();
   const bloqueado = pendentes.length > 0 && !isRH;
@@ -1029,12 +1044,13 @@ function montarApp() {
   }
 }
 
-// Função central de filtro — usada por docsPendentes e renderizarDocs
+// Função central de filtro — usa perfilAtual do Sheets (fonte de verdade)
 function docsPertenceAoPerfil(doc) {
-  const isMec  = MECANICOS.includes(currentUser);
-  const isAdm  = ADMS.includes(currentUser);
-  const isGest = GESTORES.includes(currentUser) || isRH;
-  const isVend = !isMec && !isAdm && !isGest;
+  const p = perfilAtual || 'vendedor';
+  const isMec  = p === 'mecanico';
+  const isAdm  = p === 'adm';
+  const isGest = p === 'gestor' || p === 'rh';
+  const isVend = p === 'vendedor';
   const nomeColab = dadosColab?.COLABORADOR || currentUser;
   const pq = (doc.paraQuem || 'todos').toLowerCase().trim();
 
@@ -1045,8 +1061,8 @@ function docsPertenceAoPerfil(doc) {
   if(pq === 'mecanicos')  return isMec;
   if(pq === 'gestores')   return isGest;
   if(pq === 'adms')       return isAdm || isGest;
-  if(pq === 'vendedores') return isVend;
-  // 'todos' — todos exceto: mecânicos não recebem BYOD/ECOSSISTEMA
+  if(pq === 'vendedores') return isVend || isAdm; // ADMs (Carlos/Pablo/Thiago) também recebem
+  // 'todos' — mecânicos não recebem BYOD/ECOSSISTEMA
   if(isMec && (doc.id === 'BYOD_V1' || doc.id === 'ECOSSISTEMA_V1')) return false;
   return true; // 'todos'
 }
@@ -1102,13 +1118,17 @@ function renderizarDocs() {
 function renderDocConteudo(doc) {
   const assinado = !!aceitesDocs[doc.id];
   const dados = dadosColab || {};
-  const dadosHtml = `<div class="doc-dados"><h4>📋 Dados das Partes</h4><div class="dados-grid">
+  const _cnpj   = dados.CNPJ || dados['CNPJ'] || '';
+  const _razao  = dados['RAZÃO SOCIAL'] || dados['RAZAO SOCIAL'] || dados['RAZAO_SOCIAL'] || dados['EMPRESA'] || '';
+  const _funcao = dados['FUNÇÃO'] || dados['FUNCAO'] || dados['CARGO'] || '';
+  const _cpf    = fmtCPFDados(dados.CPF || dados['CPF'] || '');
+  dadosHtml = `<div class="doc-dados"><h4>📋 Dados das Partes</h4><div class="dados-grid">
     <div class="dado-item"><span class="dado-label">Colaborador:</span><span class="dado-value">${dados.COLABORADOR||'—'}</span></div>
-    <div class="dado-item"><span class="dado-label">CPF:</span><span class="dado-value">${dados.CPF||'—'}</span></div>
-    <div class="dado-item"><span class="dado-label">Função:</span><span class="dado-value">${dados['FUNÇÃO']||'—'}</span></div>
+    <div class="dado-item"><span class="dado-label">CPF:</span><span class="dado-value">${_cpf||'—'}</span></div>
+    <div class="dado-item"><span class="dado-label">Função:</span><span class="dado-value">${_funcao||'—'}</span></div>
     <div class="dado-item"><span class="dado-label">Loja:</span><span class="dado-value">${dados.LOJA||'—'}</span></div>
-    <div class="dado-item"><span class="dado-label">Razão Social:</span><span class="dado-value">${dados['RAZAO SOCIAL']||'—'}</span></div>
-    <div class="dado-item"><span class="dado-label">CNPJ:</span><span class="dado-value">${dados.CNPJ||'—'}</span></div>
+    <div class="dado-item"><span class="dado-label">Razão Social:</span><span class="dado-value">${_razao||'—'}</span></div>
+    <div class="dado-item"><span class="dado-label">CNPJ:</span><span class="dado-value">${_cnpj||'—'}</span></div>
   </div></div>`;
   const textoHtml = `<div class="doc-text">${doc.conteudo}</div>`;
   if(assinado) {
@@ -1747,7 +1767,7 @@ function abrirEditarDoc(docId) {
 }
 
 async function salvarDocEditado() {
-  const id = document.getElementById('editDocId').value.trim().toUpperCase().replace(/\s/g,'_');
+  let id = document.getElementById('editDocId').value.trim().toUpperCase().replace(/\s/g,'_');
   const nome = document.getElementById('editDocNome').value.trim();
   const sub = document.getElementById('editDocSub').value.trim();
   const paraQuem = document.getElementById('editDocParaQuem').value;
