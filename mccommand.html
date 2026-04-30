@@ -1666,47 +1666,57 @@ async function salvarDocEditado() {
   if(btnSalvar) { btnSalvar.disabled = true; btnSalvar.textContent = '⟳ Salvando...'; }
 
   try {
-    // Etapa 1: salvar metadados (sem conteúdo)
+    console.log('🔵 Salvando doc:', docData.id, '| isNew:', !rhDocEditando);
+
+    // Etapa 1: salvar metadados
     const urlMeta = AS + '?' + new URLSearchParams({
-      action:   'rh_salvar_documento',
-      isNew:    rhDocEditando ? 'false' : 'true',
-      doc_id:   docData.id,
-      doc_nome: docData.nome,
-      doc_sub:  docData.sub || '',
-      doc_para: docData.paraQuem || 'todos',
-      doc_byod: docData.byod ? 'SIM' : 'NAO',
+      action:       'rh_salvar_documento',
+      isNew:        rhDocEditando ? 'false' : 'true',
+      doc_id:       docData.id,
+      doc_nome:     docData.nome,
+      doc_sub:      docData.sub || '',
+      doc_para:     docData.paraQuem || 'todos',
+      doc_byod:     docData.byod ? 'SIM' : 'NAO',
       doc_conteudo: '__AGUARDANDO__'
     }).toString();
 
+    console.log('🔵 URL meta length:', urlMeta.length);
     const r1 = await fetch(urlMeta);
-    const j1 = await r1.json();
-    if(!j1.success) throw new Error(j1.error || 'Erro ao salvar metadados');
+    const txt1 = await r1.text();
+    console.log('🔵 Resposta meta:', txt1.substring(0, 200));
+    const j1 = JSON.parse(txt1);
+    if(!j1.success) throw new Error('Meta: ' + (j1.error || 'falhou'));
 
-    // Etapa 2: salvar conteúdo em chunks de 3000 chars
+    // Etapa 2: conteúdo em chunks
     const conteudo = docData.conteudo || '';
     const CHUNK = 3000;
     const total = Math.ceil(conteudo.length / CHUNK) || 1;
+    console.log('🔵 Conteúdo:', conteudo.length, 'chars |', total, 'chunk(s)');
 
     for(let i = 0; i < total; i++) {
       const chunk = conteudo.substring(i * CHUNK, (i + 1) * CHUNK);
       const urlChunk = AS + '?' + new URLSearchParams({
-        action:   'rh_salvar_conteudo',
-        doc_id:   docData.id,
-        chunk:    chunk,
-        offset:   i,
-        total:    total
+        action: 'rh_salvar_conteudo',
+        doc_id: docData.id,
+        chunk,
+        offset: i,
+        total
       }).toString();
+      console.log('🔵 Chunk', i+1, '/', total, '| URL length:', urlChunk.length);
       const rc = await fetch(urlChunk);
-      const jc = await rc.json();
-      if(!jc.success) throw new Error(jc.error || 'Erro no chunk ' + i);
+      const txtc = await rc.text();
+      console.log('🔵 Chunk resp:', txtc.substring(0, 100));
+      const jc = JSON.parse(txtc);
+      if(!jc.success) throw new Error('Chunk ' + i + ': ' + (jc.error || 'falhou'));
     }
 
+    console.log('✅ Salvo com sucesso!');
     fecharRHModal('modalEditDoc');
     renderDocEditList();
     renderColaboradores();
     toast('✓ Documento salvo com sucesso!');
   } catch(e) {
-    console.error('salvarDocEditado:', e);
+    console.error('❌ salvarDocEditado erro:', e.message);
     toast('⚠ Erro: ' + e.message);
   } finally {
     if(btnSalvar) { btnSalvar.disabled = false; btnSalvar.textContent = '✓ Salvar Documento'; }
