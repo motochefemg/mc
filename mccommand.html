@@ -1252,20 +1252,30 @@ function mudarAbaRH(aba, btn) {
 
 async function carregarDadosRH() {
   try {
-    // Carregar colaboradores
-    const r1 = await fetch(AS + '?action=listar_colaboradores');
-    const j1 = await r1.json();
+    // Carregar tudo em paralelo
+    const [r1, r2, r3, r4] = await Promise.all([
+      fetch(AS + '?action=listar_colaboradores'),
+      fetch(AS + '?action=listar_todos_aceites'),
+      fetch(AS + '?action=rh_docs_config_get'),
+      fetch(AS + '?action=rh_listar_documentos')  // documentos salvos no Sheets
+    ]);
+    const [j1, j2, j3, j4] = await Promise.all([r1.json(), r2.json(), r3.json(), r4.json()]);
+
     if(j1.success) rhColaboradores = j1.colaboradores || [];
-
-    // Carregar todos os aceites
-    const r2 = await fetch(AS + '?action=listar_todos_aceites');
-    const j2 = await r2.json();
     if(j2.success) rhAceites = j2.aceites || {};
-
-    // Carregar config de docs por colaborador (exceções individuais)
-    const r3 = await fetch(AS + '?action=rh_docs_config_get');
-    const j3 = await r3.json();
     if(j3.success) rhDocsConfig = j3.config || {};
+
+    // Mesclar documentos do Sheets com os hardcoded (Sheets tem prioridade)
+    if(j4.success && j4.documentos && j4.documentos.length > 0) {
+      j4.documentos.forEach(docSheets => {
+        const idx = DOCUMENTOS.findIndex(d => d.id === docSheets.id);
+        if(idx >= 0) {
+          DOCUMENTOS[idx] = docSheets; // atualizar existente
+        } else {
+          DOCUMENTOS.push(docSheets);  // adicionar novo
+        }
+      });
+    }
 
     renderColaboradores();
     renderStats();
