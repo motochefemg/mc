@@ -1661,33 +1661,39 @@ async function salvarDocEditado() {
     DOCUMENTOS.push(docData);
   }
 
-  // Salvar no Sheets via no-cors (funciona com conteúdo grande)
+  // Salvar no Sheets via POST no-cors — sem limite de tamanho, sem CORS error
   const btnSalvar = document.querySelector('#modalEditDoc .btn-rh.primary');
   if(btnSalvar) { btnSalvar.disabled = true; btnSalvar.textContent = '⟳ Salvando...'; }
 
-  // Fechar modal e confirmar localmente primeiro
-  fecharRHModal('modalEditDoc');
-  renderDocEditList();
-  renderColaboradores();
-  toast('✓ Documento salvo!');
-  if(btnSalvar) { btnSalvar.disabled = false; btnSalvar.textContent = '✓ Salvar Documento'; }
-
-  // Enviar para o Sheets em background (no-cors — não lê resposta mas o GAS salva)
   try {
-    // Dividir: metadados via GET (pequeno) + conteúdo via no-cors separado
-    const urlMeta = `${AS}?action=rh_salvar_documento&isNew=${rhDocEditando?'false':'true'}&doc_id=${encodeURIComponent(docData.id)}&doc_nome=${encodeURIComponent(docData.nome)}&doc_sub=${encodeURIComponent(docData.sub||'')}&doc_para=${encodeURIComponent(docData.paraQuem||'todos')}&doc_byod=${docData.byod?'SIM':'NAO'}&doc_conteudo=${encodeURIComponent((docData.conteudo||'').substring(0,4000))}`;
+    const body = new URLSearchParams({
+      action:       'rh_salvar_documento',
+      isNew:        rhDocEditando ? 'false' : 'true',
+      doc_id:       docData.id,
+      doc_nome:     docData.nome,
+      doc_sub:      docData.sub || '',
+      doc_para:     docData.paraQuem || 'todos',
+      doc_byod:     docData.byod ? 'SIM' : 'NAO',
+      doc_conteudo: docData.conteudo || ''
+    });
 
-    if(urlMeta.length <= 7800) {
-      // Tudo cabe — enviar de uma vez
-      fetch(urlMeta, { mode: 'no-cors' }).catch(() => {});
-    } else {
-      // Conteúdo muito grande — enviar metadados + conteúdo truncado
-      const urlMin = `${AS}?action=rh_salvar_documento&isNew=${rhDocEditando?'false':'true'}&doc_id=${encodeURIComponent(docData.id)}&doc_nome=${encodeURIComponent(docData.nome)}&doc_sub=${encodeURIComponent(docData.sub||'')}&doc_para=${encodeURIComponent(docData.paraQuem||'todos')}&doc_byod=${docData.byod?'SIM':'NAO'}&doc_conteudo=${encodeURIComponent((docData.conteudo||'').substring(0,2000))}`;
-      fetch(urlMin, { mode: 'no-cors' }).catch(() => {});
-    }
+    await fetch(AS, {
+      method: 'POST',
+      mode:   'no-cors',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body:   body.toString()
+    });
+
+    // POST no-cors não retorna resposta legível — mas o GAS salva
+    fecharRHModal('modalEditDoc');
+    renderDocEditList();
+    renderColaboradores();
+    toast('✓ Documento salvo!');
   } catch(e) {
-    // Falha silenciosa — dados já estão em memória localmente
-    console.warn('Sync GAS falhou (silencioso):', e.message);
+    console.error('salvarDocEditado:', e);
+    toast('⚠ Erro ao salvar. Tente novamente.');
+  } finally {
+    if(btnSalvar) { btnSalvar.disabled = false; btnSalvar.textContent = '✓ Salvar Documento'; }
   }
 }
 
