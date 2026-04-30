@@ -808,29 +808,35 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cream); color: var(
 const AS = 'https://script.google.com/macros/s/AKfycbzAYDr_pArf5uSPiK0mOQP0K_BMHFEAOJ9xYxMSVBigoCpY_F69GjJlXmE9WOuQZOIn/exec';
 
 const MODULOS_CONFIG = {
-  'mecanicos': [
-    { nome:'Simulador de Comissão', desc:'Simule sua comissão e premiação', icon:'💰', color:'#ff4b00', iconBg:'#fff3ee', url:'https://motochefemg.github.io/mc/simulador.html' },
-  ],
+  // Mecânicos: sem módulos extras (só documentos)
+  'mecanicos': [],
+
+  // ADMs: caixa e estoque em construção
   'adms': [
-    { nome:'Caixa', desc:'Movimentações financeiras da loja', icon:'🏦', color:'#1a7a4a', iconBg:'#e8f5ee', url:'https://motochefemg.github.io/mc/caixa.html' },
-    { nome:'Estoque', desc:'Controle de motocicletas', icon:'🏍', color:'#7c2d12', iconBg:'#fef3ee', url:'https://motochefemg.github.io/mc/estoque.html' },
-    { nome:'Simulador de Comissão', desc:'Metas e premiação OTE 2026', icon:'💰', color:'#b45309', iconBg:'#fef9ee', url:'https://motochefemg.github.io/mc/simulador.html' },
+    { nome:'Caixa',    desc:'Movimentações financeiras da loja', icon:'🏦', color:'#1a7a4a', iconBg:'#e8f5ee', url:'https://motochefemg.github.io/mc/caixa.html',    emConstrucao:true },
+    { nome:'Estoque',  desc:'Controle de motocicletas',          icon:'🏍', color:'#7c2d12', iconBg:'#fef3ee', url:'https://motochefemg.github.io/mc/estoque.html',  emConstrucao:true },
+    { nome:'Simulador de Comissão', desc:'Metas e premiação OTE 2026', icon:'💰', color:'#b45309', iconBg:'#fef9ee', url:'https://motochefemg.github.io/mc/simulador.html', emConstrucao:true },
   ],
+
+  // RH: Marina vê tudo sem construção
   'rh': [
-    { nome:'Painel RH', desc:'Gerenciar documentos, aceites e colaboradores', icon:'👔', color:'#1a4a7a', iconBg:'#eef3f9', isRH: true },
-    { nome:'Dashboard de Vendas', desc:'Relatórios e KPIs de todas as lojas', icon:'📊', color:'#ff4b00', iconBg:'#fff3ee', url:'https://motochefemg.github.io/mc/GESTAO.html' },
-    { nome:'Simulador de Comissão', desc:'Metas e premiação OTE 2026', icon:'💰', color:'#1a7a4a', iconBg:'#e8f5ee', url:'https://motochefemg.github.io/mc/simulador.html' },
-    { nome:'Caixa', desc:'Movimentações financeiras', icon:'🏦', color:'#166534', iconBg:'#e8f5ee', url:'https://motochefemg.github.io/mc/caixa.html' },
-    { nome:'Estoque', desc:'Controle de motocicletas', icon:'🏍', color:'#7c2d12', iconBg:'#fef3ee', url:'https://motochefemg.github.io/mc/estoque.html' },
+    { nome:'Painel RH',             desc:'Gerenciar documentos, aceites e colaboradores', icon:'👔', color:'#1a4a7a', iconBg:'#eef3f9', isRH:true },
+    { nome:'Dashboard de Vendas',   desc:'Relatórios e KPIs de todas as lojas',           icon:'📊', color:'#ff4b00', iconBg:'#fff3ee', url:'https://motochefemg.github.io/mc/GESTAO.html' },
+    { nome:'Simulador de Comissão', desc:'Metas e premiação OTE 2026',                    icon:'💰', color:'#1a7a4a', iconBg:'#e8f5ee', url:'https://motochefemg.github.io/mc/simulador.html' },
+    { nome:'Caixa',                 desc:'Movimentações financeiras',                     icon:'🏦', color:'#166534', iconBg:'#e8f5ee', url:'https://motochefemg.github.io/mc/caixa.html' },
+    { nome:'Estoque',               desc:'Controle de motocicletas',                      icon:'🏍', color:'#7c2d12', iconBg:'#fef3ee', url:'https://motochefemg.github.io/mc/estoque.html' },
   ],
+
+  // Gestores: tudo em construção (sem dashboard na lista)
   'gestores': [
-    { nome:'Dashboard de Vendas', desc:'Relatórios e KPIs completos', icon:'📊', color:'#ff4b00', iconBg:'#fff3ee', url:'https://motochefemg.github.io/mc/GESTAO.html' },
-    { nome:'Caixa', desc:'Movimentações financeiras da loja', icon:'🏦', color:'#1a7a4a', iconBg:'#e8f5ee', url:'https://motochefemg.github.io/mc/caixa.html' },
-    { nome:'Estoque', desc:'Controle de motocicletas', icon:'🏍', color:'#7c2d12', iconBg:'#fef3ee', url:'https://motochefemg.github.io/mc/estoque.html' },
-    { nome:'Simulador de Comissão', desc:'Metas e premiação OTE 2026', icon:'💰', color:'#b45309', iconBg:'#fef9ee', url:'https://motochefemg.github.io/mc/simulador.html' },
+    { nome:'Caixa',    desc:'Movimentações financeiras da loja', icon:'🏦', color:'#1a7a4a', iconBg:'#e8f5ee', url:'https://motochefemg.github.io/mc/caixa.html',    emConstrucao:true },
+    { nome:'Estoque',  desc:'Controle de motocicletas',          icon:'🏍', color:'#7c2d12', iconBg:'#fef3ee', url:'https://motochefemg.github.io/mc/estoque.html',  emConstrucao:true },
+    { nome:'Simulador de Comissão', desc:'Metas e premiação OTE 2026', icon:'💰', color:'#b45309', iconBg:'#fef9ee', url:'https://motochefemg.github.io/mc/simulador.html', emConstrucao:true },
   ],
+
+  // Vendedores: tudo em construção
   'vendedores': [
-    { nome:'Simulador de Comissão', desc:'Simule sua comissão e premiação', icon:'💰', color:'#ff4b00', iconBg:'#fff3ee', url:'https://motochefemg.github.io/mc/simulador.html' },
+    { nome:'Simulador de Comissão', desc:'Simule sua comissão e premiação', icon:'💰', color:'#ff4b00', iconBg:'#fff3ee', url:'https://motochefemg.github.io/mc/simulador.html', emConstrucao:true },
   ],
 };
 
@@ -903,21 +909,28 @@ async function iniciarApp() {
 }
 
 async function carregarDocumentosColab() {
-  // Substitui o array hardcoded pelos documentos reais do Sheets
   try {
     const r = await fetch(AS + '?action=rh_listar_documentos');
     const j = await r.json();
-    if(j.success && j.documentos && j.documentos.length > 0) {
+    if(j.success && (j.documentos||[]).length > 0) {
+      // Sheets tem docs — usar SOMENTE o Sheets
       DOCUMENTOS.length = 0;
-      j.documentos.forEach(d => {
+      (j.documentos || []).forEach(d => {
         const pq = (d.paraQuem || 'todos').toLowerCase().trim();
         d.paraQuem = ['todos','gestores','adms','vendedores','mecanicos'].includes(pq) || pq.startsWith('colab:') ? pq : 'todos';
+        d.byod = false;
         DOCUMENTOS.push(d);
       });
+    } else if(j.success && (j.documentos||[]).length === 0) {
+      // Sheets respondeu mas está vazio — remover docs excluídos do hardcoded
+      const excluidos = ['CONDUTA_V1','ECOSSISTEMA_V1'];
+      for(let i = DOCUMENTOS.length-1; i >= 0; i--) {
+        if(excluidos.includes(DOCUMENTOS[i].id)) DOCUMENTOS.splice(i,1);
+      }
     }
-    // Se Sheets vazio, mantém o hardcoded como fallback
+    // Se servidor cair (catch), mantém hardcoded intacto como segurança
   } catch(e) {
-    console.warn('Usando documentos padrão (Sheets indisponível)');
+    console.warn('Sheets indisponível — usando documentos padrão');
   }
 }
 
@@ -978,22 +991,25 @@ function montarApp() {
 
   const grid = document.getElementById('modulesGrid');
   // Marina (RH) vê tudo — demais colaboradores veem ferramentas bloqueadas
-  const emConstrucao = !isRH;
+  // Controle granular de quais módulos estão em construção por perfil
+  // emConstrucao = true → todos os módulos bloqueados
+  // Para controle individual, usamos a flag m.emConstrucao no MODULOS_CONFIG
 
   grid.innerHTML = modulos.map((m, i) => {
+    const construcao = !isRH && (m.emConstrucao === true);
     let click;
-    if(emConstrucao && !m.isRH) click = 'mostrarConstrucao();return false;';
-    else if(bloqueado) click = 'mostrarBloqueio();return false;';
+    if(construcao) click = 'mostrarConstrucao();return false;';
+    else if(bloqueado && !m.isRH) click = 'mostrarBloqueio();return false;';
     else if(m.isRH) click = 'abrirPainelRH();return false;';
     else click = `abrirFerramenta('${m.url}','${m.nome.replace(/'/g,"\'")}');return false;`;
-    const cardClass = (emConstrucao && !m.isRH) ? 'em-construcao' : (bloqueado && !m.isRH ? 'locked' : '');
+    const cardClass = construcao ? 'em-construcao' : '';
     return `<a class="module-card fade-up stagger-${i+1} ${cardClass}"
        style="--card-color:${m.color};--icon-bg:${m.iconBg}"
        href="#" onclick="${click}">
       <div class="mod-icon">${m.icon}</div>
       <div class="mod-name">${m.nome}</div>
       <div class="mod-desc">${m.desc}</div>
-      ${emConstrucao && !m.isRH ? '<div class="mod-construcao">🚧 Em construção</div>' : ''}
+      ${construcao ? '<div class="mod-construcao">🚧 Em construção</div>' : ''}
     </a>`;
   }).join('');;
 
@@ -1013,22 +1029,30 @@ function montarApp() {
   }
 }
 
-function docsPendentes() {
+// Função central de filtro — usada por docsPendentes e renderizarDocs
+function docsPertenceAoPerfil(doc) {
   const isMec  = MECANICOS.includes(currentUser);
   const isAdm  = ADMS.includes(currentUser);
   const isGest = GESTORES.includes(currentUser) || isRH;
+  const isVend = !isMec && !isAdm && !isGest;
   const nomeColab = dadosColab?.COLABORADOR || currentUser;
-  return DOCUMENTOS.filter(d => {
-    if(aceitesDocs[d.id]) return false; // já assinado
-    const pq = (d.paraQuem || 'todos').toLowerCase().trim();
-    if(pq.startsWith('colab:')) return pq.replace('colab:','').trim() === currentUser || pq.replace('colab:','').trim() === nomeColab;
-    if(pq === 'mecanicos')  return isMec;
-    if(pq === 'gestores')   return isGest;
-    if(pq === 'adms')       return isAdm || isGest;
-    if(pq === 'vendedores') return !isMec && !isAdm && !isGest;
-    if(isMec && (d.id === 'BYOD_V1' || d.id === 'ECOSSISTEMA_V1')) return false;
-    return true;
-  });
+  const pq = (doc.paraQuem || 'todos').toLowerCase().trim();
+
+  if(pq.startsWith('colab:')) {
+    const alvo = pq.replace('colab:','').trim();
+    return alvo === currentUser || alvo === nomeColab;
+  }
+  if(pq === 'mecanicos')  return isMec;
+  if(pq === 'gestores')   return isGest;
+  if(pq === 'adms')       return isAdm || isGest;
+  if(pq === 'vendedores') return isVend;
+  // 'todos' — todos exceto: mecânicos não recebem BYOD/ECOSSISTEMA
+  if(isMec && (doc.id === 'BYOD_V1' || doc.id === 'ECOSSISTEMA_V1')) return false;
+  return true; // 'todos'
+}
+
+function docsPendentes() {
+  return DOCUMENTOS.filter(d => !aceitesDocs[d.id] && docsPertenceAoPerfil(d));
 }
 function mostrarBloqueio() { document.getElementById('modalBloqueio').classList.add('show'); }
 function mostrarConstrucao() { document.getElementById('modalConstrucao').classList.add('show'); }
@@ -1052,22 +1076,7 @@ function renderizarDocs() {
   const isGest = GESTORES.includes(currentUser) || isRH;
   const nomeColab = dadosColab?.COLABORADOR || currentUser;
 
-  const docsFiltrados = DOCUMENTOS.filter(doc => {
-    const pq = doc.paraQuem || 'todos';
-    // Documento individual por colaborador (ex: "colab:Cesar Rodrigues")
-    if(pq.startsWith('colab:')) {
-      const login = pq.replace('colab:', '').trim();
-      return login === currentUser || login === nomeColab;
-    }
-    // Por perfil
-    if(pq === 'mecanicos') return isMec;
-    if(pq === 'gestores') return isGest;
-    if(pq === 'adms') return isAdm || isGest;
-    if(pq === 'vendedores') return !isMec && !isAdm && !isGest;
-    // 'todos' — mas mecânicos não recebem BYOD e ECOSSISTEMA
-    if(isMec && (doc.id === 'BYOD_V1' || doc.id === 'ECOSSISTEMA_V1')) return false;
-    return true; // 'todos'
-  });
+  const docsFiltrados = DOCUMENTOS.filter(doc => docsPertenceAoPerfil(doc));;
   const total = docsFiltrados.length;
   const assinados = docsFiltrados.filter(d => aceitesDocs[d.id]).length;
   document.getElementById('progressBar').style.width = (assinados/total*100) + '%';
@@ -1336,16 +1345,12 @@ async function carregarDadosRH() {
     if(j3.success) rhDocsConfig = j3.config || {};
 
     // Sheets é a fonte de verdade — substituir COMPLETAMENTE o array hardcoded
-    if(j4.success && j4.documentos && j4.documentos.length > 0) {
+    if(j4.success) {
       DOCUMENTOS.length = 0;
-      j4.documentos.forEach(d => {
-        // Normalizar paraQuem — garantir valores válidos
+      (j4.documentos || []).forEach(d => {
         const pq = (d.paraQuem || 'todos').toLowerCase().trim();
-        if(!['todos','gestores','adms','vendedores','mecanicos'].includes(pq) && !pq.startsWith('colab:')) {
-          d.paraQuem = 'todos';
-        } else {
-          d.paraQuem = pq;
-        }
+        d.paraQuem = ['todos','gestores','adms','vendedores','mecanicos'].includes(pq) || pq.startsWith('colab:') ? pq : 'todos';
+        d.byod = false;
         DOCUMENTOS.push(d);
       });
     }
@@ -1666,7 +1671,7 @@ function renderDocEditList() {
         <div style="width:40px;height:40px;border-radius:10px;background:var(--orange-light);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">📄</div>
         <div class="doc-edit-info">
           <div class="doc-edit-name">${doc.nome}</div>
-          <div class="doc-edit-meta">${doc.sub} · Para: ${doc.paraQuem === 'todos' ? 'Todos' : doc.paraQuem} ${doc.byod?'· Tem "Não se aplica"':''}</div>
+          <div class="doc-edit-meta">${doc.sub} · Para: ${doc.paraQuem === 'todos' ? 'Todos' : doc.paraQuem}</div>
         </div>
         <button class="btn-rh primary" style="font-size:11px;padding:6px 12px" onclick="event.stopPropagation();abrirEditarDoc('${doc.id}')">✏️ Editar</button>
         <span class="doc-chevron" style="font-size:12px;color:var(--mid);transition:.3s">›</span>
@@ -1753,6 +1758,13 @@ async function salvarDocEditado() {
     toast('⚠ Preencha ID, nome e conteúdo.');
     return;
   }
+
+  // Sanitizar ID — remover acentos e caracteres especiais
+  id = id.toUpperCase()
+    .replace(/[ÀÁÂÃÄÅ]/g,'A').replace(/[ÈÉÊË]/g,'E').replace(/[ÌÍÎÏ]/g,'I')
+    .replace(/[ÒÓÔÕÖ]/g,'O').replace(/[ÙÚÛÜ]/g,'U').replace(/[Ç]/g,'C')
+    .normalize('NFD').replace(/[̀-ͯ]/g,'')
+    .replace(/[^A-Z0-9_]/g,'_').replace(/_+/g,'_').replace(/^_|_$/g,'');
 
   // Limpar HTML completo — extrair só o body se vier com DOCTYPE
   let conteudoFinal = conteudo;
