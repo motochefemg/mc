@@ -1048,7 +1048,7 @@ function renderDocConteudo(doc) {
     const a = aceitesDocs[doc.id];
     return dadosHtml + textoHtml + `<div class="signed-banner">✅ Documento assinado em ${a.data||''} às ${a.hora||''} · CPF: ${a.cpf||''}</div>`;
   }
-  const naoAplicaBtn = doc.byod ? `<button class="btn-nao-aplica" onclick="assinarNaoAplica('${doc.id}')">Não se aplica a mim</button>` : '';
+  const naoAplicaBtn = ''; // removido — docs selecionados individualmente
   return dadosHtml + textoHtml + `<div class="aceite-form">
     <h4>Confirmar assinatura digital</h4>
     <div class="form-grid">
@@ -1071,6 +1071,14 @@ function toggleDoc(id) {
   const isOpen = item.classList.contains('open');
   document.querySelectorAll('.doc-item').forEach(el => el.classList.remove('open'));
   if(!isOpen) item.classList.add('open');
+}
+
+function fmtCPFDados(v) {
+  if(!v) return '';
+  // Garantir 11 dígitos com zero à esquerda
+  const s = String(v).replace(/\D/g,'').padStart(11,'0');
+  if(s.length !== 11) return s;
+  return s.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
 }
 
 function fmtCPF(el) {
@@ -1595,6 +1603,21 @@ function toggleDocEdit(id) {
   if(!isOpen) card.classList.add('open');
 }
 
+function popularSelectColabs() {
+  // Adicionar colaboradores individuais no select "Para Quem" (sem gestores)
+  const grp = document.getElementById('editDocParaQuemIndividual');
+  if(!grp) return;
+  grp.innerHTML = '';
+  // Apenas vendedores, adms e mecânicos — sem gestores
+  const semGestores = rhColaboradores.filter(c => c.perfil !== 'gestor' && c.perfil !== 'rh');
+  semGestores.forEach(c => {
+    const opt = document.createElement('option');
+    opt.value = 'colab:' + c.login;
+    opt.textContent = c.nome + ' (' + (c.perfil||'') + ')';
+    grp.appendChild(opt);
+  });
+}
+
 function abrirCriarDoc() {
   rhDocEditando = null;
   document.getElementById('modalEditDocTitulo').textContent = 'Novo Documento';
@@ -1606,6 +1629,7 @@ function abrirCriarDoc() {
   document.getElementById('editDocBYOD').checked = false;
   document.getElementById('editDocConteudo').value = '<h3>TÍTULO DA SEÇÃO</h3>\n<p>Conteúdo do documento aqui...</p>';
   document.getElementById('btnExcluirDoc').style.display = 'none';
+  popularSelectColabs();
   document.getElementById('modalEditDoc').classList.add('show');
 }
 
@@ -1622,6 +1646,11 @@ function abrirEditarDoc(docId) {
   document.getElementById('editDocBYOD').checked = !!doc.byod;
   document.getElementById('editDocConteudo').value = doc.conteudo || '';
   document.getElementById('btnExcluirDoc').style.display = 'inline-flex';
+  popularSelectColabs();
+  // Restaurar valor após popular (pode ter sido resetado)
+  setTimeout(() => {
+    document.getElementById('editDocParaQuem').value = doc.paraQuem || 'todos';
+  }, 50);
   document.getElementById('modalEditDoc').classList.add('show');
 }
 
@@ -1676,7 +1705,6 @@ async function salvarDocEditado() {
   if(btnSalvar) { btnSalvar.disabled = true; btnSalvar.textContent = '⟳ Salvando...'; }
 
   try {
-    console.log('🔵 Salvando doc:', docData.id, '| isNew:', !rhDocEditando);
 
     // Etapa 1: salvar metadados
     const urlMeta = AS + '?' + new URLSearchParams({
@@ -1689,8 +1717,6 @@ async function salvarDocEditado() {
       doc_byod:     docData.byod ? 'SIM' : 'NAO',
       doc_conteudo: '__AGUARDANDO__'
     }).toString();
-
-    console.log('🔵 URL meta length:', urlMeta.length);
     const r1 = await fetch(urlMeta);
     const txt1 = await r1.text();
     console.log('🔵 Resposta meta:', txt1.substring(0, 200));
@@ -1712,15 +1738,12 @@ async function salvarDocEditado() {
         offset: i,
         total
       }).toString();
-      console.log('🔵 Chunk', i+1, '/', total, '| URL length:', urlChunk.length);
       const rc = await fetch(urlChunk);
       const txtc = await rc.text();
       console.log('🔵 Chunk resp:', txtc.substring(0, 100));
       const jc = JSON.parse(txtc);
       if(!jc.success) throw new Error('Chunk ' + i + ': ' + (jc.error || 'falhou'));
     }
-
-    console.log('✅ Salvo com sucesso!');
     fecharRHModal('modalEditDoc');
     renderDocEditList();
     renderColaboradores();
@@ -2091,9 +2114,11 @@ window.addEventListener('load', function() {
           <label style="font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--mid);display:block;margin-bottom:5px">Para Quem</label>
           <select id="editDocParaQuem" style="width:100%;padding:10px 14px;border:1.5px solid var(--light);border-radius:8px;font-family:'DM Sans',sans-serif;font-size:13px;outline:none;background:var(--white)">
             <option value="todos">Todos</option>
-            <option value="mecanicos">Apenas Mecânicos</option>
-            <option value="gestores">Apenas Gestores</option>
-            <option value="vendedores">Apenas Vendedores</option>
+            <option value="gestores">Gestores</option>
+            <option value="adms">Administradores</option>
+            <option value="vendedores">Vendedores</option>
+            <option value="mecanicos">Mecânicos</option>
+            <optgroup label="── Individual ──" id="editDocParaQuemIndividual"></optgroup>
           </select>
         </div>
         <div style="grid-column:1/-1">
