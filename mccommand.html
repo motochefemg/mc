@@ -676,6 +676,140 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cream); color: var(
   .rh-topbar { padding: 12px 16px; flex-wrap: wrap; gap: 10px; }
 }
 
+
+/* ── CÂMERA / SELFIE ── */
+.modal-camera {
+  display: none;
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,.85);
+  z-index: 2000;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+}
+.modal-camera.show { display: flex; }
+
+.camera-box {
+  background: var(--dark);
+  border-radius: var(--radius);
+  padding: 24px;
+  width: 360px;
+  text-align: center;
+  box-shadow: var(--shadow-lg);
+}
+
+.camera-title {
+  font-family: 'DM Serif Display', serif;
+  font-size: 20px;
+  color: var(--white);
+  margin-bottom: 6px;
+}
+
+.camera-sub {
+  font-size: 12px;
+  color: rgba(255,255,255,.5);
+  margin-bottom: 16px;
+  line-height: 1.5;
+}
+
+#cameraVideo {
+  width: 100%;
+  border-radius: 10px;
+  background: #000;
+  display: block;
+  transform: scaleX(-1); /* espelho */
+}
+
+#cameraCanvas { display: none; }
+
+#cameraPreview {
+  display: none;
+  width: 100%;
+  border-radius: 10px;
+  border: 2px solid var(--green);
+  transform: scaleX(-1);
+}
+
+.camera-btns {
+  display: flex;
+  gap: 10px;
+  margin-top: 16px;
+  justify-content: center;
+}
+
+.btn-capture {
+  background: var(--orange);
+  color: #fff;
+  border: none;
+  border-radius: 50%;
+  width: 60px; height: 60px;
+  font-size: 24px;
+  cursor: pointer;
+  transition: .2s;
+  box-shadow: 0 0 0 4px rgba(255,75,0,.3);
+}
+.btn-capture:hover { transform: scale(1.08); }
+
+.btn-refazer {
+  background: rgba(255,255,255,.1);
+  color: #fff;
+  border: 1px solid rgba(255,255,255,.2);
+  border-radius: 8px;
+  padding: 10px 16px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.btn-confirmar-selfie {
+  background: var(--green);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 20px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.selfie-preview-banner {
+  background: var(--green-light);
+  border: 1px solid var(--green);
+  border-radius: 8px;
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+  font-size: 13px;
+  color: var(--green);
+  font-weight: 600;
+}
+
+.selfie-thumb {
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--green);
+  transform: scaleX(-1);
+}
+
+.hash-badge {
+  font-family: monospace;
+  font-size: 10px;
+  color: var(--mid);
+  background: var(--light2);
+  border-radius: 4px;
+  padding: 3px 8px;
+  word-break: break-all;
+  margin-top: 4px;
+  display: block;
+}
+
 </style>
 </head>
 <body>
@@ -1198,38 +1332,79 @@ function hojeISO() {
 }
 
 async function assinarDoc(docId) {
-  const nome = document.getElementById('nome_'+docId).value.trim();
-  const cpf = document.getElementById('cpf_'+docId).value.replace(/\D/g,'');
-  const data = document.getElementById('data_'+docId).value;
+  const nome  = document.getElementById('nome_'+docId).value.trim();
+  const cpf   = document.getElementById('cpf_'+docId).value.replace(/\D/g,'');
+  const data  = document.getElementById('data_'+docId).value;
   const email = document.getElementById('email_'+docId).value.trim();
   const check = document.getElementById('check_'+docId).checked;
-  const err = document.getElementById('err_'+docId);
+  const err   = document.getElementById('err_'+docId);
+
   if(nome.split(' ').filter(Boolean).length < 2){ err.textContent='Informe nome e sobrenome completos.'; return; }
   if(!validarCPF(cpf)){ err.textContent='CPF inválido.'; return; }
   if(!data){ err.textContent='Informe a data.'; return; }
   if(!email||!email.includes('@')){ err.textContent='Informe um e-mail válido.'; return; }
   if(!check){ err.textContent='Confirme que leu e concorda com o documento.'; return; }
-  err.textContent='';
-  const btn = document.querySelector(`#docItem_${docId} .btn-assinar`);
+  err.textContent = '';
+
+  // Abrir câmera para captura de selfie
+  abrirCamera(docId, async (selfieB64, dId) => {
+    await _finalizarAssinatura(dId, selfieB64);
+  });
+}
+
+// Executar a assinatura após selfie (selfieB64 pode ser null se câmera falhou)
+async function _finalizarAssinatura(docId, selfieB64) {
+  const nome  = document.getElementById('nome_'+docId).value.trim();
+  const cpf   = document.getElementById('cpf_'+docId).value.replace(/\D/g,'');
+  const data  = document.getElementById('data_'+docId).value;
+  const email = document.getElementById('email_'+docId).value.trim();
+  const err   = document.getElementById('err_'+docId);
+  const btn   = document.querySelector(`#docItem_${docId} .btn-assinar`);
+  const doc   = DOCUMENTOS.find(d=>d.id===docId);
+
   if(btn){ btn.disabled=true; btn.innerHTML='<span class="loading-spin"></span> Registrando...'; }
-  let ip = '';
-  try { const r=await fetch('https://api.ipify.org?format=json'); ip=(await r.json()).ip||''; } catch(e){}
-  const doc = DOCUMENTOS.find(d=>d.id===docId);
+
   try {
-    const params = new URLSearchParams({ action:'registrar_aceite_doc', login:currentUser, nome, cpf, data, email, ip, documento:docId, nomeDoc:doc?.nome||docId, hora:new Date().toLocaleTimeString('pt-BR'), naoAplica:'false' });
+    // Capturar IP
+    let ip = '';
+    try { const r=await fetch('https://api.ipify.org?format=json'); ip=(await r.json()).ip||''; } catch(e){}
+
+    // Gerar hash SHA-256 do conteúdo do documento
+    const hashDoc = await gerarHash((doc?.conteudo||'') + docId + nome + cpf);
+
+    // Upload da selfie em chunks (se disponível)
+    let selfieKey = '';
+    if(selfieB64) {
+      if(btn) btn.innerHTML='<span class="loading-spin"></span> Enviando selfie...';
+      selfieKey = await uploadSelfie(currentUser, docId, selfieB64);
+    }
+
+    if(btn) btn.innerHTML='<span class="loading-spin"></span> Registrando...';
+
+    const params = new URLSearchParams({
+      action: 'registrar_aceite_doc',
+      login: currentUser, nome, cpf, data, email, ip,
+      documento: docId, nomeDoc: doc?.nome||docId,
+      hora: new Date().toLocaleTimeString('pt-BR'),
+      naoAplica: 'false',
+      hashDoc, selfieKey,
+      temSelfie: selfieB64 ? 'true' : 'false'
+    });
+
     const r = await fetch(AS+'?'+params.toString());
     const j = await r.json();
+
     if(j.success){
       aceitesDocs[docId] = { data, hora: new Date().toLocaleTimeString('pt-BR'), cpf };
       toast('✅ Documento assinado com sucesso!');
       renderizarDocs();
       setTimeout(()=>{ const item=document.getElementById('docItem_'+docId); if(item) item.classList.add('open'); }, 100);
     } else {
-      err.textContent = 'Erro: '+(j.error||'tente novamente');
+      if(err) err.textContent = 'Erro: '+(j.error||'tente novamente');
       if(btn){ btn.disabled=false; btn.innerHTML='<span>✍️</span> Assinar documento'; }
     }
-  } catch(e){
-    err.textContent='Sem conexão. Tente novamente.';
+  } catch(e) {
+    if(err) err.textContent = 'Sem conexão. Tente novamente.';
     if(btn){ btn.disabled=false; btn.innerHTML='<span>✍️</span> Assinar documento'; }
   }
 }
@@ -2125,6 +2300,149 @@ function fecharRHModal(id) {
 }
 
 
+
+// ══════════════════════════════════════════════════════════
+//  SELFIE + HASH — Evidências de Assinatura
+// ══════════════════════════════════════════════════════════
+
+let cameraStream = null;
+let selfieBase64 = null;     // selfie capturada
+let selfieDocId  = null;     // doc que está sendo assinado
+let selfieCallbackFn = null; // função a chamar após confirmar selfie
+
+// Gerar hash SHA-256 do conteúdo do documento
+async function gerarHash(texto) {
+  try {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(texto);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2,'0')).join('');
+  } catch(e) {
+    // Fallback simples se SubtleCrypto não disponível
+    let h = 0;
+    for(let i = 0; i < texto.length; i++) {
+      const chr = texto.charCodeAt(i);
+      h = ((h << 5) - h) + chr;
+      h |= 0;
+    }
+    return Math.abs(h).toString(16).padStart(8,'0') + '-fallback';
+  }
+}
+
+// Abrir câmera para um documento específico
+async function abrirCamera(docId, callbackFn) {
+  selfieDocId = docId;
+  selfieCallbackFn = callbackFn;
+  selfieBase64 = null;
+
+  const modal = document.getElementById('modalCamera');
+  const video = document.getElementById('cameraVideo');
+  const preview = document.getElementById('cameraPreview');
+
+  // Reset estado
+  video.style.display = 'block';
+  preview.style.display = 'none';
+  document.getElementById('cameraBtnsCaptura').style.display = 'flex';
+  document.getElementById('cameraBtnsConfirmar').style.display = 'none';
+  document.getElementById('cameraSub').textContent = 'Posicione seu rosto e clique para capturar.';
+
+  modal.classList.add('show');
+
+  try {
+    cameraStream = await navigator.mediaDevices.getUserMedia({
+      video: { width: 320, height: 240, facingMode: 'user' },
+      audio: false
+    });
+    video.srcObject = cameraStream;
+  } catch(e) {
+    modal.classList.remove('show');
+    toast('⚠ Câmera não disponível. Verifique as permissões do navegador.');
+    // Prosseguir sem selfie
+    if(selfieCallbackFn) selfieCallbackFn(null, null);
+  }
+}
+
+// Capturar frame do vídeo
+function capturarSelfie() {
+  const video  = document.getElementById('cameraVideo');
+  const canvas = document.getElementById('cameraCanvas');
+  const preview = document.getElementById('cameraPreview');
+  const ctx = canvas.getContext('2d');
+
+  // Capturar frame (espelhado para parecer natural)
+  ctx.save();
+  ctx.translate(canvas.width, 0);
+  ctx.scale(-1, 1);
+  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+  ctx.restore();
+
+  // Comprimir como JPEG qualidade 0.4 (~5-10KB)
+  const dataUrl = canvas.toDataURL('image/jpeg', 0.4);
+  selfieBase64 = dataUrl.split(',')[1]; // só o base64
+
+  // Mostrar preview
+  preview.src = dataUrl;
+  preview.style.display = 'block';
+  video.style.display = 'none';
+
+  document.getElementById('cameraBtnsCaptura').style.display = 'none';
+  document.getElementById('cameraBtnsConfirmar').style.display = 'flex';
+  document.getElementById('cameraSub').textContent = 'Boa! Confirma esta foto ou refaz.';
+}
+
+// Refazer selfie
+function refazerSelfie() {
+  selfieBase64 = null;
+  const video  = document.getElementById('cameraVideo');
+  const preview = document.getElementById('cameraPreview');
+  video.style.display = 'block';
+  preview.style.display = 'none';
+  document.getElementById('cameraBtnsCaptura').style.display = 'flex';
+  document.getElementById('cameraBtnsConfirmar').style.display = 'none';
+  document.getElementById('cameraSub').textContent = 'Posicione seu rosto e clique para capturar.';
+}
+
+// Confirmar selfie e chamar callback
+function confirmarSelfie() {
+  fecharCamera();
+  if(selfieCallbackFn) selfieCallbackFn(selfieBase64, selfieDocId);
+}
+
+// Fechar câmera
+function fecharCamera() {
+  document.getElementById('modalCamera').classList.remove('show');
+  if(cameraStream) {
+    cameraStream.getTracks().forEach(t => t.stop());
+    cameraStream = null;
+  }
+}
+
+// Upload da selfie em chunks para o GAS
+async function uploadSelfie(login, docId, base64) {
+  if(!base64) return '';
+  const CHUNK = 2000;
+  const total = Math.ceil(base64.length / CHUNK);
+  let selfieKey = '';
+  try {
+    for(let i = 0; i < total; i++) {
+      const chunk = base64.substring(i * CHUNK, (i+1) * CHUNK);
+      const url = AS + '?' + new URLSearchParams({
+        action: 'upload_selfie_chunk',
+        login, docId,
+        chunk, offset: i, total
+      }).toString();
+      const r = await fetch(url);
+      const j = await r.json();
+      if(i === total - 1 && j.selfieKey) selfieKey = j.selfieKey;
+    }
+  } catch(e) {
+    console.warn('Upload selfie falhou:', e.message);
+  }
+  return selfieKey;
+}
+
+
 // Auto-login ao carregar
 window.addEventListener('load', function() {
   carregarColaboradoresSelect();
@@ -2340,6 +2658,26 @@ window.addEventListener('load', function() {
     </div>
     <div class="rh-modal-footer">
       <button class="btn-rh" onclick="fecharRHModal('modalAceitesColab')">Fechar</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- MODAL CÂMERA / SELFIE -->
+<div class="modal-camera" id="modalCamera">
+  <div class="camera-box">
+    <div class="camera-title">📸 Confirme sua identidade</div>
+    <div class="camera-sub" id="cameraSub">Posicione seu rosto na câmera e clique para capturar a selfie de confirmação.</div>
+    <video id="cameraVideo" autoplay playsinline></video>
+    <canvas id="cameraCanvas" width="320" height="240"></canvas>
+    <img id="cameraPreview" alt="selfie">
+    <div class="camera-btns" id="cameraBtnsCaptura">
+      <button class="btn-refazer" onclick="fecharCamera()">Cancelar</button>
+      <button class="btn-capture" onclick="capturarSelfie()" title="Capturar">📷</button>
+    </div>
+    <div class="camera-btns" id="cameraBtnsConfirmar" style="display:none">
+      <button class="btn-refazer" onclick="refazerSelfie()">↩ Refazer</button>
+      <button class="btn-confirmar-selfie" onclick="confirmarSelfie()">✓ Usar esta foto</button>
     </div>
   </div>
 </div>
