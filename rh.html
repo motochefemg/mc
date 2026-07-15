@@ -1871,22 +1871,9 @@ function fecharRHModal(id) {
 
 // ── AUTO-LOGIN ──
 window.addEventListener('load', function() {
-  const sess = sessionStorage.getItem('rh_session');
-  if(sess) {
-    try {
-      const s = JSON.parse(sess);
-      if(Date.now() - s.ts < 8 * 60 * 60 * 1000) {
-        document.getElementById('rhLoginScreen').style.display = 'none';
-        if(s.cpf) {
-          const cpf = s.cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
-          dadosColab = dadosColab || {};
-          dadosColab.CPF = s.cpf;
-        }
-        iniciarRH();
-        return;
-      }
-    } catch(e) {}
-  }
+  // Limpar sessão antiga para evitar loop de tela em branco
+  sessionStorage.removeItem('rh_session');
+  // Login sempre obrigatório
 });
 </script>
 </body>
