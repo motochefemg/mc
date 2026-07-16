@@ -1029,6 +1029,7 @@ async function iniciarRH() {
   // Carregar dados
   await carregarDadosRH();
   mudarAbaRH('colabs');
+  renderColaboradores();
 }
 
 function fmtCPFRH(el) {
@@ -1085,12 +1086,15 @@ function mudarAbaRH(aba, btn) {
   document.querySelectorAll('.rh-tab').forEach(t => t.classList.remove('active'));
   if(btn) btn.classList.add('active');
   // Mostrar aba
+  // Mapear nomes curtos para IDs completos
+  const mapaAbas = { 'colabs': 'colaboradores', 'colaboradores': 'colaboradores', 'documentos': 'documentos', 'docs': 'documentos', 'aceites': 'aceites' };
+  const abaId = mapaAbas[aba] || aba;
   ['colaboradores','documentos','aceites'].forEach(a => {
     const el = document.getElementById('rh-aba-' + a);
-    if(el) el.style.display = a === aba ? 'block' : 'none';
+    if(el) el.style.display = a === abaId ? 'block' : 'none';
   });
-  if(aba === 'documentos') renderDocEditList();
-  if(aba === 'aceites') renderAceites();
+  if(abaId === 'documentos') renderDocEditList();
+  if(abaId === 'aceites') renderAceites();
 }
 
 async function carregarDadosRH() {
